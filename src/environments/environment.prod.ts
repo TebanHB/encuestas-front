@@ -1,4 +1,4 @@
 export const environment = {
     production: true,
-    apiBaseUrl: 'https://t6s935xp-8080.brs.devtunnels.mss'
+    apiBaseUrl: 'https://3905-181-115-214-197.ngrok-free.app'
 };

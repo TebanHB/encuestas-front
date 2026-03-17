@@ -28,36 +28,34 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     const token = localStorage.getItem('auth_token');
     const user = getAuthUser();
 
+    const headers: Record<string, string> = {};
+
+    // Agregar header para ngrok - TODAS las peticiones
+    headers['ngrok-skip-browser-warning'] = 'true';
+
     const excludedUrls = ['/auth/login', '/auth/register'];
     const isExcluded = excludedUrls.some((url) => req.url.includes(url));
 
-    if (isExcluded) {
-        return next(req);
-    }
+    // Agregar auth headers solo si no es un url excluido
+    if (!isExcluded) {
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
 
-    const headers: Record<string, string> = {};
+        if (user?.rol) {
+            headers['X-User-Role'] = user.rol;
+        }
 
-    if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    if (user?.rol) {
-        headers['X-User-Role'] = user.rol;
-    }
-
-    if (user?.email) {
-        headers['X-User-Email'] = user.email;
+        if (user?.email) {
+            headers['X-User-Email'] = user.email;
+        }
     }
 
     console.log('Request Headers:', headers);
 
-    if (Object.keys(headers).length > 0) {
-        const authReq = req.clone({
-            setHeaders: headers
-        });
+    const authReq = req.clone({
+        setHeaders: headers
+    });
 
-        return next(authReq);
-    }
-
-    return next(req);
+    return next(authReq);
 };
