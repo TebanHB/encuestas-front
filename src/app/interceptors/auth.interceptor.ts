@@ -49,6 +49,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         headers['X-User-Email'] = user.email;
     }
 
+    headers['Origin'] = 'https://cies.blumcode.com';
+
     if (Object.keys(headers).length > 0) {
         const authReq = req.clone({
             setHeaders: headers
