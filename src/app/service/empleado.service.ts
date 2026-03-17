@@ -23,6 +23,19 @@ export interface CrearEmpleadoRequest {
     puedeCrearEncuestas: boolean;
 }
 
+export interface ActualizarEmpleadoRequest {
+    nombre: string;
+    apellido: string;
+    email: string;
+    rol: string;
+    activo: boolean;
+    puedeCrearEncuestas: boolean;
+}
+
+export interface CambiarPasswordRequest {
+    password: string;
+}
+
 @Injectable({
     providedIn: 'root'
 })
@@ -36,6 +49,14 @@ export class EmpleadoService {
 
     crearEmpleado(payload: CrearEmpleadoRequest): Observable<Empleado> {
         return this.http.post<Empleado>(this.API_URL, payload);
+    }
+
+    actualizarEmpleado(id: number, payload: ActualizarEmpleadoRequest): Observable<Empleado> {
+        return this.http.put<Empleado>(`${this.API_URL}/${id}`, payload);
+    }
+
+    cambiarPassword(id: number, payload: CambiarPasswordRequest): Observable<void> {
+        return this.http.put<void>(`${this.API_URL}/${id}/password`, payload);
     }
 
     eliminarEmpleado(id: number, currentUserEmail: string): Observable<void> {

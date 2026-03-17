@@ -9,7 +9,13 @@ import { PasswordModule } from 'primeng/password';
 import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
-import { Empleado, EmpleadoService } from '../../service/empleado.service';
+import {
+    ActualizarEmpleadoRequest,
+    CambiarPasswordRequest,
+    CrearEmpleadoRequest,
+    Empleado,
+    EmpleadoService
+} from '../../service/empleado.service';
 
 interface NuevoEmpleadoForm {
     nombre: string;
@@ -19,6 +25,22 @@ interface NuevoEmpleadoForm {
     rol: string;
     activo: boolean;
     puedeCrearEncuestas: boolean;
+}
+
+interface EditarEmpleadoForm {
+    id: number | null;
+    nombre: string;
+    apellido: string;
+    email: string;
+    rol: string;
+    activo: boolean;
+    puedeCrearEncuestas: boolean;
+}
+
+interface CambiarPasswordForm {
+    id: number | null;
+    password: string;
+    confirmarPassword: string;
 }
 
 interface UsuarioLogueado {
@@ -31,6 +53,8 @@ interface UsuarioLogueado {
     activo: boolean;
 }
 
+type ErroresFormulario = Record<string, string>;
+
 @Component({
     selector: 'app-empleados',
     standalone: true,
@@ -42,7 +66,7 @@ interface UsuarioLogueado {
                     <div>
                         <div class="hero-chip">Administración</div>
                         <h1 class="hero-title">Gestión de empleados</h1>
-                        <p class="hero-subtitle">Administra los usuarios que tendrán acceso al sistema, sus roles y permisos de creación de encuestas.</p>
+                        <p class="hero-subtitle">Administra los usuarios que tendrán acceso al sistema, sus roles, estado y permisos de creación de encuestas.</p>
                     </div>
 
                     <button pButton type="button" icon="pi pi-plus" label="Nuevo empleado" class="hero-button" (click)="abrirDialogoNuevoEmpleado()"></button>
@@ -50,7 +74,7 @@ interface UsuarioLogueado {
 
                 <div class="hero-stats">
                     <div class="hero-stat">
-                        <span class="hero-stat__label">Total empleados</span>
+                        <span class="hero-stat__label">Total visibles</span>
                         <strong>{{ empleados.length }}</strong>
                     </div>
                     <div class="hero-stat">
@@ -126,9 +150,36 @@ interface UsuarioLogueado {
 
                             <td>
                                 <div class="actions-cell">
-                                    <button pButton type="button" icon="pi pi-pencil" severity="info" text rounded></button>
-                                    <button pButton type="button" icon="pi pi-key" severity="warn" text rounded></button>
-                                    <button pButton type="button" icon="pi pi-trash" severity="danger" text rounded [disabled]="esUsuarioActual(empleado)" (click)="confirmarEliminarEmpleado(empleado)"></button>
+                                    <button
+                                        pButton
+                                        type="button"
+                                        icon="pi pi-pencil"
+                                        severity="info"
+                                        text
+                                        rounded
+                                        (click)="abrirDialogoEditarEmpleado(empleado)"
+                                    ></button>
+
+                                    <button
+                                        pButton
+                                        type="button"
+                                        icon="pi pi-key"
+                                        severity="warn"
+                                        text
+                                        rounded
+                                        (click)="abrirDialogoCambiarPassword(empleado)"
+                                    ></button>
+
+                                    <button
+                                        pButton
+                                        type="button"
+                                        icon="pi pi-trash"
+                                        severity="danger"
+                                        text
+                                        rounded
+                                        [disabled]="!puedeEliminarEmpleado(empleado)"
+                                        (click)="confirmarEliminarEmpleado(empleado)"
+                                    ></button>
                                 </div>
                             </td>
                         </tr>
@@ -144,58 +195,84 @@ interface UsuarioLogueado {
         </div>
 
         <p-dialog
-            header="Nuevo empleado"
+            header="Registrar empleado"
             [(visible)]="mostrarDialogoNuevoEmpleado"
             [modal]="true"
-            [style]="{ width: '42rem', 'max-width': '95vw' }"
+            [style]="{ width: '46rem', 'max-width': '95vw' }"
             [contentStyle]="{ overflow: 'visible' }"
             [closable]="!guardandoEmpleado"
             [draggable]="false"
             [resizable]="false"
         >
-            <div class="flex flex-column gap-4 pt-2">
-                <div class="grid">
-                    <div class="col-12 md:col-6">
-                        <label class="block mb-2 font-medium">Nombre</label>
-                        <input pInputText [(ngModel)]="nuevoEmpleado.nombre" class="w-full" />
-                    </div>
+            <div class="dialog-form pt-2">
+                <div class="form-section">
+                    <div class="section-title">Datos personales</div>
 
-                    <div class="col-12 md:col-6">
-                        <label class="block mb-2 font-medium">Apellido</label>
-                        <input pInputText [(ngModel)]="nuevoEmpleado.apellido" class="w-full" />
-                    </div>
-
-                    <div class="col-12">
-                        <label class="block mb-2 font-medium">Correo</label>
-                        <input pInputText [(ngModel)]="nuevoEmpleado.email" class="w-full" />
-                    </div>
-
-                    <div class="col-12 md:col-6">
-                        <label class="block mb-2 font-medium">Contraseña</label>
-                        <p-password [(ngModel)]="nuevoEmpleado.password" [feedback]="false" [toggleMask]="true" styleClass="w-full" inputStyleClass="w-full"></p-password>
-                    </div>
-
-                    <div class="col-12 md:col-6">
-                        <label class="block mb-2 font-medium">Rol</label>
-                        <p-select [options]="roles" [(ngModel)]="nuevoEmpleado.rol" optionLabel="label" optionValue="value" placeholder="Seleccione un rol" class="w-full"></p-select>
-                    </div>
-
-                    <div class="col-12 md:col-6">
-                        <div class="flex align-items-center gap-2 mt-2">
-                            <p-checkbox [(ngModel)]="nuevoEmpleado.activo" binary inputId="activo"></p-checkbox>
-                            <label for="activo">Activo</label>
+                    <div class="dialog-grid">
+                        <div class="field-block">
+                            <label class="field-label">Nombre *</label>
+                            <input pInputText [(ngModel)]="nuevoEmpleado.nombre" class="w-full" maxlength="100" />
+                            <small class="field-help">Solo letras y espacios.</small>
+                            <small *ngIf="erroresNuevoEmpleado['nombre']" class="field-error">{{ erroresNuevoEmpleado['nombre'] }}</small>
                         </div>
-                    </div>
 
-                    <div class="col-12 md:col-6">
-                        <div class="flex align-items-center gap-2 mt-2">
-                            <p-checkbox [(ngModel)]="nuevoEmpleado.puedeCrearEncuestas" binary inputId="puedeCrearEncuestas"></p-checkbox>
-                            <label for="puedeCrearEncuestas">Puede crear encuestas</label>
+                        <div class="field-block">
+                            <label class="field-label">Apellido *</label>
+                            <input pInputText [(ngModel)]="nuevoEmpleado.apellido" class="w-full" maxlength="100" />
+                            <small class="field-help">Solo letras y espacios.</small>
+                            <small *ngIf="erroresNuevoEmpleado['apellido']" class="field-error">{{ erroresNuevoEmpleado['apellido'] }}</small>
                         </div>
                     </div>
                 </div>
 
-                <div *ngIf="errorCrearEmpleado" class="text-red-500 font-medium">
+                <div class="form-section">
+                    <div class="section-title">Acceso al sistema</div>
+
+                    <div class="dialog-grid">
+                        <div class="field-block">
+                            <label class="field-label">Correo electrónico *</label>
+                            <input pInputText [(ngModel)]="nuevoEmpleado.email" class="w-full" type="email" maxlength="150" />
+                            <small class="field-help">Debe ser un correo válido.</small>
+                            <small *ngIf="erroresNuevoEmpleado['email']" class="field-error">{{ erroresNuevoEmpleado['email'] }}</small>
+                        </div>
+
+                        <div class="field-block">
+                            <label class="field-label">Contraseña *</label>
+                            <p-password [(ngModel)]="nuevoEmpleado.password" [feedback]="false" [toggleMask]="true" styleClass="w-full" inputStyleClass="w-full"></p-password>
+                            <small class="field-help">Mínimo 5 caracteres.</small>
+                            <small *ngIf="erroresNuevoEmpleado['password']" class="field-error">{{ erroresNuevoEmpleado['password'] }}</small>
+                        </div>
+
+                        <div class="field-block">
+                            <label class="field-label">Rol *</label>
+                            <p-select
+                                [options]="roles"
+                                [(ngModel)]="nuevoEmpleado.rol"
+                                optionLabel="label"
+                                optionValue="value"
+                                placeholder="Seleccione un rol"
+                                class="w-full"
+                            ></p-select>
+                            <small *ngIf="erroresNuevoEmpleado['rol']" class="field-error">{{ erroresNuevoEmpleado['rol'] }}</small>
+                        </div>
+
+                        <div class="field-block field-block--checks">
+                            <div class="check-group">
+                                <div class="check-item">
+                                    <p-checkbox [(ngModel)]="nuevoEmpleado.activo" binary inputId="nuevoActivo"></p-checkbox>
+                                    <label for="nuevoActivo">Activo</label>
+                                </div>
+
+                                <div class="check-item">
+                                    <p-checkbox [(ngModel)]="nuevoEmpleado.puedeCrearEncuestas" binary inputId="nuevoPuedeCrearEncuestas"></p-checkbox>
+                                    <label for="nuevoPuedeCrearEncuestas">Puede crear encuestas</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div *ngIf="errorCrearEmpleado" class="form-error-box">
                     {{ errorCrearEmpleado }}
                 </div>
             </div>
@@ -208,13 +285,147 @@ interface UsuarioLogueado {
             </ng-template>
         </p-dialog>
 
-        <p-dialog header="Confirmar eliminación" [(visible)]="mostrarDialogoEliminar" [modal]="true" [style]="{ width: '28rem', 'max-width': '95vw' }" [closable]="!eliminandoEmpleado" [draggable]="false" [resizable]="false">
+        <p-dialog
+            header="Editar empleado"
+            [(visible)]="mostrarDialogoEditarEmpleado"
+            [modal]="true"
+            [style]="{ width: '46rem', 'max-width': '95vw' }"
+            [contentStyle]="{ overflow: 'visible' }"
+            [closable]="!actualizandoEmpleado"
+            [draggable]="false"
+            [resizable]="false"
+        >
+            <div class="dialog-form pt-2">
+                <div class="form-section">
+                    <div class="section-title">Datos del empleado</div>
+
+                    <div class="dialog-grid">
+                        <div class="field-block">
+                            <label class="field-label">Nombre *</label>
+                            <input pInputText [(ngModel)]="empleadoEditar.nombre" class="w-full" maxlength="100" />
+                            <small class="field-help">Solo letras y espacios.</small>
+                            <small *ngIf="erroresEditarEmpleado['nombre']" class="field-error">{{ erroresEditarEmpleado['nombre'] }}</small>
+                        </div>
+
+                        <div class="field-block">
+                            <label class="field-label">Apellido *</label>
+                            <input pInputText [(ngModel)]="empleadoEditar.apellido" class="w-full" maxlength="100" />
+                            <small class="field-help">Solo letras y espacios.</small>
+                            <small *ngIf="erroresEditarEmpleado['apellido']" class="field-error">{{ erroresEditarEmpleado['apellido'] }}</small>
+                        </div>
+
+                        <div class="field-block">
+                            <label class="field-label">Correo electrónico *</label>
+                            <input pInputText [(ngModel)]="empleadoEditar.email" class="w-full" type="email" maxlength="150" />
+                            <small class="field-help">Debe ser un correo válido.</small>
+                            <small *ngIf="erroresEditarEmpleado['email']" class="field-error">{{ erroresEditarEmpleado['email'] }}</small>
+                        </div>
+
+                        <div class="field-block">
+                            <label class="field-label">Rol *</label>
+                            <p-select
+                                [options]="roles"
+                                [(ngModel)]="empleadoEditar.rol"
+                                optionLabel="label"
+                                optionValue="value"
+                                placeholder="Seleccione un rol"
+                                class="w-full"
+                            ></p-select>
+                            <small *ngIf="erroresEditarEmpleado['rol']" class="field-error">{{ erroresEditarEmpleado['rol'] }}</small>
+                        </div>
+
+                        <div class="field-block field-block--checks field-block--span-2">
+                            <div class="check-group check-group--row">
+                                <div class="check-item">
+                                    <p-checkbox [(ngModel)]="empleadoEditar.activo" binary inputId="editarActivo"></p-checkbox>
+                                    <label for="editarActivo">Activo</label>
+                                </div>
+
+                                <div class="check-item">
+                                    <p-checkbox [(ngModel)]="empleadoEditar.puedeCrearEncuestas" binary inputId="editarPuedeCrearEncuestas"></p-checkbox>
+                                    <label for="editarPuedeCrearEncuestas">Puede crear encuestas</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div *ngIf="errorEditarEmpleado" class="form-error-box">
+                    {{ errorEditarEmpleado }}
+                </div>
+            </div>
+
+            <ng-template pTemplate="footer">
+                <div class="flex justify-content-end gap-2">
+                    <button pButton type="button" label="Cancelar" severity="secondary" [outlined]="true" (click)="cerrarDialogoEditarEmpleado()" [disabled]="actualizandoEmpleado"></button>
+                    <button pButton type="button" [label]="actualizandoEmpleado ? 'Guardando...' : 'Guardar cambios'" (click)="actualizarEmpleado()" [disabled]="actualizandoEmpleado"></button>
+                </div>
+            </ng-template>
+        </p-dialog>
+
+        <p-dialog
+            header="Cambiar contraseña"
+            [(visible)]="mostrarDialogoCambiarPassword"
+            [modal]="true"
+            [style]="{ width: '34rem', 'max-width': '95vw' }"
+            [contentStyle]="{ overflow: 'visible' }"
+            [closable]="!cambiandoPassword"
+            [draggable]="false"
+            [resizable]="false"
+        >
+            <div class="dialog-form pt-2">
+                <div class="form-section">
+                    <div class="section-title">
+                        Cambiar contraseña de
+                        <strong>{{ empleadoPasswordNombre }}</strong>
+                    </div>
+
+                    <div class="dialog-grid dialog-grid--single">
+                        <div class="field-block">
+                            <label class="field-label">Nueva contraseña *</label>
+                            <p-password [(ngModel)]="cambiarPasswordForm.password" [feedback]="false" [toggleMask]="true" styleClass="w-full" inputStyleClass="w-full"></p-password>
+                            <small class="field-help">Mínimo 5 caracteres.</small>
+                            <small *ngIf="erroresCambiarPassword['password']" class="field-error">{{ erroresCambiarPassword['password'] }}</small>
+                        </div>
+
+                        <div class="field-block">
+                            <label class="field-label">Confirmar contraseña *</label>
+                            <p-password [(ngModel)]="cambiarPasswordForm.confirmarPassword" [feedback]="false" [toggleMask]="true" styleClass="w-full" inputStyleClass="w-full"></p-password>
+                            <small *ngIf="erroresCambiarPassword['confirmarPassword']" class="field-error">{{ erroresCambiarPassword['confirmarPassword'] }}</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div *ngIf="errorCambiarPassword" class="form-error-box">
+                    {{ errorCambiarPassword }}
+                </div>
+            </div>
+
+            <ng-template pTemplate="footer">
+                <div class="flex justify-content-end gap-2">
+                    <button pButton type="button" label="Cancelar" severity="secondary" [outlined]="true" (click)="cerrarDialogoCambiarPassword()" [disabled]="cambiandoPassword"></button>
+                    <button pButton type="button" [label]="cambiandoPassword ? 'Guardando...' : 'Cambiar contraseña'" (click)="cambiarPassword()" [disabled]="cambiandoPassword"></button>
+                </div>
+            </ng-template>
+        </p-dialog>
+
+        <p-dialog
+            header="Confirmar eliminación"
+            [(visible)]="mostrarDialogoEliminar"
+            [modal]="true"
+            [style]="{ width: '30rem', 'max-width': '95vw' }"
+            [closable]="!eliminandoEmpleado"
+            [draggable]="false"
+            [resizable]="false"
+        >
             <div class="pt-2">
                 <p class="m-0">
-                    ¿Estás seguro de eliminar a
+                    ¿Estás seguro de eliminar a este {{ getTipoUsuarioLabel(empleadoSeleccionado) }}:
                     <strong>{{ empleadoSeleccionado?.nombre }} {{ empleadoSeleccionado?.apellido }}</strong
                     >?
                 </p>
+
+                <p class="mt-3 mb-0 text-600">Se quitará de la interfaz, pero seguirá guardado en la base de datos.</p>
 
                 <div *ngIf="errorEliminarEmpleado" class="text-red-500 font-medium mt-3">
                     {{ errorEliminarEmpleado }}
@@ -368,6 +579,101 @@ interface UsuarioLogueado {
                 gap: 0.35rem;
             }
 
+            .dialog-form {
+                display: flex;
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .form-section {
+                border: 1px solid var(--surface-border);
+                border-radius: 1rem;
+                padding: 1rem 1rem 1.15rem;
+                background: var(--surface-0);
+            }
+
+            .section-title {
+                font-size: 1rem;
+                font-weight: 700;
+                color: var(--text-color);
+                margin-bottom: 1rem;
+            }
+
+            .dialog-grid {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 1rem 1.25rem;
+                align-items: start;
+            }
+
+            .dialog-grid--single {
+                grid-template-columns: 1fr;
+            }
+
+            .field-block {
+                min-width: 0;
+            }
+
+            .field-block--span-2 {
+                grid-column: 1 / -1;
+            }
+
+            .field-block--checks {
+                display: flex;
+                align-items: center;
+            }
+
+            .field-label {
+                display: block;
+                font-weight: 600;
+                margin-bottom: 0.5rem;
+                color: var(--text-color);
+            }
+
+            .field-help {
+                display: block;
+                margin-top: 0.45rem;
+                color: var(--text-color-secondary);
+                font-size: 0.8rem;
+                line-height: 1.35;
+            }
+
+            .field-error {
+                display: block;
+                margin-top: 0.35rem;
+                color: #dc2626;
+                font-size: 0.82rem;
+                font-weight: 600;
+                line-height: 1.35;
+            }
+
+            .form-error-box {
+                border-radius: 0.9rem;
+                padding: 0.85rem 1rem;
+                background: rgba(220, 38, 38, 0.08);
+                color: #dc2626;
+                font-weight: 600;
+            }
+
+            .check-group {
+                display: flex;
+                flex-direction: column;
+                gap: 0.9rem;
+                width: 100%;
+            }
+
+            .check-group--row {
+                flex-direction: row;
+                flex-wrap: wrap;
+                gap: 1.25rem;
+            }
+
+            .check-item {
+                display: flex;
+                align-items: center;
+                gap: 0.6rem;
+            }
+
             @media (max-width: 900px) {
                 .employees-hero__content {
                     flex-direction: column;
@@ -380,6 +686,25 @@ interface UsuarioLogueado {
 
                 .hero-stats {
                     grid-template-columns: 1fr;
+                }
+            }
+
+            @media (max-width: 768px) {
+                .dialog-grid {
+                    grid-template-columns: 1fr;
+                }
+
+                .field-block--span-2 {
+                    grid-column: auto;
+                }
+
+                .field-block--checks {
+                    align-items: flex-start;
+                }
+
+                .check-group--row {
+                    flex-direction: column;
+                    gap: 0.9rem;
                 }
             }
         `
@@ -396,6 +721,18 @@ export class Empleados implements OnInit {
     mostrarDialogoNuevoEmpleado = false;
     guardandoEmpleado = false;
     errorCrearEmpleado = '';
+    erroresNuevoEmpleado: ErroresFormulario = {};
+
+    mostrarDialogoEditarEmpleado = false;
+    actualizandoEmpleado = false;
+    errorEditarEmpleado = '';
+    erroresEditarEmpleado: ErroresFormulario = {};
+
+    mostrarDialogoCambiarPassword = false;
+    cambiandoPassword = false;
+    errorCambiarPassword = '';
+    erroresCambiarPassword: ErroresFormulario = {};
+    empleadoPasswordNombre = '';
 
     mostrarDialogoEliminar = false;
     eliminandoEmpleado = false;
@@ -410,6 +747,8 @@ export class Empleados implements OnInit {
     ];
 
     nuevoEmpleado: NuevoEmpleadoForm = this.obtenerFormularioInicial();
+    empleadoEditar: EditarEmpleadoForm = this.obtenerFormularioEditarInicial();
+    cambiarPasswordForm: CambiarPasswordForm = this.obtenerFormularioPasswordInicial();
 
     ngOnInit(): void {
         this.cargarUsuarioLogueado();
@@ -417,7 +756,7 @@ export class Empleados implements OnInit {
     }
 
     cargarUsuarioLogueado(): void {
-        const rawUser = localStorage.getItem('auth_user');
+        const rawUser = localStorage.getItem('auth_user') || sessionStorage.getItem('auth_user');
 
         if (!rawUser) {
             this.usuarioLogueado = null;
@@ -427,7 +766,7 @@ export class Empleados implements OnInit {
         try {
             this.usuarioLogueado = JSON.parse(rawUser) as UsuarioLogueado;
         } catch (error) {
-            console.error('No se pudo leer auth_user desde localStorage:', error);
+            console.error('No se pudo leer auth_user:', error);
             this.usuarioLogueado = null;
         }
     }
@@ -445,7 +784,7 @@ export class Empleados implements OnInit {
             },
             error: (error) => {
                 console.error('Error al listar empleados:', error);
-                this.errorMessage = 'No se pudo cargar la lista de empleados.';
+                this.errorMessage = this.obtenerMensajeError(error, 'No se pudo cargar la lista de empleados.');
                 this.loading = false;
                 this.cdr.detectChanges();
             }
@@ -454,6 +793,7 @@ export class Empleados implements OnInit {
 
     abrirDialogoNuevoEmpleado(): void {
         this.nuevoEmpleado = this.obtenerFormularioInicial();
+        this.erroresNuevoEmpleado = {};
         this.errorCrearEmpleado = '';
         this.mostrarDialogoNuevoEmpleado = true;
         this.cdr.detectChanges();
@@ -466,51 +806,203 @@ export class Empleados implements OnInit {
 
         this.mostrarDialogoNuevoEmpleado = false;
         this.errorCrearEmpleado = '';
+        this.erroresNuevoEmpleado = {};
         this.cdr.detectChanges();
     }
 
     guardarEmpleado(): void {
         this.errorCrearEmpleado = '';
+        this.erroresNuevoEmpleado = {};
 
-        if (!this.nuevoEmpleado.nombre.trim() || !this.nuevoEmpleado.apellido.trim() || !this.nuevoEmpleado.email.trim() || !this.nuevoEmpleado.password.trim() || !this.nuevoEmpleado.rol.trim()) {
-            this.errorCrearEmpleado = 'Completa todos los campos obligatorios.';
+        if (!this.validarNuevoEmpleado()) {
             this.cdr.detectChanges();
             return;
         }
 
+        const payload: CrearEmpleadoRequest = {
+            nombre: this.normalizarTexto(this.nuevoEmpleado.nombre),
+            apellido: this.normalizarTexto(this.nuevoEmpleado.apellido),
+            email: this.normalizarEmail(this.nuevoEmpleado.email),
+            password: this.nuevoEmpleado.password.trim(),
+            rol: this.nuevoEmpleado.rol,
+            activo: this.nuevoEmpleado.activo,
+            puedeCrearEncuestas: this.nuevoEmpleado.puedeCrearEncuestas
+        };
+
         this.guardandoEmpleado = true;
         this.cdr.detectChanges();
 
-        this.empleadoService
-            .crearEmpleado({
-                nombre: this.nuevoEmpleado.nombre.trim(),
-                apellido: this.nuevoEmpleado.apellido.trim(),
-                email: this.nuevoEmpleado.email.trim(),
-                password: this.nuevoEmpleado.password.trim(),
-                rol: this.nuevoEmpleado.rol,
-                activo: this.nuevoEmpleado.activo,
-                puedeCrearEncuestas: this.nuevoEmpleado.puedeCrearEncuestas
-            })
-            .subscribe({
-                next: () => {
-                    this.guardandoEmpleado = false;
-                    this.mostrarDialogoNuevoEmpleado = false;
-                    this.nuevoEmpleado = this.obtenerFormularioInicial();
-                    this.cdr.detectChanges();
-                    this.cargarEmpleados();
-                },
-                error: (error) => {
-                    console.error('Error al crear empleado:', error);
-                    this.errorCrearEmpleado = typeof error?.error === 'string' ? error.error : 'No se pudo crear el empleado.';
-                    this.guardandoEmpleado = false;
-                    this.cdr.detectChanges();
+        this.empleadoService.crearEmpleado(payload).subscribe({
+            next: () => {
+                this.guardandoEmpleado = false;
+                this.mostrarDialogoNuevoEmpleado = false;
+                this.nuevoEmpleado = this.obtenerFormularioInicial();
+                this.erroresNuevoEmpleado = {};
+                this.cdr.detectChanges();
+                this.cargarEmpleados();
+            },
+            error: (error) => {
+                console.error('Error al crear empleado:', error);
+                this.errorCrearEmpleado = this.obtenerMensajeError(error, 'No se pudo crear el empleado.');
+                this.guardandoEmpleado = false;
+                this.cdr.detectChanges();
+            }
+        });
+    }
+
+    abrirDialogoEditarEmpleado(empleado: Empleado): void {
+        this.empleadoEditar = {
+            id: empleado.id,
+            nombre: empleado.nombre ?? '',
+            apellido: empleado.apellido ?? '',
+            email: empleado.email ?? '',
+            rol: empleado.rol ?? 'EMPLEADO',
+            activo: !!empleado.activo,
+            puedeCrearEncuestas: !!empleado.puedeCrearEncuestas
+        };
+
+        this.erroresEditarEmpleado = {};
+        this.errorEditarEmpleado = '';
+        this.mostrarDialogoEditarEmpleado = true;
+        this.cdr.detectChanges();
+    }
+
+    cerrarDialogoEditarEmpleado(): void {
+        if (this.actualizandoEmpleado) {
+            return;
+        }
+
+        this.mostrarDialogoEditarEmpleado = false;
+        this.errorEditarEmpleado = '';
+        this.erroresEditarEmpleado = {};
+        this.empleadoEditar = this.obtenerFormularioEditarInicial();
+        this.cdr.detectChanges();
+    }
+
+    actualizarEmpleado(): void {
+        this.errorEditarEmpleado = '';
+        this.erroresEditarEmpleado = {};
+
+        if (!this.validarEditarEmpleado()) {
+            this.cdr.detectChanges();
+            return;
+        }
+
+        if (!this.empleadoEditar.id) {
+            this.errorEditarEmpleado = 'No se pudo identificar el empleado a editar.';
+            this.cdr.detectChanges();
+            return;
+        }
+
+        const payload: ActualizarEmpleadoRequest = {
+            nombre: this.normalizarTexto(this.empleadoEditar.nombre),
+            apellido: this.normalizarTexto(this.empleadoEditar.apellido),
+            email: this.normalizarEmail(this.empleadoEditar.email),
+            rol: this.empleadoEditar.rol,
+            activo: this.empleadoEditar.activo,
+            puedeCrearEncuestas: this.empleadoEditar.puedeCrearEncuestas
+        };
+
+        this.actualizandoEmpleado = true;
+        this.cdr.detectChanges();
+
+        this.empleadoService.actualizarEmpleado(this.empleadoEditar.id, payload).subscribe({
+            next: (empleadoActualizado) => {
+                this.actualizandoEmpleado = false;
+                this.mostrarDialogoEditarEmpleado = false;
+                this.errorEditarEmpleado = '';
+                this.erroresEditarEmpleado = {};
+
+                if (this.esUsuarioActualPorId(empleadoActualizado.id)) {
+                    this.actualizarSesionUsuario(empleadoActualizado);
                 }
-            });
+
+                this.empleadoEditar = this.obtenerFormularioEditarInicial();
+                this.cdr.detectChanges();
+                this.cargarEmpleados();
+            },
+            error: (error) => {
+                console.error('Error al actualizar empleado:', error);
+                this.errorEditarEmpleado = this.obtenerMensajeError(error, 'No se pudo actualizar el empleado.');
+                this.actualizandoEmpleado = false;
+                this.cdr.detectChanges();
+            }
+        });
+    }
+
+    abrirDialogoCambiarPassword(empleado: Empleado): void {
+        this.cambiarPasswordForm = {
+            id: empleado.id,
+            password: '',
+            confirmarPassword: ''
+        };
+
+        this.empleadoPasswordNombre = `${empleado.nombre} ${empleado.apellido}`.trim();
+        this.erroresCambiarPassword = {};
+        this.errorCambiarPassword = '';
+        this.mostrarDialogoCambiarPassword = true;
+        this.cdr.detectChanges();
+    }
+
+    cerrarDialogoCambiarPassword(): void {
+        if (this.cambiandoPassword) {
+            return;
+        }
+
+        this.mostrarDialogoCambiarPassword = false;
+        this.errorCambiarPassword = '';
+        this.erroresCambiarPassword = {};
+        this.empleadoPasswordNombre = '';
+        this.cambiarPasswordForm = this.obtenerFormularioPasswordInicial();
+        this.cdr.detectChanges();
+    }
+
+    cambiarPassword(): void {
+        this.errorCambiarPassword = '';
+        this.erroresCambiarPassword = {};
+
+        if (!this.validarCambiarPassword()) {
+            this.cdr.detectChanges();
+            return;
+        }
+
+        if (!this.cambiarPasswordForm.id) {
+            this.errorCambiarPassword = 'No se pudo identificar el empleado.';
+            this.cdr.detectChanges();
+            return;
+        }
+
+        const payload: CambiarPasswordRequest = {
+            password: this.cambiarPasswordForm.password.trim()
+        };
+
+        this.cambiandoPassword = true;
+        this.cdr.detectChanges();
+
+        this.empleadoService.cambiarPassword(this.cambiarPasswordForm.id, payload).subscribe({
+            next: () => {
+                this.cambiandoPassword = false;
+                this.mostrarDialogoCambiarPassword = false;
+                this.errorCambiarPassword = '';
+                this.erroresCambiarPassword = {};
+                this.empleadoPasswordNombre = '';
+                this.cambiarPasswordForm = this.obtenerFormularioPasswordInicial();
+                this.cdr.detectChanges();
+            },
+            error: (error) => {
+                console.error('Error al cambiar contraseña:', error);
+                this.errorCambiarPassword = this.obtenerMensajeError(error, 'No se pudo cambiar la contraseña.');
+                this.cambiandoPassword = false;
+                this.cdr.detectChanges();
+            }
+        });
     }
 
     confirmarEliminarEmpleado(empleado: Empleado): void {
-        if (this.esUsuarioActual(empleado)) {
-            this.errorMessage = 'No puedes eliminar el usuario con el que tienes la sesión iniciada.';
+        if (!this.puedeEliminarEmpleado(empleado)) {
+            this.errorMessage = this.esUsuarioActual(empleado)
+                ? 'No puedes eliminar el usuario con el que tienes la sesión iniciada.'
+                : 'No se puede eliminar el administrador principal.';
             this.cdr.detectChanges();
             return;
         }
@@ -537,17 +1029,13 @@ export class Empleados implements OnInit {
             return;
         }
 
-        if (!this.usuarioLogueado?.email) {
-            this.errorEliminarEmpleado = 'No se pudo identificar el usuario actual.';
-            this.cdr.detectChanges();
-            return;
-        }
+        const currentUserEmail = this.usuarioLogueado?.email ?? '';
 
         this.eliminandoEmpleado = true;
         this.errorEliminarEmpleado = '';
         this.cdr.detectChanges();
 
-        this.empleadoService.eliminarEmpleado(this.empleadoSeleccionado.id, this.usuarioLogueado.email).subscribe({
+        this.empleadoService.eliminarEmpleado(this.empleadoSeleccionado.id, currentUserEmail).subscribe({
             next: () => {
                 this.eliminandoEmpleado = false;
                 this.mostrarDialogoEliminar = false;
@@ -557,11 +1045,23 @@ export class Empleados implements OnInit {
             },
             error: (error) => {
                 console.error('Error al eliminar empleado:', error);
-                this.errorEliminarEmpleado = typeof error?.error === 'string' ? error.error : 'No se pudo eliminar el empleado.';
+                this.errorEliminarEmpleado = this.obtenerMensajeError(error, 'No se pudo eliminar el empleado.');
                 this.eliminandoEmpleado = false;
                 this.cdr.detectChanges();
             }
         });
+    }
+
+    puedeEliminarEmpleado(empleado: Empleado): boolean {
+        if (!empleado) {
+            return false;
+        }
+
+        if (this.esUsuarioActual(empleado)) {
+            return false;
+        }
+
+        return !this.esAdminPrincipal(empleado);
     }
 
     esUsuarioActual(empleado: Empleado): boolean {
@@ -570,6 +1070,26 @@ export class Empleados implements OnInit {
         }
 
         return this.usuarioLogueado.email.toLowerCase() === empleado.email.toLowerCase();
+    }
+
+    esUsuarioActualPorId(id: number): boolean {
+        if (!this.usuarioLogueado?.id) {
+            return false;
+        }
+
+        return this.usuarioLogueado.id === id;
+    }
+
+    esAdminPrincipal(empleado: Empleado): boolean {
+        return (empleado.email ?? '').toLowerCase() === 'admin@encuestas.com';
+    }
+
+    getTipoUsuarioLabel(empleado: Empleado | null): string {
+        if (!empleado) {
+            return 'usuario';
+        }
+
+        return empleado.rol === 'ADMIN' ? 'administrador' : 'empleado';
     }
 
     getIniciales(empleado: Empleado): string {
@@ -586,6 +1106,147 @@ export class Empleados implements OnInit {
         return this.empleados.filter((empleado) => empleado.rol === 'ADMIN').length;
     }
 
+    private validarNuevoEmpleado(): boolean {
+        const errores: ErroresFormulario = {};
+
+        if (!this.esTextoNombreValido(this.nuevoEmpleado.nombre)) {
+            errores['nombre'] = 'Ingresa un nombre válido.';
+        }
+
+        if (!this.esTextoNombreValido(this.nuevoEmpleado.apellido)) {
+            errores['apellido'] = 'Ingresa un apellido válido.';
+        }
+
+        if (!this.esCorreoValido(this.nuevoEmpleado.email)) {
+            errores['email'] = 'Ingresa un correo válido.';
+        }
+
+        if (!this.esPasswordValido(this.nuevoEmpleado.password)) {
+            errores['password'] = 'La contraseña debe tener al menos 5 caracteres.';
+        }
+
+        if (!this.nuevoEmpleado.rol?.trim()) {
+            errores['rol'] = 'Selecciona un rol.';
+        }
+
+        this.erroresNuevoEmpleado = errores;
+
+        if (Object.keys(errores).length > 0) {
+            this.errorCrearEmpleado = 'Corrige los campos marcados antes de guardar.';
+            return false;
+        }
+
+        return true;
+    }
+
+    private validarEditarEmpleado(): boolean {
+        const errores: ErroresFormulario = {};
+
+        if (!this.esTextoNombreValido(this.empleadoEditar.nombre)) {
+            errores['nombre'] = 'Ingresa un nombre válido.';
+        }
+
+        if (!this.esTextoNombreValido(this.empleadoEditar.apellido)) {
+            errores['apellido'] = 'Ingresa un apellido válido.';
+        }
+
+        if (!this.esCorreoValido(this.empleadoEditar.email)) {
+            errores['email'] = 'Ingresa un correo válido.';
+        }
+
+        if (!this.empleadoEditar.rol?.trim()) {
+            errores['rol'] = 'Selecciona un rol.';
+        }
+
+        this.erroresEditarEmpleado = errores;
+
+        if (Object.keys(errores).length > 0) {
+            this.errorEditarEmpleado = 'Corrige los campos marcados antes de guardar.';
+            return false;
+        }
+
+        return true;
+    }
+
+    private validarCambiarPassword(): boolean {
+        const errores: ErroresFormulario = {};
+
+        if (!this.esPasswordValido(this.cambiarPasswordForm.password)) {
+            errores['password'] = 'La contraseña debe tener al menos 5 caracteres.';
+        }
+
+        if (!this.cambiarPasswordForm.confirmarPassword.trim()) {
+            errores['confirmarPassword'] = 'Debes confirmar la contraseña.';
+        } else if (this.cambiarPasswordForm.password.trim() !== this.cambiarPasswordForm.confirmarPassword.trim()) {
+            errores['confirmarPassword'] = 'Las contraseñas no coinciden.';
+        }
+
+        this.erroresCambiarPassword = errores;
+
+        if (Object.keys(errores).length > 0) {
+            this.errorCambiarPassword = 'Corrige los campos marcados antes de continuar.';
+            return false;
+        }
+
+        return true;
+    }
+
+    private esTextoNombreValido(valor: string): boolean {
+        const texto = this.normalizarTexto(valor);
+        const regex = /^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s]+$/;
+        return texto.length > 0 && regex.test(texto);
+    }
+
+    private esCorreoValido(valor: string): boolean {
+        const correo = this.normalizarEmail(valor);
+        const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return regex.test(correo);
+    }
+
+    private esPasswordValido(valor: string): boolean {
+        return valor.trim().length >= 5;
+    }
+
+    private normalizarTexto(valor: string): string {
+        return (valor || '').trim().replace(/\s+/g, ' ');
+    }
+
+    private normalizarEmail(valor: string): string {
+        return (valor || '').trim().toLowerCase();
+    }
+
+    private obtenerMensajeError(error: any, fallback: string): string {
+        if (typeof error?.error === 'string' && error.error.trim()) {
+            return error.error;
+        }
+
+        if (typeof error?.error?.message === 'string' && error.error.message.trim()) {
+            return error.error.message;
+        }
+
+        return fallback;
+    }
+
+    private actualizarSesionUsuario(empleado: Empleado): void {
+        const usuarioActualizado: UsuarioLogueado = {
+            id: empleado.id,
+            nombre: empleado.nombre,
+            apellido: empleado.apellido,
+            email: empleado.email,
+            rol: empleado.rol,
+            puedeCrearEncuestas: empleado.puedeCrearEncuestas,
+            activo: empleado.activo
+        };
+
+        this.usuarioLogueado = usuarioActualizado;
+
+        if (localStorage.getItem('auth_user')) {
+            localStorage.setItem('auth_user', JSON.stringify(usuarioActualizado));
+        } else if (sessionStorage.getItem('auth_user')) {
+            sessionStorage.setItem('auth_user', JSON.stringify(usuarioActualizado));
+        }
+    }
+
     private obtenerFormularioInicial(): NuevoEmpleadoForm {
         return {
             nombre: '',
@@ -595,6 +1256,26 @@ export class Empleados implements OnInit {
             rol: 'EMPLEADO',
             activo: true,
             puedeCrearEncuestas: false
+        };
+    }
+
+    private obtenerFormularioEditarInicial(): EditarEmpleadoForm {
+        return {
+            id: null,
+            nombre: '',
+            apellido: '',
+            email: '',
+            rol: 'EMPLEADO',
+            activo: true,
+            puedeCrearEncuestas: false
+        };
+    }
+
+    private obtenerFormularioPasswordInicial(): CambiarPasswordForm {
+        return {
+            id: null,
+            password: '',
+            confirmarPassword: ''
         };
     }
 }
