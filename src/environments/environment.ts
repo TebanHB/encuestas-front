@@ -1,4 +1,4 @@
 export const environment = {
     production: false,
-    apiBaseUrl: 'backend-encuestas-production.up.railway.app'
+    apiBaseUrl: 'https://t6s935xp-8080.brs.devtunnels.ms'
 };
