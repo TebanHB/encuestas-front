@@ -10,25 +10,33 @@ interface UsuarioLogueado {
     activo: boolean;
 }
 
-export const authUserInterceptor: HttpInterceptorFn = (req, next) => {
-    const rawUser = localStorage.getItem('auth_user');
+function obtenerUsuarioDesdeStorage(): UsuarioLogueado | null {
+    const rawUser = localStorage.getItem('auth_user') || sessionStorage.getItem('auth_user');
 
     if (!rawUser) {
-        return next(req);
+        return null;
     }
 
     try {
-        const usuario = JSON.parse(rawUser) as UsuarioLogueado;
-
-        const cloned = req.clone({
-            setHeaders: {
-                'X-User-Role': usuario.rol || '',
-                'X-User-Email': usuario.email || ''
-            }
-        });
-
-        return next(cloned);
+        return JSON.parse(rawUser) as UsuarioLogueado;
     } catch {
+        return null;
+    }
+}
+
+export const authUserInterceptor: HttpInterceptorFn = (req, next) => {
+    const usuario = obtenerUsuarioDesdeStorage();
+
+    if (!usuario) {
         return next(req);
     }
+
+    const cloned = req.clone({
+        setHeaders: {
+            'X-User-Role': usuario.rol || '',
+            'X-User-Email': usuario.email || ''
+        }
+    });
+
+    return next(cloned);
 };

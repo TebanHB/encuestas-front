@@ -37,29 +37,46 @@ export class AuthService {
         return this.http.post<LoginResponse>(`${this.API_URL}/login`, payload);
     }
 
-    setToken(token: string): void {
-        localStorage.setItem(this.TOKEN_KEY, token);
+    persistSession(token: string, user: LoginUser, rememberMe: boolean): void {
+        this.clearAllSessionData();
+
+        const storage = rememberMe ? localStorage : sessionStorage;
+
+        storage.setItem(this.TOKEN_KEY, token);
+        storage.setItem(this.USER_KEY, JSON.stringify(user));
+    }
+
+    setToken(token: string, rememberMe: boolean = true): void {
+        const storage = rememberMe ? localStorage : sessionStorage;
+        localStorage.removeItem(this.TOKEN_KEY);
+        sessionStorage.removeItem(this.TOKEN_KEY);
+        storage.setItem(this.TOKEN_KEY, token);
     }
 
     getToken(): string | null {
-        return localStorage.getItem(this.TOKEN_KEY);
+        return localStorage.getItem(this.TOKEN_KEY) || sessionStorage.getItem(this.TOKEN_KEY);
     }
 
     removeToken(): void {
         localStorage.removeItem(this.TOKEN_KEY);
+        sessionStorage.removeItem(this.TOKEN_KEY);
     }
 
-    setUser(user: LoginUser): void {
-        localStorage.setItem(this.USER_KEY, JSON.stringify(user));
+    setUser(user: LoginUser, rememberMe: boolean = true): void {
+        const storage = rememberMe ? localStorage : sessionStorage;
+        localStorage.removeItem(this.USER_KEY);
+        sessionStorage.removeItem(this.USER_KEY);
+        storage.setItem(this.USER_KEY, JSON.stringify(user));
     }
 
     getUser(): LoginUser | null {
-        const user = localStorage.getItem(this.USER_KEY);
+        const user = localStorage.getItem(this.USER_KEY) || sessionStorage.getItem(this.USER_KEY);
         return user ? (JSON.parse(user) as LoginUser) : null;
     }
 
     removeUser(): void {
         localStorage.removeItem(this.USER_KEY);
+        sessionStorage.removeItem(this.USER_KEY);
     }
 
     isLoggedIn(): boolean {
@@ -67,8 +84,7 @@ export class AuthService {
     }
 
     logout(): void {
-        this.removeToken();
-        this.removeUser();
+        this.clearAllSessionData();
     }
 
     getRole(): string | null {
@@ -81,5 +97,12 @@ export class AuthService {
 
     isEmpleado(): boolean {
         return this.getRole() === 'EMPLEADO';
+    }
+
+    private clearAllSessionData(): void {
+        localStorage.removeItem(this.TOKEN_KEY);
+        localStorage.removeItem(this.USER_KEY);
+        sessionStorage.removeItem(this.TOKEN_KEY);
+        sessionStorage.removeItem(this.USER_KEY);
     }
 }

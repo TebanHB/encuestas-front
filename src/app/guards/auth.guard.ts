@@ -13,7 +13,7 @@ interface UsuarioLogueado {
 }
 
 function obtenerUsuarioDesdeStorage(): UsuarioLogueado | null {
-    const rawUser = localStorage.getItem('auth_user');
+    const rawUser = localStorage.getItem('auth_user') || sessionStorage.getItem('auth_user');
 
     if (!rawUser) {
         return null;

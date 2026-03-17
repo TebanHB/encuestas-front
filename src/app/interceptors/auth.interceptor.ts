@@ -10,8 +10,12 @@ interface AuthUser {
     activo?: boolean;
 }
 
+function getAuthToken(): string | null {
+    return localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+}
+
 function getAuthUser(): AuthUser | null {
-    const rawUser = localStorage.getItem('auth_user');
+    const rawUser = localStorage.getItem('auth_user') || sessionStorage.getItem('auth_user');
 
     if (!rawUser) {
         return null;
@@ -25,18 +29,16 @@ function getAuthUser(): AuthUser | null {
 }
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
-    const token = localStorage.getItem('auth_token');
+    const token = getAuthToken();
     const user = getAuthUser();
 
     const headers: Record<string, string> = {};
 
-    // Agregar header para ngrok - TODAS las peticiones
     headers['ngrok-skip-browser-warning'] = 'true';
 
     const excludedUrls = ['/auth/login', '/auth/register'];
     const isExcluded = excludedUrls.some((url) => req.url.includes(url));
 
-    // Agregar auth headers solo si no es un url excluido
     if (!isExcluded) {
         if (token) {
             headers['Authorization'] = `Bearer ${token}`;
@@ -50,8 +52,6 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
             headers['X-User-Email'] = user.email;
         }
     }
-
-    console.log('Request Headers:', headers);
 
     const authReq = req.clone({
         setHeaders: headers
