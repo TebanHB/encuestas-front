@@ -159,11 +159,11 @@ export interface DashboardEmpleadoResponse {
 })
 export class EncuestaService {
     private http = inject(HttpClient);
-    private readonly API_URL = 'http://localhost:8080/encuestas';
-    private readonly RESPUESTAS_URL = 'http://localhost:8080/respuestas';
-    private readonly RESULTADOS_ADMIN_URL = 'http://localhost:8080/resultados-admin';
-    private readonly DASHBOARD_URL = 'http://localhost:8080/dashboard';
-    private readonly EXPORTACIONES_URL = 'http://localhost:8080/exportaciones';
+    private readonly API_URL = 'https://6f42-181-115-208-107.ngrok-free.app/encuestas';
+    private readonly RESPUESTAS_URL = 'https://6f42-181-115-208-107.ngrok-free.app/respuestas';
+    private readonly RESULTADOS_ADMIN_URL = 'https://6f42-181-115-208-107.ngrok-free.app/resultados-admin';
+    private readonly DASHBOARD_URL = 'https://6f42-181-115-208-107.ngrok-free.app/dashboard';
+    private readonly EXPORTACIONES_URL = 'https://6f42-181-115-208-107.ngrok-free.app/exportaciones';
 
     guardarEncuesta(payload: GuardarEncuestaRequest): Observable<EncuestaResponse> {
         return this.http.post<EncuestaResponse>(this.API_URL, payload);

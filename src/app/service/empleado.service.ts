@@ -27,7 +27,7 @@ export interface CrearEmpleadoRequest {
 })
 export class EmpleadoService {
     private http = inject(HttpClient);
-    private readonly API_URL = 'http://localhost:8080/empleados';
+    private readonly API_URL = 'https://6f42-181-115-208-107.ngrok-free.app/empleados';
 
     listarEmpleados(): Observable<Empleado[]> {
         return this.http.get<Empleado[]>(this.API_URL);

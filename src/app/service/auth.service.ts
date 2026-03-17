@@ -28,7 +28,7 @@ export interface LoginResponse {
 export class AuthService {
     private http = inject(HttpClient);
 
-    private readonly API_URL = 'http://localhost:8080/auth';
+    private readonly API_URL = 'https://6f42-181-115-208-107.ngrok-free.app/auth';
     private readonly TOKEN_KEY = 'auth_token';
     private readonly USER_KEY = 'auth_user';
 
