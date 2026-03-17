@@ -1,6 +1,7 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
+import { environment } from '@/environments/environment';
 
 export interface Empleado {
     id: number;
@@ -27,7 +28,7 @@ export interface CrearEmpleadoRequest {
 })
 export class EmpleadoService {
     private http = inject(HttpClient);
-    private readonly API_URL = 'https://6f42-181-115-208-107.ngrok-free.app/empleados';
+    private readonly API_URL = `${environment.apiBaseUrl}/empleados`;
 
     listarEmpleados(): Observable<Empleado[]> {
         return this.http.get<Empleado[]>(this.API_URL);

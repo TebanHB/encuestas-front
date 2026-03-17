@@ -1,6 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
+import { environment } from '@/environments/environment';
 
 export interface OpcionEncuestaRequest {
     texto: string;
@@ -159,11 +160,11 @@ export interface DashboardEmpleadoResponse {
 })
 export class EncuestaService {
     private http = inject(HttpClient);
-    private readonly API_URL = 'https://6f42-181-115-208-107.ngrok-free.app/encuestas';
-    private readonly RESPUESTAS_URL = 'https://6f42-181-115-208-107.ngrok-free.app/respuestas';
-    private readonly RESULTADOS_ADMIN_URL = 'https://6f42-181-115-208-107.ngrok-free.app/resultados-admin';
-    private readonly DASHBOARD_URL = 'https://6f42-181-115-208-107.ngrok-free.app/dashboard';
-    private readonly EXPORTACIONES_URL = 'https://6f42-181-115-208-107.ngrok-free.app/exportaciones';
+    private readonly API_URL = `${environment.apiBaseUrl}/encuestas`;
+    private readonly RESPUESTAS_URL = `${environment.apiBaseUrl}/respuestas`;
+    private readonly RESULTADOS_ADMIN_URL = `${environment.apiBaseUrl}/resultados-admin`;
+    private readonly DASHBOARD_URL = `${environment.apiBaseUrl}/dashboard`;
+    private readonly EXPORTACIONES_URL = `${environment.apiBaseUrl}/exportaciones`;
 
     guardarEncuesta(payload: GuardarEncuestaRequest): Observable<EncuestaResponse> {
         return this.http.post<EncuestaResponse>(this.API_URL, payload);

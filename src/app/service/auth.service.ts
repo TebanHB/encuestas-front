@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
+import { environment } from '@/environments/environment';
 
 export interface LoginRequest {
     email: string;
@@ -28,7 +29,7 @@ export interface LoginResponse {
 export class AuthService {
     private http = inject(HttpClient);
 
-    private readonly API_URL = 'https://6f42-181-115-208-107.ngrok-free.app/auth';
+    private readonly API_URL = `${environment.apiBaseUrl}/auth`;
     private readonly TOKEN_KEY = 'auth_token';
     private readonly USER_KEY = 'auth_user';
 
