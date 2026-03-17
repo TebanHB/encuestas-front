@@ -591,8 +591,8 @@ interface BorradorLocalCrearEncuesta {
                 padding: 1rem;
                 border: 1px solid var(--surface-border);
                 border-radius: 1rem;
-                background: rgba(255, 255, 255, 0.92);
-                backdrop-filter: blur(8px);
+                background: var(--surface-card);
+                box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
                 display: flex;
                 justify-content: space-between;
                 gap: 1rem;
@@ -604,10 +604,6 @@ interface BorradorLocalCrearEncuesta {
                 gap: 0.75rem;
                 flex-wrap: wrap;
                 justify-content: flex-end;
-            }
-
-            :host-context(.dark) .questions-actions-sticky {
-                background: rgba(15, 23, 42, 0.92);
             }
 
             .preview-card {

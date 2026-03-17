@@ -1,10 +1,10 @@
-import { Component, computed, effect, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Component, computed, effect, inject } from '@angular/core';
 import { RouterModule } from '@angular/router';
-import { AppTopbar } from './app.topbar';
-import { AppSidebar } from './app.sidebar';
-import { AppFooter } from './app.footer';
 import { LayoutService } from '@/app/layout/service/layout.service';
+import { AppFooter } from './app.footer';
+import { AppSidebar } from './app.sidebar';
+import { AppTopbar } from './app.topbar';
 
 @Component({
     selector: 'app-layout',
@@ -20,7 +20,7 @@ import { LayoutService } from '@/app/layout/service/layout.service';
             <app-footer></app-footer>
         </div>
         <div class="layout-mask"></div>
-    </div> `
+    </div>`
 })
 export class AppLayout {
     layoutService = inject(LayoutService);
@@ -28,6 +28,7 @@ export class AppLayout {
     constructor() {
         effect(() => {
             const state = this.layoutService.layoutState();
+
             if (state.mobileMenuActive) {
                 document.body.classList.add('blocked-scroll');
             } else {
@@ -39,6 +40,7 @@ export class AppLayout {
     containerClass = computed(() => {
         const config = this.layoutService.layoutConfig();
         const state = this.layoutService.layoutState();
+
         return {
             'layout-overlay': config.menuMode === 'overlay',
             'layout-static': config.menuMode === 'static',
@@ -46,5 +48,5 @@ export class AppLayout {
             'layout-overlay-active': state.overlayMenuActive,
             'layout-mobile-active': state.mobileMenuActive
         };
-    })
+    });
 }
