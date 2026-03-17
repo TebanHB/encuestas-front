@@ -1,8 +1,18 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { MenuItem } from 'primeng/api';
 import { AppMenuitem } from './app.menuitem';
+
+interface UsuarioLogueado {
+    id: number;
+    nombre: string;
+    apellido?: string;
+    email: string;
+    rol: string;
+    puedeCrearEncuestas?: boolean;
+    activo?: boolean;
+}
 
 @Component({
     selector: 'app-menu',
@@ -18,20 +28,12 @@ import { AppMenuitem } from './app.menuitem';
         }
     </ul> `
 })
-export class AppMenu {
+export class AppMenu implements OnInit {
     model: MenuItem[] = [];
 
-    ngOnInit() {
-        const rawUser = localStorage.getItem('auth_user');
-        let rol = '';
-
-        try {
-            if (rawUser) {
-                rol = JSON.parse(rawUser)?.rol?.toUpperCase() || '';
-            }
-        } catch (error) {
-            console.error('No se pudo leer auth_user desde localStorage:', error);
-        }
+    ngOnInit(): void {
+        const usuario = this.obtenerUsuarioLogueado();
+        const rol = (usuario?.rol || '').toUpperCase();
 
         if (rol === 'ADMIN') {
             this.model = [
@@ -66,5 +68,20 @@ export class AppMenu {
                 items: [{ label: 'Responder encuestas', icon: 'pi pi-fw pi-send', routerLink: ['/pages/encuestas/responder'] }]
             }
         ];
+    }
+
+    private obtenerUsuarioLogueado(): UsuarioLogueado | null {
+        const rawUser = localStorage.getItem('auth_user') || sessionStorage.getItem('auth_user');
+
+        if (!rawUser) {
+            return null;
+        }
+
+        try {
+            return JSON.parse(rawUser) as UsuarioLogueado;
+        } catch (error) {
+            console.error('No se pudo leer auth_user desde storage:', error);
+            return null;
+        }
     }
 }

@@ -712,7 +712,7 @@ export class Dashboard implements OnInit {
     }
 
     cargarUsuarioLogueado(): void {
-        const rawUser = localStorage.getItem('auth_user');
+        const rawUser = localStorage.getItem('auth_user') || sessionStorage.getItem('auth_user');
 
         if (!rawUser) {
             this.usuarioLogueado = null;
@@ -722,7 +722,7 @@ export class Dashboard implements OnInit {
         try {
             this.usuarioLogueado = JSON.parse(rawUser) as UsuarioLogueado;
         } catch (error) {
-            console.error('No se pudo leer auth_user desde localStorage:', error);
+            console.error('No se pudo leer auth_user desde storage:', error);
             this.usuarioLogueado = null;
         }
     }
