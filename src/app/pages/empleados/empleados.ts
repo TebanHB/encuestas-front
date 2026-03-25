@@ -9,13 +9,7 @@ import { PasswordModule } from 'primeng/password';
 import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
-import {
-    ActualizarEmpleadoRequest,
-    CambiarPasswordRequest,
-    CrearEmpleadoRequest,
-    Empleado,
-    EmpleadoService
-} from '../../service/empleado.service';
+import { ActualizarEmpleadoRequest, CambiarPasswordRequest, CrearEmpleadoRequest, Empleado, EmpleadoService } from '../../service/empleado.service';
 
 interface NuevoEmpleadoForm {
     nombre: string;
@@ -150,36 +144,11 @@ type ErroresFormulario = Record<string, string>;
 
                             <td>
                                 <div class="actions-cell">
-                                    <button
-                                        pButton
-                                        type="button"
-                                        icon="pi pi-pencil"
-                                        severity="info"
-                                        text
-                                        rounded
-                                        (click)="abrirDialogoEditarEmpleado(empleado)"
-                                    ></button>
+                                    <button pButton type="button" icon="pi pi-pencil" severity="info" text rounded (click)="abrirDialogoEditarEmpleado(empleado)"></button>
 
-                                    <button
-                                        pButton
-                                        type="button"
-                                        icon="pi pi-key"
-                                        severity="warn"
-                                        text
-                                        rounded
-                                        (click)="abrirDialogoCambiarPassword(empleado)"
-                                    ></button>
+                                    <button pButton type="button" icon="pi pi-key" severity="warn" text rounded (click)="abrirDialogoCambiarPassword(empleado)"></button>
 
-                                    <button
-                                        pButton
-                                        type="button"
-                                        icon="pi pi-trash"
-                                        severity="danger"
-                                        text
-                                        rounded
-                                        [disabled]="!puedeEliminarEmpleado(empleado)"
-                                        (click)="confirmarEliminarEmpleado(empleado)"
-                                    ></button>
+                                    <button pButton type="button" icon="pi pi-trash" severity="danger" text rounded [disabled]="!puedeEliminarEmpleado(empleado)" (click)="confirmarEliminarEmpleado(empleado)"></button>
                                 </div>
                             </td>
                         </tr>
@@ -245,14 +214,7 @@ type ErroresFormulario = Record<string, string>;
 
                         <div class="field-block">
                             <label class="field-label">Rol *</label>
-                            <p-select
-                                [options]="roles"
-                                [(ngModel)]="nuevoEmpleado.rol"
-                                optionLabel="label"
-                                optionValue="value"
-                                placeholder="Seleccione un rol"
-                                class="w-full"
-                            ></p-select>
+                            <p-select [options]="roles" [(ngModel)]="nuevoEmpleado.rol" optionLabel="label" optionValue="value" placeholder="Seleccione un rol" class="w-full"></p-select>
                             <small *ngIf="erroresNuevoEmpleado['rol']" class="field-error">{{ erroresNuevoEmpleado['rol'] }}</small>
                         </div>
 
@@ -323,14 +285,7 @@ type ErroresFormulario = Record<string, string>;
 
                         <div class="field-block">
                             <label class="field-label">Rol *</label>
-                            <p-select
-                                [options]="roles"
-                                [(ngModel)]="empleadoEditar.rol"
-                                optionLabel="label"
-                                optionValue="value"
-                                placeholder="Seleccione un rol"
-                                class="w-full"
-                            ></p-select>
+                            <p-select [options]="roles" [(ngModel)]="empleadoEditar.rol" optionLabel="label" optionValue="value" placeholder="Seleccione un rol" class="w-full"></p-select>
                             <small *ngIf="erroresEditarEmpleado['rol']" class="field-error">{{ erroresEditarEmpleado['rol'] }}</small>
                         </div>
 
@@ -409,19 +364,10 @@ type ErroresFormulario = Record<string, string>;
             </ng-template>
         </p-dialog>
 
-        <p-dialog
-            header="Confirmar eliminación"
-            [(visible)]="mostrarDialogoEliminar"
-            [modal]="true"
-            [style]="{ width: '30rem', 'max-width': '95vw' }"
-            [closable]="!eliminandoEmpleado"
-            [draggable]="false"
-            [resizable]="false"
-        >
+        <p-dialog header="Confirmar eliminación" [(visible)]="mostrarDialogoEliminar" [modal]="true" [style]="{ width: '30rem', 'max-width': '95vw' }" [closable]="!eliminandoEmpleado" [draggable]="false" [resizable]="false">
             <div class="pt-2">
                 <p class="m-0">
-                    ¿Estás seguro de eliminar a este {{ getTipoUsuarioLabel(empleadoSeleccionado) }}:
-                    <strong>{{ empleadoSeleccionado?.nombre }} {{ empleadoSeleccionado?.apellido }}</strong
+                    ¿Estás seguro de eliminar a este {{ getTipoUsuarioLabel(empleadoSeleccionado) }}: <strong>{{ empleadoSeleccionado?.nombre }} {{ empleadoSeleccionado?.apellido }}</strong
                     >?
                 </p>
 
@@ -1000,9 +946,7 @@ export class Empleados implements OnInit {
 
     confirmarEliminarEmpleado(empleado: Empleado): void {
         if (!this.puedeEliminarEmpleado(empleado)) {
-            this.errorMessage = this.esUsuarioActual(empleado)
-                ? 'No puedes eliminar el usuario con el que tienes la sesión iniciada.'
-                : 'No se puede eliminar el administrador principal.';
+            this.errorMessage = this.esUsuarioActual(empleado) ? 'No puedes eliminar el usuario con el que tienes la sesión iniciada.' : 'No se puede eliminar el administrador principal.';
             this.cdr.detectChanges();
             return;
         }

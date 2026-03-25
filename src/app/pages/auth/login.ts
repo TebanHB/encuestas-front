@@ -30,29 +30,10 @@ import { AuthService, LoginResponse } from '../../service/auth.service';
 
                         <form (ngSubmit)="onLogin()" autocomplete="on">
                             <label for="email1" class="block text-surface-900 dark:text-surface-0 text-xl font-medium mb-2">Correo</label>
-                            <input
-                                pInputText
-                                id="email1"
-                                name="email"
-                                type="email"
-                                placeholder="Correo electrónico"
-                                class="w-full md:w-120 mb-8"
-                                [(ngModel)]="email"
-                                autocomplete="username"
-                            />
+                            <input pInputText id="email1" name="email" type="email" placeholder="Correo electrónico" class="w-full md:w-120 mb-8" [(ngModel)]="email" autocomplete="username" />
 
                             <label for="password1" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Contraseña</label>
-                            <p-password
-                                id="password1"
-                                name="password"
-                                [(ngModel)]="password"
-                                placeholder="Contraseña"
-                                [toggleMask]="true"
-                                styleClass="mb-4"
-                                [fluid]="true"
-                                [feedback]="false"
-                                autocomplete="current-password"
-                            ></p-password>
+                            <p-password id="password1" name="password" [(ngModel)]="password" placeholder="Contraseña" [toggleMask]="true" styleClass="mb-4" [fluid]="true" [feedback]="false" autocomplete="current-password"></p-password>
 
                             <div class="flex items-center justify-between mt-2 mb-8 gap-8">
                                 <div class="flex items-center">
@@ -65,14 +46,7 @@ import { AuthService, LoginResponse } from '../../service/auth.service';
                                 {{ errorMessage }}
                             </div>
 
-                            <button
-                                pButton
-                                type="submit"
-                                [label]="loading ? 'Ingresando...' : 'Iniciar sesión'"
-                                icon="pi pi-sign-in"
-                                class="w-full"
-                                [disabled]="loading"
-                            ></button>
+                            <button pButton type="submit" [label]="loading ? 'Ingresando...' : 'Iniciar sesión'" icon="pi pi-sign-in" class="w-full" [disabled]="loading"></button>
                         </form>
                     </div>
                 </div>
