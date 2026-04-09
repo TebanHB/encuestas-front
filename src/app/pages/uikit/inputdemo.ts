@@ -165,7 +165,7 @@ import { Country } from '@/app/pages/service/customer.service';
                     <p-listbox [(ngModel)]="listboxValue" [options]="listboxValues" optionLabel="name" [filter]="true" />
 
                     <div class="font-semibold text-xl">Select</div>
-                    <p-select [(ngModel)]="dropdownValue" [options]="dropdownValues" optionLabel="name" placeholder="Select" />
+                    <p-select [(ngModel)]="dropdownValue" [options]="dropdownValues" optionLabel="name" placeholder="Select" appendTo="body" />
 
                     <div class="font-semibold text-xl">MultiSelect</div>
                     <p-multiselect [options]="multiselectCountries" [(ngModel)]="multiselectSelectedCountries" placeholder="Select Countries" optionLabel="name" display="chip" [filter]="true">

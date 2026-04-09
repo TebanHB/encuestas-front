@@ -1,13 +1,31 @@
 .layout-main-container {
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
-    justify-content: space-between;
-    padding: 6rem 2rem 0 2rem;
+    flex: 1 1 auto;
+    min-height: 0;
+    justify-content: flex-start;
+    padding: clamp(0.65rem, 1vw, 1rem) clamp(1rem, 2vw, 2rem) 1.5rem;
     transition: margin-left var(--layout-section-transition-duration);
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
 }
 
 .layout-main {
     flex: 1 1 auto;
-    padding-bottom: 2rem;
+    width: min(100%, 1440px);
+    margin: 0 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    padding-top: 0;
+    padding-bottom: 1rem;
+}
+
+.layout-main > * {
+    display: block;
+    width: 100%;
+    flex: 0 0 auto;
 }

@@ -3,9 +3,22 @@ import { Component } from '@angular/core';
 @Component({
     standalone: true,
     selector: 'app-footer',
-    template: `<div class="layout-footer">
-        CIES by
-        <a href="https://primeng.org" target="_blank" rel="noopener noreferrer" class="text-primary font-bold hover:underline">BLUMCODE</a>
-    </div>`
+    template: `<footer class="layout-footer-shell">
+        <div class="layout-footer">
+            <div>
+                <strong>Plataforma CIES de vulnerabilidad</strong>
+                <div>Monitoreo institucional, entrevistas y reporteria SSR.</div>
+            </div>
+        </div>
+    </footer>`,
+    styles: [
+        `
+            :host {
+                display: block;
+                width: 100%;
+                margin-top: auto;
+            }
+        `
+    ]
 })
 export class AppFooter {}

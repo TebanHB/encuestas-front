@@ -1,32 +1,36 @@
 @use 'mixins' as *;
 
 .layout-topbar {
-    position: fixed;
-    height: 4rem;
+    position: relative;
+    height: var(--layout-topbar-height);
     z-index: 997;
-    left: 0;
-    top: 0;
     width: 100%;
-    padding: 0 2rem;
-    background-color: var(--surface-card);
+    padding: 0 1.25rem;
+    background: var(--layout-panel-elevated-background);
+    backdrop-filter: blur(18px);
+    border: 1px solid var(--layout-border-soft);
+    border-radius: 1.6rem;
+    box-shadow: var(--layout-shadow-elevated);
     transition: left var(--layout-section-transition-duration);
     display: flex;
     align-items: center;
 
     .layout-topbar-logo-container {
-        width: 20rem;
+        width: 22rem;
         display: flex;
         align-items: center;
+        gap: 0.5rem;
     }
 
     .layout-topbar-logo {
         display: inline-flex;
         align-items: center;
-        font-size: 1.5rem;
-        border-radius: var(--content-border-radius);
+        font-size: 1rem;
+        border-radius: 1rem;
         color: var(--text-color);
         font-weight: 500;
-        gap: 0.5rem;
+        gap: 0.9rem;
+        padding: 0.35rem 0.55rem 0.35rem 0.3rem;
 
         svg {
             width: 3rem;
@@ -41,15 +45,20 @@
         display: inline-flex;
         justify-content: center;
         align-items: center;
-        border-radius: 50%;
-        width: 2.5rem;
-        height: 2.5rem;
+        border-radius: 999px;
+        width: 2.65rem;
+        height: 2.65rem;
         color: var(--text-color);
-        transition: background-color var(--element-transition-duration);
+        transition:
+            background-color var(--element-transition-duration),
+            transform var(--element-transition-duration);
         cursor: pointer;
+        border: 1px solid var(--layout-border-soft);
+        background: var(--layout-panel-muted-background);
 
         &:hover {
-            background-color: var(--surface-hover);
+            background-color: var(--layout-hover-background);
+            transform: translateY(-1px);
         }
 
         &:focus-visible {
@@ -66,8 +75,9 @@
         }
 
         &.layout-topbar-action-highlight {
-            background-color: var(--primary-color);
-            color: var(--primary-contrast-color);
+            background: var(--layout-highlight-background);
+            color: var(--layout-highlight-text);
+            border-color: transparent;
         }
     }
 
@@ -82,6 +92,7 @@
     .layout-topbar-actions {
         margin-left: auto;
         display: flex;
+        align-items: center;
         gap: 1rem;
     }
 
@@ -92,13 +103,13 @@
 
     .layout-config-menu {
         display: flex;
-        gap: 1rem;
+        gap: 0.75rem;
     }
 }
 
 @media (max-width: 991px) {
     .layout-topbar {
-        padding: 0 2rem;
+        padding: 0 0.85rem;
 
         .layout-topbar-logo-container {
             width: auto;
@@ -123,8 +134,8 @@
                 0px 1px 4px rgba(0, 0, 0, 0.08);
             border-radius: var(--content-border-radius);
             padding: 1rem;
-            right: 2rem;
-            top: 4rem;
+            right: 0.5rem;
+            top: 4.25rem;
             min-width: 15rem;
             border: 1px solid var(--surface-border);
 
@@ -155,6 +166,56 @@
         .layout-topbar-menu-content {
             flex-direction: column;
         }
+    }
+}
+
+.topbar-brand-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    line-height: 1.1;
+
+    strong {
+        font-size: 0.98rem;
+        font-weight: 800;
+        color: var(--layout-text-strong);
+    }
+
+    span {
+        font-size: 0.74rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--layout-text-muted);
+    }
+}
+
+.topbar-identity {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    padding: 0.55rem 0.8rem;
+    border-radius: 1rem;
+    background: var(--layout-panel-muted-background);
+    border: 1px solid var(--layout-border-soft);
+    min-width: 11rem;
+
+    strong {
+        font-size: 0.88rem;
+        color: var(--layout-text-strong);
+    }
+
+    span {
+        font-size: 0.72rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--layout-text-muted);
+    }
+}
+
+@media (max-width: 991px) {
+    .topbar-brand-copy,
+    .topbar-identity {
+        display: none;
     }
 }
 

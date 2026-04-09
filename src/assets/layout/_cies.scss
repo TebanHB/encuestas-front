@@ -1,0 +1,555 @@
+:root {
+    --cies-shell-gap: 1.1rem;
+    --cies-card-radius: 1.5rem;
+    --cies-hero-radius: 1.75rem;
+    --cies-border-soft: var(--layout-border-soft);
+    --cies-shadow-soft: var(--layout-shadow-soft);
+    --cies-ink: var(--layout-text-strong);
+    --cies-muted: var(--layout-text-muted);
+}
+
+body .p-select-overlay,
+body .p-overlay,
+body .p-connected-overlay {
+    z-index: 1200 !important;
+}
+
+.layout-main {
+    .cies-page {
+        display: flex;
+        flex-direction: column;
+        gap: var(--cies-shell-gap);
+    }
+
+    .cies-page .card {
+        margin-bottom: 0;
+    }
+
+    .cies-hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 1.5rem;
+        align-items: start;
+        position: relative;
+        overflow: hidden;
+        min-height: 14rem;
+        background:
+            radial-gradient(circle at top right, rgba(255, 255, 255, 0.28), transparent 24%),
+            linear-gradient(135deg, #0f766e 0%, #155e75 45%, #0f172a 100%);
+        color: #f8fafc;
+        border-radius: var(--cies-hero-radius);
+        border: none;
+        box-shadow: 0 24px 60px rgba(15, 23, 42, 0.14);
+    }
+
+    .cies-hero::after {
+        content: '';
+        position: absolute;
+        inset: auto -2rem -3rem auto;
+        width: 15rem;
+        height: 15rem;
+        border-radius: 999px;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.16), transparent 68%);
+        pointer-events: none;
+    }
+
+    .cies-hero__content {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 0.8rem;
+        max-width: 48rem;
+    }
+
+    .cies-hero__title {
+        margin: 0;
+        font-size: clamp(2rem, 4vw, 3rem);
+        line-height: 1.02;
+        color: #f8fafc;
+    }
+
+    .cies-hero__copy {
+        margin: 0;
+        max-width: 42rem;
+        color: rgba(248, 250, 252, 0.8);
+        font-size: 1rem;
+    }
+
+    .cies-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        width: fit-content;
+        padding: 0.42rem 0.9rem;
+        border-radius: 999px;
+        background: var(--layout-subtle-overlay);
+        border: 1px solid var(--layout-subtle-overlay);
+        color: #f8fafc;
+        font-weight: 700;
+        font-size: 0.8rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    .cies-chip--slate {
+        background: rgba(15, 23, 42, 0.72);
+    }
+
+    .cies-chip--emerald {
+        background: var(--layout-accent-soft);
+    }
+
+    .cies-chip--amber {
+        background: rgba(245, 158, 11, 0.18);
+    }
+
+    .cies-chip--blue {
+        background: rgba(59, 130, 246, 0.18);
+    }
+
+    .cies-chip--violet {
+        background: rgba(139, 92, 246, 0.18);
+    }
+
+    .cies-hero__actions,
+    .cies-actions-row,
+    .cies-inline-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        align-items: center;
+    }
+
+    .cies-hero__actions {
+        justify-content: flex-end;
+        align-self: start;
+        position: relative;
+        z-index: 1;
+    }
+
+    .cies-hero__actions > a,
+    .cies-inline-actions > a {
+        display: inline-flex;
+    }
+
+    .cies-section-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .cies-section-head__content,
+    .cies-card-caption {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.55rem;
+    }
+
+    .cies-card-caption {
+        justify-content: space-between;
+    }
+
+    .cies-card-caption > span {
+        flex: 1;
+    }
+
+    .cies-section-head h3,
+    .cies-section-head p {
+        margin: 0;
+    }
+
+    .cies-section-head p,
+    .cies-muted {
+        color: var(--cies-muted);
+    }
+
+    .cies-stats-grid,
+    .cies-chart-grid,
+    .cies-summary-grid,
+    .cies-guidance-grid {
+        display: grid;
+        gap: var(--cies-shell-gap);
+    }
+
+    .cies-stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+
+    .cies-summary-grid {
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+
+    .cies-chart-grid {
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    }
+
+    .cies-guidance-grid {
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    }
+
+    .cies-stat-card,
+    .cies-summary-card,
+    .cies-guidance-card {
+        display: flex;
+        flex-direction: column;
+        gap: 0.7rem;
+    }
+
+    .cies-stat-card span,
+    .cies-summary-card span {
+        color: var(--cies-muted);
+        font-weight: 600;
+    }
+
+    .cies-stat-card strong,
+    .cies-summary-card strong {
+        font-size: clamp(1.6rem, 3vw, 2.25rem);
+        color: var(--cies-ink);
+    }
+
+    .cies-guidance-card {
+        min-height: 100%;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .cies-guidance-card h4,
+    .cies-guidance-card p {
+        margin: 0;
+    }
+
+    .cies-guidance-card h4 {
+        color: var(--cies-ink);
+        font-size: 1.05rem;
+    }
+
+    .cies-guidance-card p {
+        color: var(--cies-muted);
+        line-height: 1.5;
+    }
+
+    .cies-guidance-step {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.1rem;
+        height: 2.1rem;
+        border-radius: 999px;
+        font-weight: 800;
+        color: var(--layout-highlight-text);
+        background: var(--layout-highlight-background);
+        box-shadow: var(--layout-shadow-soft);
+    }
+
+    .cies-guidance-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        align-items: center;
+    }
+
+    .cies-guidance-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.55rem;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        color: var(--cies-muted);
+    }
+
+    .cies-guidance-list li {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.55rem;
+    }
+
+    .cies-guidance-list li::before {
+        content: '•';
+        color: var(--layout-accent);
+        font-weight: 900;
+    }
+
+    .cies-empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.85rem;
+        padding: 1.15rem 0;
+    }
+
+    .cies-empty-state h3,
+    .cies-empty-state p {
+        margin: 0;
+    }
+
+    .cies-empty-state h3 {
+        color: var(--cies-ink);
+    }
+
+    .cies-empty-state p {
+        max-width: 40rem;
+        color: var(--cies-muted);
+        line-height: 1.55;
+    }
+
+    .cies-empty-state__icon {
+        width: 3rem;
+        height: 3rem;
+        border-radius: 1rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--layout-active-background);
+        color: var(--layout-accent);
+        font-size: 1.4rem;
+    }
+
+    .cies-empty-state__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        align-items: center;
+    }
+
+    .cies-soft-note {
+        border-radius: 1rem;
+        padding: 1rem 1.1rem;
+        border: 1px solid var(--layout-border-soft);
+        background: var(--layout-panel-soft-background);
+        color: var(--cies-muted);
+        line-height: 1.55;
+    }
+
+    .cies-info-hint {
+        width: 2rem;
+        height: 2rem;
+        border: 1px solid var(--layout-border-strong);
+        border-radius: 999px;
+        background: var(--layout-info-background);
+        color: var(--layout-info-text);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: help;
+        transition:
+            transform 0.15s ease,
+            border-color 0.15s ease,
+            box-shadow 0.15s ease;
+    }
+
+    .cies-info-hint:hover {
+        transform: translateY(-1px);
+        border-color: var(--layout-accent-soft-strong);
+        box-shadow: var(--layout-shadow-soft);
+    }
+
+    .cies-form-grid {
+        display: grid;
+        gap: 1rem;
+        align-items: end;
+    }
+
+    .cies-form-grid--filters {
+        grid-template-columns: repeat(6, minmax(0, 1fr)) minmax(180px, auto);
+    }
+
+    .cies-form-grid--two {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .cies-form-grid--three {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .cies-field--full {
+        grid-column: 1 / -1;
+    }
+
+    .cies-field--wide {
+        grid-column: span 2;
+    }
+
+    .cies-form-grid label,
+    .cies-dialog-form label {
+        display: block;
+        margin-bottom: 0.45rem;
+        font-weight: 700;
+        color: var(--cies-ink);
+    }
+
+    .cies-table .p-datatable-wrapper {
+        border-radius: 1rem;
+        overflow: auto;
+    }
+
+    .cies-table .p-datatable-table {
+        min-width: 100%;
+    }
+
+    .cies-table .p-datatable-thead > tr > th {
+        white-space: nowrap;
+        font-size: 0.8rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--cies-muted);
+        background: var(--layout-panel-muted-background);
+    }
+
+    .cies-table .p-datatable-tbody > tr > td {
+        vertical-align: top;
+    }
+
+    .cies-table .p-datatable-tbody > tr:hover {
+        background: var(--layout-hover-background);
+    }
+
+    .cies-subcard {
+        border-radius: 1.25rem;
+        border: 1px solid var(--layout-border-soft);
+        background: var(--layout-panel-soft-background);
+        padding: 1rem;
+    }
+
+    .cies-subcard-head {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        margin-bottom: 0.85rem;
+    }
+
+    .cies-note {
+        border-radius: 1rem;
+        padding: 0.95rem 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+    }
+
+    .cies-note--warning {
+        background: var(--layout-note-warning-background);
+        color: var(--layout-note-warning-text);
+    }
+
+    .cies-note--error {
+        background: var(--layout-note-danger-background);
+        color: var(--layout-note-danger-text);
+    }
+
+    .cies-question-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1rem;
+    }
+
+    .cies-question-card {
+        border: 1px solid var(--layout-border-soft);
+        border-radius: 1.1rem;
+        background: var(--layout-panel-soft-background);
+        padding: 1rem;
+    }
+
+    .cies-question-card.invalid {
+        border-color: var(--layout-danger-border);
+        box-shadow: inset 0 0 0 1px var(--layout-danger-shadow);
+    }
+
+    .cies-question-card label {
+        display: block;
+        margin-bottom: 0.6rem;
+        font-weight: 700;
+        color: var(--cies-ink);
+    }
+
+    .cies-helper {
+        display: block;
+        margin-top: 0.55rem;
+        color: var(--cies-muted);
+        font-size: 0.86rem;
+    }
+
+    .cies-error-text {
+        display: block;
+        margin-top: 0.45rem;
+        color: var(--layout-note-danger-text);
+        font-size: 0.86rem;
+        font-weight: 700;
+    }
+
+    .cies-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .cies-dialog .p-dialog-header {
+        padding: 1.15rem 1.25rem;
+        border-bottom: 1px solid var(--layout-border-soft);
+    }
+
+    .cies-dialog .p-dialog-content {
+        padding: 1.25rem;
+    }
+
+    .cies-dialog .p-dialog-footer {
+        padding: 1rem 1.25rem 1.25rem;
+        border-top: 1px solid var(--layout-border-soft);
+    }
+
+    .p-button {
+        border-radius: 0.95rem;
+        font-weight: 700;
+    }
+
+    .p-inputtext,
+    .p-inputnumber-input,
+    .p-password-input,
+    .p-select,
+    .p-textarea {
+        border-radius: 0.9rem;
+    }
+}
+
+@media (max-width: 1200px) {
+    .layout-main {
+        .cies-form-grid--filters {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+}
+
+@media (max-width: 991px) {
+    .layout-main {
+        .cies-hero {
+            grid-template-columns: 1fr;
+            min-height: auto;
+        }
+
+        .cies-hero__actions {
+            justify-content: flex-start;
+        }
+    }
+}
+
+@media (max-width: 768px) {
+    .layout-main {
+        .cies-form-grid--two,
+        .cies-form-grid--three,
+        .cies-form-grid--filters {
+            grid-template-columns: 1fr;
+        }
+
+        .cies-field--wide,
+        .cies-field--full {
+            grid-column: auto;
+        }
+
+        .cies-section-head {
+            flex-direction: column;
+            align-items: stretch;
+        }
+    }
+}

@@ -1,18 +1,9 @@
-import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+﻿import { CommonModule } from '@angular/common';
+import { Component, OnInit, inject } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { MenuItem } from 'primeng/api';
+import { AuthService } from '../../core/auth/auth.service';
 import { AppMenuitem } from './app.menuitem';
-
-interface UsuarioLogueado {
-    id: number;
-    nombre: string;
-    apellido?: string;
-    email: string;
-    rol: string;
-    puedeCrearEncuestas?: boolean;
-    activo?: boolean;
-}
 
 @Component({
     selector: 'app-menu',
@@ -30,29 +21,40 @@ interface UsuarioLogueado {
 })
 export class AppMenu implements OnInit {
     model: MenuItem[] = [];
+    private authService = inject(AuthService);
 
     ngOnInit(): void {
-        const usuario = this.obtenerUsuarioLogueado();
-        const rol = (usuario?.rol || '').toUpperCase();
+        const rol = (this.authService.getRole() || '').toUpperCase();
 
-        if (rol === 'ADMIN') {
+        if (rol === 'ADMINISTRADOR') {
             this.model = [
                 {
-                    label: 'Inicio',
-                    items: [{ label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/'] }]
+                    label: 'Empieza aquí',
+                    items: [{ label: 'Resumen general', icon: 'pi pi-fw pi-home', routerLink: ['/'] }]
                 },
                 {
-                    label: 'Encuestas',
+                    label: 'Tareas del día',
                     items: [
-                        { label: 'Crear encuesta', icon: 'pi pi-fw pi-file-edit', routerLink: ['/pages/encuestas/crear'] },
-                        { label: 'Historial de encuestas', icon: 'pi pi-fw pi-folder-open', routerLink: ['/pages/encuestas/historial'] },
-                        { label: 'Resultados de encuestas', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/pages/encuestas/resultados'] },
-                        { label: 'Responder encuestas', icon: 'pi pi-fw pi-send', routerLink: ['/pages/encuestas/responder'] }
+                        { label: '1. Configurar preguntas y puntajes', icon: 'pi pi-fw pi-sliders-h', routerLink: ['/pages/metodologia'] },
+                        { label: '2. Registrar personas', icon: 'pi pi-fw pi-share-alt', routerLink: ['/pages/seleccion'] },
+                        { label: '3. Aplicar entrevistas', icon: 'pi pi-fw pi-file-edit', routerLink: ['/pages/entrevistas'] },
+                        { label: '4. Ver resultados', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/pages/reporteria'] },
+                        { label: '5. Administrar usuarios', icon: 'pi pi-fw pi-users', routerLink: ['/pages/usuarios'] }
                     ]
+                }
+            ];
+            return;
+        }
+
+        if (rol === 'ENCUESTADOR') {
+            this.model = [
+                {
+                    label: 'Empieza aquí',
+                    items: [{ label: 'Resumen general', icon: 'pi pi-fw pi-home', routerLink: ['/'] }]
                 },
                 {
-                    label: 'Administración',
-                    items: [{ label: 'Empleados', icon: 'pi pi-fw pi-users', routerLink: ['/pages/empleados'] }]
+                    label: 'Trabajo diario',
+                    items: [{ label: 'Entrevistar ahora', icon: 'pi pi-fw pi-file-edit', routerLink: ['/pages/entrevistas'] }]
                 }
             ];
             return;
@@ -60,28 +62,14 @@ export class AppMenu implements OnInit {
 
         this.model = [
             {
-                label: 'Inicio',
-                items: [{ label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/'] }]
+                label: 'Empieza aquí',
+                items: [{ label: 'Resumen general', icon: 'pi pi-fw pi-home', routerLink: ['/'] }]
             },
             {
-                label: 'Mis encuestas',
-                items: [{ label: 'Responder encuestas', icon: 'pi pi-fw pi-send', routerLink: ['/pages/encuestas/responder'] }]
+                label: 'Resultados',
+                items: [{ label: 'Ver resultados y exportar', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/pages/reporteria'] }]
             }
         ];
     }
-
-    private obtenerUsuarioLogueado(): UsuarioLogueado | null {
-        const rawUser = localStorage.getItem('auth_user') || sessionStorage.getItem('auth_user');
-
-        if (!rawUser) {
-            return null;
-        }
-
-        try {
-            return JSON.parse(rawUser) as UsuarioLogueado;
-        } catch (error) {
-            console.error('No se pudo leer auth_user desde storage:', error);
-            return null;
-        }
-    }
 }
+

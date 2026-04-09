@@ -1,0 +1,36 @@
+
+> sakai-ng@21.0.0 start
+> ng serve
+
+[33m>[39m Building...
+[32m√[39m Building...
+[1mInitial chunk files[22m[2m | [22m[1mNames[22m        [2m | [22m [1mRaw size[22m
+[32mmain.js[39m            [2m | [22m[2mmain[22m         [2m | [22m[36m207.56 kB[39m[2m | [22m
+[32mstyles.css[39m         [2m | [22m[2mstyles[22m       [2m | [22m[36m102.74 kB[39m[2m | [22m
+[32mchunk-ELCUGDIG.js[39m  [2m | [22m[2m-[22m            [2m | [22m [36m28.77 kB[39m[2m | [22m
+[32mchunk-GW3ZD7ZK.js[39m  [2m | [22m[2m-[22m            [2m | [22m  [36m5.47 kB[39m[2m | [22m
+[32mchunk-UHGSKFMQ.js[39m  [2m | [22m[2m-[22m            [2m | [22m  [36m5.41 kB[39m[2m | [22m
+[32mchunk-5VUOJO7S.js[39m  [2m | [22m[2m-[22m            [2m | [22m  [36m4.99 kB[39m[2m | [22m
+[32mchunk-WM5VDV4E.js[39m  [2m | [22m[2m-[22m            [2m | [22m  [36m2.16 kB[39m[2m | [22m
+[32mchunk-LSU7JZEC.js[39m  [2m | [22m[2m-[22m            [2m | [22m  [36m1.23 kB[39m[2m | [22m
+[32mchunk-CZJLB7T5.js[39m  [2m | [22m[2m-[22m            [2m | [22m  [36m1.08 kB[39m[2m | [22m
+[32mchunk-7PU3PR2A.js[39m  [2m | [22m[2m-[22m            [2m | [22m[36m265 bytes[39m[2m | [22m
+
+[1m [22m                  [2m | [22m[1mInitial total[22m[2m | [22m[1m359.67 kB[22m
+
+[1mLazy chunk files[22m   [2m | [22m[1mNames[22m        [2m | [22m [1mRaw size[22m
+[32mchunk-UF5ZYXTK.js[39m  [2m | [22m[2muikit-routes[22m [2m | [22m[36m645.46 kB[39m[2m | [22m
+[32mchunk-F4OF7L7Y.js[39m  [2m | [22m[2mmetodologia[22m  [2m | [22m [36m43.23 kB[39m[2m | [22m
+[32mchunk-RAQ4FDET.js[39m  [2m | [22m[2mauth-routes[22m  [2m | [22m [36m33.97 kB[39m[2m | [22m
+[32mchunk-Q6YPGMTE.js[39m  [2m | [22m[2mreporteria[22m   [2m | [22m [36m32.04 kB[39m[2m | [22m
+[32mchunk-WE356HKJ.js[39m  [2m | [22m[2mentrevistas[22m  [2m | [22m [36m29.32 kB[39m[2m | [22m
+[32mchunk-6RWJHCUC.js[39m  [2m | [22m[2mseleccion[22m    [2m | [22m [36m22.44 kB[39m[2m | [22m
+[32mchunk-KXKX3EI5.js[39m  [2m | [22m[2musuarios[22m     [2m | [22m [36m22.39 kB[39m[2m | [22m
+[32mchunk-PZDGZ2KD.js[39m  [2m | [22m[2mpages-routes[22m [2m | [22m  [36m1.23 kB[39m[2m | [22m
+
+Application bundle generation complete. [3.647 seconds] - 2026-03-29T18:28:15.364Z
+
+Watch mode enabled. Watching for file changes...
+NOTE: Raw file sizes do not reflect development server per-request transformations.
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m4200[22m/[39m
+[2m[32m  ➜[39m[22m[2m  press [22m[1mh + enter[22m[2m to show help[22m

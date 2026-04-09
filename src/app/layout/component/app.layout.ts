@@ -16,8 +16,8 @@ import { AppTopbar } from './app.topbar';
         <div class="layout-main-container">
             <div class="layout-main">
                 <router-outlet></router-outlet>
+                <app-footer></app-footer>
             </div>
-            <app-footer></app-footer>
         </div>
         <div class="layout-mask"></div>
     </div>`

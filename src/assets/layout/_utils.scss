@@ -6,10 +6,12 @@
 }
 
 .card {
-    background: var(--surface-card);
-    padding: 2rem;
-    margin-bottom: 2rem;
-    border-radius: var(--content-border-radius);
+    background: var(--layout-panel-background);
+    padding: clamp(1rem, 2vw, 1.5rem);
+    margin-bottom: 0;
+    border-radius: 1.5rem;
+    border: 1px solid var(--layout-border-soft);
+    box-shadow: var(--layout-shadow-soft);
 
     &:last-child {
         margin-bottom: 0;

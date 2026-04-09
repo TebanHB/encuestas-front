@@ -43,7 +43,7 @@ export class LayoutService {
         activePath: null
     });
 
-    theme = computed(() => (this.layoutConfig().darkTheme ? 'light' : 'dark'));
+    theme = computed(() => (this.layoutConfig().darkTheme ? 'dark' : 'light'));
 
     isSidebarActive = computed(() => this.layoutState().overlayMenuActive || this.layoutState().mobileMenuActive);
 
@@ -141,12 +141,20 @@ export class LayoutService {
         }
 
         const currentConfig = config || this.layoutConfig();
+        const isDark = currentConfig.darkTheme;
 
-        if (currentConfig.darkTheme) {
+        if (isDark) {
             document.documentElement.classList.add('app-dark');
+            document.body.classList.add('app-dark');
         } else {
             document.documentElement.classList.remove('app-dark');
+            document.body.classList.remove('app-dark');
         }
+
+        document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+
+        const themeMeta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+        themeMeta?.setAttribute('content', isDark ? '#0b1220' : '#0f766e');
     }
 
     onMenuToggle() {

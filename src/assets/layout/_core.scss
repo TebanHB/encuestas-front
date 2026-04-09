@@ -1,13 +1,20 @@
 html {
     height: 100%;
-    font-size: 14px;
-    line-height: 1.2;
+    font-size: 15px;
+    line-height: 1.35;
+    background: var(--layout-body-background);
+}
+
+:root {
+    --layout-topbar-height: 4.5rem;
+    --layout-topbar-offset: 0.9rem;
+    --layout-topbar-clearance: 1.2rem;
 }
 
 body {
-    font-family: 'Lato', sans-serif;
+    font-family: 'Manrope', 'Lato', sans-serif;
     color: var(--text-color);
-    background-color: var(--surface-ground);
+    background: transparent;
     margin: 0;
     padding: 0;
     min-height: 100%;
@@ -19,6 +26,20 @@ a {
     text-decoration: none;
 }
 
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-family: 'Fraunces', 'Times New Roman', serif;
+    letter-spacing: -0.02em;
+}
+
 .layout-wrapper {
     min-height: 100vh;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
