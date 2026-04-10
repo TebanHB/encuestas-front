@@ -3,6 +3,7 @@
 {
     "compileOnSave": false,
     "compilerOptions": {
+        "rootDir": "./src",
         "outDir": "./dist/out-tsc",
         "strict": true,
         "noImplicitOverride": true,
@@ -17,10 +18,9 @@
         "importHelpers": true,
         "target": "ES2022",
         "module": "ES2022",
-        "baseUrl": "./",
         "paths": {
             "@/*": [
-                "src/*"
+                "./src/*"
             ]
         }
     },
