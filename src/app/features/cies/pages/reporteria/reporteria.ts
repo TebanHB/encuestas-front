@@ -1,11 +1,13 @@
 ﻿import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { ChartModule } from 'primeng/chart';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
+import { Toast } from 'primeng/toast';
 import { CiesInfoHintComponent } from '../../components/cies-info-hint';
 import { CiesService, DistribucionVariable, Metodologia, ReporteResumen } from '../../services/cies.service';
 
@@ -21,7 +23,8 @@ interface ReportFilters {
 @Component({
     selector: 'app-reporteria-page',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, ChartModule, InputTextModule, SelectModule, TableModule, CiesInfoHintComponent],
+    imports: [CommonModule, FormsModule, ButtonModule, ChartModule, InputTextModule, SelectModule, TableModule, Toast, CiesInfoHintComponent],
+    providers: [MessageService],
     template: `
         <div class="cies-page">
             <section class="card cies-hero">
@@ -241,6 +244,8 @@ interface ReportFilters {
                 </p-table>
             </section>
         </div>
+
+        <p-toast></p-toast>
     `,
     styles: [
         `
@@ -253,6 +258,7 @@ interface ReportFilters {
 export class ReporteriaPage implements OnInit {
     private ciesService = inject(CiesService);
     private cdr = inject(ChangeDetectorRef);
+    private messageService = inject(MessageService);
 
     resumen: ReporteResumen | null = null;
     distribucion: DistribucionVariable | null = null;
@@ -298,6 +304,9 @@ export class ReporteriaPage implements OnInit {
             next: (response: Metodologia[]) => {
                 this.versionOptions = [{ label: 'Todas', value: '' }, ...response.map((item) => ({ label: item.nombre, value: item.nombre }))];
                 this.cdr.detectChanges();
+            },
+            error: (err) => {
+                console.error('Error loading metodologías:', err);
             }
         });
 
@@ -315,6 +324,10 @@ export class ReporteriaPage implements OnInit {
                 this.resumen = response;
                 this.buildCharts();
                 this.cdr.detectChanges();
+            },
+            error: (err) => {
+                console.error('Error loading resumen:', err);
+                this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los reportes' });
             }
         });
         this.ciesService.getDistribucionVariable(filters).subscribe({
@@ -322,6 +335,9 @@ export class ReporteriaPage implements OnInit {
                 this.distribucion = response;
                 this.buildCharts();
                 this.cdr.detectChanges();
+            },
+            error: (err) => {
+                console.error('Error loading distribución:', err);
             }
         });
     }
@@ -351,6 +367,11 @@ export class ReporteriaPage implements OnInit {
                 link.download = `reporte-cies.${type === 'excel' ? 'xlsx' : type}`;
                 link.click();
                 URL.revokeObjectURL(url);
+                this.messageService.add({ severity: 'success', summary: 'Descarga exitosa', detail: `Reporte ${type.toUpperCase()} descargado correctamente` });
+            },
+            error: (err) => {
+                console.error('Error downloading report:', err);
+                this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo descargar el reporte' });
             }
         });
     }

@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
@@ -9,6 +10,7 @@ import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { TextareaModule } from 'primeng/textarea';
+import { Toast } from 'primeng/toast';
 import { CiesInfoHintComponent } from '../../components/cies-info-hint';
 import { CiesService, Entrevista, PersonaElegible, PreguntaInstrumento, RespuestaPayload } from '../../services/cies.service';
 import { OfflineInterviewQueueService } from '../../services/offline-interview-queue.service';
@@ -16,7 +18,8 @@ import { OfflineInterviewQueueService } from '../../services/offline-interview-q
 @Component({
     selector: 'app-entrevistas-page',
     standalone: true,
-    imports: [CommonModule, FormsModule, RouterModule, ButtonModule, DialogModule, InputTextModule, SelectModule, TableModule, TagModule, TextareaModule, CiesInfoHintComponent],
+    imports: [CommonModule, FormsModule, RouterModule, ButtonModule, DialogModule, InputTextModule, SelectModule, TableModule, TagModule, TextareaModule, Toast, CiesInfoHintComponent],
+    providers: [MessageService],
     template: `
         <div class="cies-page">
             <section class="card cies-hero">
@@ -255,12 +258,15 @@ import { OfflineInterviewQueueService } from '../../services/offline-interview-q
                 </ng-template>
             </p-dialog>
         </div>
+
+        <p-toast></p-toast>
     `,
     styles: [``]
 })
 export class EntrevistasPage implements OnInit, OnDestroy {
     private ciesService = inject(CiesService);
     private cdr = inject(ChangeDetectorRef);
+    private messageService = inject(MessageService);
     readonly offlineQueue = inject(OfflineInterviewQueueService);
 
     pendientes: PersonaElegible[] = [];
@@ -354,7 +360,12 @@ export class EntrevistasPage implements OnInit, OnDestroy {
         this.ciesService.getPendientesEntrevista().subscribe({
             next: (response) => {
                 this.pendientes = response;
+                this.messageService.add({ severity: 'success', summary: 'Datos cargados', detail: 'La lista de personas se actualizo correctamente.' });
                 this.cdr.detectChanges();
+            },
+            error: (err) => {
+                this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar las personas pendientes.' });
+                console.error('Error loading pendientes:', err);
             }
         });
     }
@@ -376,7 +387,12 @@ export class EntrevistasPage implements OnInit, OnDestroy {
                         };
                     });
 
+                this.messageService.add({ severity: 'success', summary: 'Entrevista iniciada', detail: `Se abrio la entrevista de ${response.personaNombre}.` });
                 this.cdr.detectChanges();
+            },
+            error: (err) => {
+                this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo iniciar la entrevista.' });
+                console.error('Error starting interview:', err);
             }
         });
     }
@@ -435,8 +451,14 @@ export class EntrevistasPage implements OnInit, OnDestroy {
 
         this.ciesService.finalizarEntrevista(this.currentInterview.id, this.buildPayload()).subscribe({
             next: () => {
+                this.messageService.add({ severity: 'success', summary: 'Entrevista finalizada', detail: 'La entrevista se guardo exitosamente.' });
                 this.closeInterview();
                 this.loadPendientes();
+            },
+            error: (err) => {
+                this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo finalizar la entrevista. Se guardara offline.' });
+                console.error('Error submitting interview:', err);
+                this.saveOffline();
             }
         });
     }
@@ -514,6 +536,7 @@ export class EntrevistasPage implements OnInit, OnDestroy {
                         const persona = ejecucion.seleccionadas[0];
                         this.directRegistrationLoading = false;
                         this.closeDirectRegistration();
+                        this.messageService.add({ severity: 'success', summary: 'Registro exitoso', detail: `${nombre} ${apellido} fue registrado/a correctamente.` });
                         this.loadPendientes();
 
                         if (persona) {
@@ -522,16 +545,20 @@ export class EntrevistasPage implements OnInit, OnDestroy {
                             this.cdr.detectChanges();
                         }
                     },
-                    error: () => {
+                    error: (err) => {
                         this.directRegistrationLoading = false;
-                        this.directRegistrationError = 'Se creó el registro, pero falló la selección automática.';
+                        this.directRegistrationError = 'Se creo el registro, pero fallo la seleccion automatica.';
+                        this.messageService.add({ severity: 'warn', summary: 'Seleccion fallida', detail: 'El registro se creo pero no se pudo abrir la entrevista automaticamente.' });
+                        console.error('Error executing selection:', err);
                         this.cdr.detectChanges();
                     }
                 });
             },
-            error: () => {
+            error: (err) => {
                 this.directRegistrationLoading = false;
                 this.directRegistrationError = 'No se pudo crear el registro individual.';
+                this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo crear el registro individual.' });
+                console.error('Error creating direct registration lote:', err);
                 this.cdr.detectChanges();
             }
         });

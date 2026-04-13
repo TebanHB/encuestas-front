@@ -2,18 +2,21 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { TextareaModule } from 'primeng/textarea';
+import { Toast } from 'primeng/toast';
 import { CiesInfoHintComponent } from '../../components/cies-info-hint';
 import { CiesService, EjecucionSeleccion, LoteMedicare, MedicareOutboxItem } from '../../services/cies.service';
 
 @Component({
     selector: 'app-seleccion-page',
     standalone: true,
-    imports: [CommonModule, FormsModule, RouterModule, ButtonModule, InputTextModule, TableModule, TagModule, TextareaModule, CiesInfoHintComponent],
+    imports: [CommonModule, FormsModule, RouterModule, ButtonModule, InputTextModule, TableModule, TagModule, TextareaModule, Toast, CiesInfoHintComponent],
+    providers: [MessageService],
     template: `
         <div class="cies-page">
             <section class="card cies-hero">
@@ -267,6 +270,8 @@ import { CiesService, EjecucionSeleccion, LoteMedicare, MedicareOutboxItem } fro
                 </p-table>
             </section>
         </div>
+
+        <p-toast></p-toast>
     `,
     styles: [
         `
@@ -291,6 +296,7 @@ import { CiesService, EjecucionSeleccion, LoteMedicare, MedicareOutboxItem } fro
 export class SeleccionPage implements OnInit {
     private ciesService = inject(CiesService);
     private cdr = inject(ChangeDetectorRef);
+    private messageService = inject(MessageService);
 
     editingLoteId: number | null = null;
     nombreLote = '';
@@ -317,12 +323,19 @@ export class SeleccionPage implements OnInit {
             next: (response) => {
                 this.lotes = response;
                 this.cdr.detectChanges();
+            },
+            error: (error) => {
+                console.error('Error loading lotes:', error);
+                this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los lotes' });
             }
         });
         this.ciesService.listEjecuciones().subscribe({
             next: (response) => {
                 this.ejecuciones = response;
                 this.cdr.detectChanges();
+            },
+            error: (error) => {
+                console.error('Error loading ejecuciones:', error);
             }
         });
         this.ciesService.getMedicareOutbox().subscribe({
@@ -350,6 +363,11 @@ export class SeleccionPage implements OnInit {
     }
 
     registrarLote(): void {
+        if (!this.nombreLote) {
+            this.messageService.add({ severity: 'warn', summary: 'Validación', detail: 'El nombre del listado es obligatorio' });
+            return;
+        }
+
         try {
             const personas = this.parseCargaMasiva();
             const request$ = this.editingLoteId ? this.ciesService.updateLote(this.editingLoteId, this.nombreLote, personas) : this.ciesService.createLote(this.nombreLote, personas);
@@ -358,6 +376,15 @@ export class SeleccionPage implements OnInit {
                 next: () => {
                     this.limpiarCarga();
                     this.load();
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Éxito',
+                        detail: this.editingLoteId ? 'Listado actualizado correctamente' : 'Listado registrado correctamente'
+                    });
+                },
+                error: (error) => {
+                    console.error('Error registering batch:', error);
+                    this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo registrar el listado' });
                 }
             });
         } catch (error) {
@@ -379,6 +406,15 @@ export class SeleccionPage implements OnInit {
         this.ciesService.executeSeleccion(item.id).subscribe({
             next: () => {
                 this.load();
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Selección ejecutada',
+                    detail: 'Proceso de selección aleatoria completado'
+                });
+            },
+            error: (error) => {
+                console.error('Error executing selection:', error);
+                this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo ejecutar la selección' });
             }
         });
     }
@@ -415,6 +451,15 @@ export class SeleccionPage implements OnInit {
                     this.limpiarCarga();
                 }
                 this.load();
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Eliminado',
+                    detail: `Listado ${item.nombre} eliminado correctamente`
+                });
+            },
+            error: (error) => {
+                console.error('Error deleting batch:', error);
+                this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo eliminar el listado' });
             }
         });
     }

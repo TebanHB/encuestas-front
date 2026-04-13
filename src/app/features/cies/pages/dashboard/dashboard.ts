@@ -1,9 +1,11 @@
 ﻿import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { RouterModule } from '@angular/router';
+import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
+import { Toast } from 'primeng/toast';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { CiesInfoHintComponent } from '../../components/cies-info-hint';
 import { CiesService, PersonaElegible, ReporteResumen } from '../../services/cies.service';
@@ -21,7 +23,8 @@ interface QuickStartCard {
 @Component({
     selector: 'app-dashboard',
     standalone: true,
-    imports: [CommonModule, RouterModule, ButtonModule, TableModule, TagModule, CiesInfoHintComponent],
+    imports: [CommonModule, RouterModule, ButtonModule, TableModule, TagModule, Toast, CiesInfoHintComponent],
+    providers: [MessageService],
     template: `
         <div class="cies-page">
             <section class="card cies-hero">
@@ -146,6 +149,8 @@ interface QuickStartCard {
                 </p-table>
             </section>
         </div>
+
+        <p-toast></p-toast>
     `,
     styles: [
         `
@@ -159,6 +164,7 @@ export class Dashboard implements OnInit {
     private authService = inject(AuthService);
     private ciesService = inject(CiesService);
     private cdr = inject(ChangeDetectorRef);
+    private messageService = inject(MessageService);
 
     resumen: ReporteResumen | null = null;
     pendientes: PersonaElegible[] = [];

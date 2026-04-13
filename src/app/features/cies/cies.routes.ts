@@ -29,6 +29,11 @@ export default [
                 path: 'reporteria',
                 loadComponent: () => import('./pages/reporteria/reporteria').then((m) => m.ReporteriaPage),
                 canActivate: [analistaGuard]
+            },
+            {
+                path: 'auditoria',
+                loadComponent: () => import('./pages/auditoria/auditoria').then((m) => m.AuditoriaPage),
+                canActivate: [adminGuard]
             }
         ]
     }

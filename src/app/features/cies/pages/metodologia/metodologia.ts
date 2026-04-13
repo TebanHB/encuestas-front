@@ -1,6 +1,7 @@
 ﻿import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { InputNumberModule } from 'primeng/inputnumber';
@@ -8,13 +9,15 @@ import { InputTextModule } from 'primeng/inputtext';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { TextareaModule } from 'primeng/textarea';
+import { Toast } from 'primeng/toast';
 import { CiesInfoHintComponent } from '../../components/cies-info-hint';
 import { CiesService, Metodologia, MetodologiaComparativo } from '../../services/cies.service';
 
 @Component({
     selector: 'app-metodologia-page',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, DialogModule, InputNumberModule, InputTextModule, TableModule, TagModule, TextareaModule, CiesInfoHintComponent],
+    imports: [CommonModule, FormsModule, ButtonModule, DialogModule, InputNumberModule, InputTextModule, TableModule, TagModule, TextareaModule, Toast, CiesInfoHintComponent],
+    providers: [MessageService],
     template: `
         <div class="cies-page">
             <section class="card cies-hero">
@@ -168,6 +171,8 @@ import { CiesService, Metodologia, MetodologiaComparativo } from '../../services
             </section>
         </div>
 
+        <p-toast></p-toast>
+
         <p-dialog
             [(visible)]="showEditor"
             [modal]="true"
@@ -290,6 +295,7 @@ import { CiesService, Metodologia, MetodologiaComparativo } from '../../services
 export class MetodologiaPage implements OnInit {
     private ciesService = inject(CiesService);
     private cdr = inject(ChangeDetectorRef);
+    private messageService = inject(MessageService);
 
     metodologias: Metodologia[] = [];
     active: Metodologia | null = null;
@@ -312,6 +318,10 @@ export class MetodologiaPage implements OnInit {
                     this.compareSummary = null;
                 }
                 this.cdr.detectChanges();
+            },
+            error: (error) => {
+                console.error('Error loading methodologies:', error);
+                this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar las metodologías' });
             }
         });
     }
@@ -321,6 +331,9 @@ export class MetodologiaPage implements OnInit {
             next: (response) => {
                 this.compareSummary = response;
                 this.cdr.detectChanges();
+            },
+            error: (error) => {
+                console.error('Error loading comparison:', error);
             }
         });
     }
@@ -348,6 +361,11 @@ export class MetodologiaPage implements OnInit {
             return;
         }
 
+        if (!this.editor.nombre) {
+            this.messageService.add({ severity: 'warn', summary: 'Validación', detail: 'El nombre es obligatorio' });
+            return;
+        }
+
         const payload = {
             nombre: this.editor.nombre,
             descripcion: this.editor.descripcion,
@@ -366,14 +384,36 @@ export class MetodologiaPage implements OnInit {
                 this.showEditor = false;
                 this.cdr.detectChanges();
                 this.load();
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Éxito',
+                    detail: this.editor?.id ? 'Metodología actualizada correctamente' : 'Nueva versión de metodología creada'
+                });
+            },
+            error: (error) => {
+                console.error('Error saving methodology:', error);
+                this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar la metodología' });
             }
         });
     }
 
     activate(item: Metodologia): void {
+        if (!window.confirm(`Se activara la version ${item.nombre}. Esta sera la version usada para nuevas entrevistas. Deseas continuar?`)) {
+            return;
+        }
+
         this.ciesService.activateMetodologia(item.id).subscribe({
             next: () => {
                 this.load();
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Metodología activada',
+                    detail: `La versión ${item.nombre} ahora esta activa`
+                });
+            },
+            error: (error) => {
+                console.error('Error activating methodology:', error);
+                this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo activar la metodología' });
             }
         });
     }
@@ -390,6 +430,15 @@ export class MetodologiaPage implements OnInit {
         this.ciesService.deleteMetodologia(item.id).subscribe({
             next: () => {
                 this.load();
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Eliminado',
+                    detail: `Version ${item.nombre} eliminada correctamente`
+                });
+            },
+            error: (error) => {
+                console.error('Error deleting methodology:', error);
+                this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo eliminar la metodología' });
             }
         });
     }

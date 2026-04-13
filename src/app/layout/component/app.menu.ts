@@ -35,11 +35,12 @@ export class AppMenu implements OnInit {
                 {
                     label: 'Tareas del día',
                     items: [
-                        { label: '1. Configurar preguntas y puntajes', icon: 'pi pi-fw pi-sliders-h', routerLink: ['/pages/metodologia'] },
-                        { label: '2. Registrar personas', icon: 'pi pi-fw pi-share-alt', routerLink: ['/pages/seleccion'] },
-                        { label: '3. Aplicar entrevistas', icon: 'pi pi-fw pi-file-edit', routerLink: ['/pages/entrevistas'] },
-                        { label: '4. Ver resultados', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/pages/reporteria'] },
-                        { label: '5. Administrar usuarios', icon: 'pi pi-fw pi-users', routerLink: ['/pages/usuarios'] }
+                        { label: 'Configurar preguntas y puntajes', icon: 'pi pi-fw pi-sliders-h', routerLink: ['/pages/metodologia'] },
+                        { label: 'Registrar personas', icon: 'pi pi-fw pi-share-alt', routerLink: ['/pages/seleccion'] },
+                        { label: 'Aplicar entrevistas', icon: 'pi pi-fw pi-file-edit', routerLink: ['/pages/entrevistas'] },
+                        { label: 'Ver resultados', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/pages/reporteria'] },
+                        { label: 'Administrar usuarios', icon: 'pi pi-fw pi-users', routerLink: ['/pages/usuarios'] },
+                        { label: 'Revisar auditoría', icon: 'pi pi-fw pi-shield', routerLink: ['/pages/auditoria'] }
                     ]
                 }
             ];

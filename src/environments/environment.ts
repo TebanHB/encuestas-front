@@ -1,6 +1,4 @@
-const runtimeConfig = (globalThis as any).__appConfig ?? {};
-
 export const environment = {
     production: false,
-    apiBaseUrl: runtimeConfig.apiBaseUrl || 'http://localhost:8080'
+    apiBaseUrl: 'https://ae25-2800-cd0-4a04-d000-2cdd-3a64-e413-4949.ngrok-free.app'
 };

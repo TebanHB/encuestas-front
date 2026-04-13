@@ -1,6 +1,7 @@
 ﻿import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
@@ -8,13 +9,15 @@ import { PasswordModule } from 'primeng/password';
 import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
+import { Toast } from 'primeng/toast';
 import { CiesInfoHintComponent } from '../../components/cies-info-hint';
 import { CiesService, UsuarioAdmin, UsuarioUpsertRequest } from '../../services/cies.service';
 
 @Component({
     selector: 'app-usuarios-page',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, DialogModule, InputTextModule, PasswordModule, SelectModule, TableModule, TagModule, CiesInfoHintComponent],
+    imports: [CommonModule, FormsModule, ButtonModule, DialogModule, InputTextModule, PasswordModule, SelectModule, TableModule, TagModule, Toast, CiesInfoHintComponent],
+    providers: [MessageService],
     template: `
         <div class="cies-page">
             <section class="card cies-hero">
@@ -116,6 +119,8 @@ import { CiesService, UsuarioAdmin, UsuarioUpsertRequest } from '../../services/
             </section>
         </div>
 
+        <p-toast></p-toast>
+
         <p-dialog
             [(visible)]="showDialog"
             [modal]="true"
@@ -164,6 +169,7 @@ import { CiesService, UsuarioAdmin, UsuarioUpsertRequest } from '../../services/
 export class UsuariosPage implements OnInit {
     private ciesService = inject(CiesService);
     private cdr = inject(ChangeDetectorRef);
+    private messageService = inject(MessageService);
 
     usuarios: UsuarioAdmin[] = [];
     showDialog = false;
@@ -193,6 +199,10 @@ export class UsuariosPage implements OnInit {
             next: (response) => {
                 this.usuarios = response;
                 this.cdr.detectChanges();
+            },
+            error: (error) => {
+                console.error('Error loading users:', error);
+                this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los usuarios' });
             }
         });
     }
@@ -217,20 +227,44 @@ export class UsuariosPage implements OnInit {
     }
 
     save(): void {
+        if (!this.form.nombre || !this.form.email) {
+            this.messageService.add({ severity: 'warn', summary: 'Validación', detail: 'Nombre y correo son obligatorios' });
+            return;
+        }
+
         const request$ = this.editingId ? this.ciesService.updateUsuario(this.editingId, this.form) : this.ciesService.createUsuario(this.form);
         request$.subscribe({
             next: () => {
                 this.showDialog = false;
                 this.cdr.detectChanges();
                 this.load();
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Éxito',
+                    detail: this.editingId ? 'Usuario actualizado correctamente' : 'Usuario creado correctamente'
+                });
+            },
+            error: (error) => {
+                console.error('Error saving user:', error);
+                this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar el usuario' });
             }
         });
     }
 
     toggleEstado(user: UsuarioAdmin): void {
-        this.ciesService.toggleUsuario(user.id, !user.activo).subscribe({
+        const nuevoEstado = !user.activo;
+        this.ciesService.toggleUsuario(user.id, nuevoEstado).subscribe({
             next: () => {
                 this.load();
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Estado actualizado',
+                    detail: `Usuario ${nuevoEstado ? 'activado' : 'desactivado'} correctamente`
+                });
+            },
+            error: (error) => {
+                console.error('Error toggling user state:', error);
+                this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo actualizar el estado del usuario' });
             }
         });
     }
@@ -243,6 +277,15 @@ export class UsuariosPage implements OnInit {
         this.ciesService.deleteUsuario(user.id).subscribe({
             next: () => {
                 this.load();
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Eliminado',
+                    detail: `Usuario ${user.nombre} eliminado correctamente`
+                });
+            },
+            error: (error) => {
+                console.error('Error deleting user:', error);
+                this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo eliminar el usuario' });
             }
         });
     }
