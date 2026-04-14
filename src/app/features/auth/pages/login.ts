@@ -153,7 +153,7 @@ export class Login {
 
         this.authService
             .login({
-                email: this.email.trim(),
+                email: this.email.trim().toLowerCase(),
                 password: this.password
             })
             .subscribe({
@@ -168,6 +168,38 @@ export class Login {
                     const status = err?.status;
                     const body = err?.error;
                     const bodyText = typeof body === 'string' ? body : '';
+                    const bodyMessage = typeof body?.message === 'string' ? body.message : '';
+                    const backendMessage = bodyText || bodyMessage;
+
+                    if (status === 401) {
+                        this.errorMessage = backendMessage || 'Correo o contrasena incorrectos.';
+                        this.cdr.detectChanges();
+                        return;
+                    }
+
+                    if (status === 0) {
+                        this.errorMessage = 'No se pudo conectar con el servidor.';
+                        this.cdr.detectChanges();
+                        return;
+                    }
+
+                    if (status === 404 || status === 502 || status === 503 || status === 504) {
+                        this.errorMessage = 'El backend configurado no esta disponible en este momento.';
+                        this.cdr.detectChanges();
+                        return;
+                    }
+
+                    if (status >= 500) {
+                        this.errorMessage = backendMessage || 'Error interno del servidor.';
+                        this.cdr.detectChanges();
+                        return;
+                    }
+
+                    if (backendMessage) {
+                        this.errorMessage = backendMessage;
+                        this.cdr.detectChanges();
+                        return;
+                    }
 
                     if (status === 401) {
                         this.errorMessage = 'Correo o contraseña incorrectos.';

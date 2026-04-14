@@ -3,7 +3,7 @@
     const localHosts = new Set(['localhost', '127.0.0.1', '::1']);
     const existingConfig = window.__appConfig || {};
 
-    const publicApiBaseUrl = 'https://ae97-2800-cd0-4a04-d000-c32-9a92-2154-c630.ngrok-free.app';
+    const publicApiBaseUrl = 'https://9b25-2800-cd0-4a04-d000-e4e8-4f38-1f9e-de9b.ngrok-free.app';
 
     window.__appConfig = {
         localApiBaseUrl: 'http://localhost:8080',
