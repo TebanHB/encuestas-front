@@ -298,6 +298,22 @@ export class Dashboard implements OnInit {
                 next: (response) => {
                     this.resumen = response;
                     this.cdr.detectChanges();
+                },
+                error: (err) => {
+                    console.error('Error al cargar resumen:', err);
+                    // Mostrar resumen vacío en caso de error
+                    this.resumen = {
+                        totalEntrevistas: 0,
+                        totalPobres: 0,
+                        totalExcluidas: 0,
+                        totalSubatendidas: 0,
+                        porcentajePobres: 0,
+                        porcentajeExcluidas: 0,
+                        porcentajeSubatendidas: 0,
+                        tendencias: [],
+                        comparativoClinicas: []
+                    };
+                    this.cdr.detectChanges();
                 }
             });
         }
@@ -307,6 +323,12 @@ export class Dashboard implements OnInit {
                 next: (response) => {
                     this.totalPendientes = response.length;
                     this.pendientes = response.slice(0, 8);
+                    this.cdr.detectChanges();
+                },
+                error: (err) => {
+                    console.error('Error al cargar pendientes:', err);
+                    this.totalPendientes = 0;
+                    this.pendientes = [];
                     this.cdr.detectChanges();
                 }
             });
