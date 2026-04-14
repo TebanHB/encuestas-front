@@ -171,20 +171,44 @@ export class Login {
                     const bodyMessage = typeof body?.message === 'string' ? body.message : '';
                     const backendMessage = bodyText || bodyMessage;
 
+                    // Log para diagnóstico
+                    console.error('Login Error Details:', {
+                        status,
+                        statusText: err?.statusText,
+                        message: err?.message,
+                        body,
+                        url: err?.url
+                    });
+
                     if (status === 401) {
-                        this.errorMessage = backendMessage || 'Correo o contrasena incorrectos.';
+                        this.errorMessage = backendMessage || 'Correo o contraseña incorrectos.';
+                        this.cdr.detectChanges();
+                        return;
+                    }
+
+                    if (status === 403) {
+                        this.errorMessage = 'Acceso denegado. Verifica la configuración CORS del servidor.';
+                        console.warn('CORS Error: El backend rechaza la solicitud desde este origen');
                         this.cdr.detectChanges();
                         return;
                     }
 
                     if (status === 0) {
-                        this.errorMessage = 'No se pudo conectar con el servidor.';
+                        this.errorMessage = 'No se pudo conectar con el servidor. Verifica que el backend esté disponible.';
+                        console.warn('Connection Error: No se puede alcanzar el backend');
                         this.cdr.detectChanges();
                         return;
                     }
 
-                    if (status === 404 || status === 502 || status === 503 || status === 504) {
-                        this.errorMessage = 'El backend configurado no esta disponible en este momento.';
+                    if (status === 404) {
+                        this.errorMessage = 'Endpoint no encontrado. Verifica la URL del backend.';
+                        this.cdr.detectChanges();
+                        return;
+                    }
+
+                    if (status === 504 || status === 503 || status === 502) {
+                        this.errorMessage = 'El backend no está disponible. Intenta en unos momentos.';
+                        console.error('Backend Unavailable:', status);
                         this.cdr.detectChanges();
                         return;
                     }
@@ -210,7 +234,7 @@ export class Login {
                     } else if (bodyText) {
                         this.errorMessage = bodyText;
                     } else {
-                        this.errorMessage = 'Error al iniciar sesión.';
+                        this.errorMessage = `Error al iniciar sesión (${status || 'desconocido'})`;
                     }
                     this.cdr.detectChanges();
                 }

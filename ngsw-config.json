@@ -31,5 +31,23 @@
                 ]
             }
         }
+    ],
+    "dataGroups": [
+        {
+            "name": "api-backend",
+            "urls": [
+                "https://encuestas-back-production.up.railway.app/**",
+                "http://localhost:8080/**"
+            ],
+            "cacheConfig": {
+                "strategy": "network-first",
+                "maxAge": "0h",
+                "maxSize": 0
+            }
+        }
+    ],
+    "navigationUrls": [
+        "/**",
+        "!/**/*.{js,css,png,gif,svg,jpg,jpeg,ico,woff,woff2}"
     ]
 }
