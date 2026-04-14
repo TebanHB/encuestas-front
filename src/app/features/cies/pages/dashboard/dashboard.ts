@@ -4,7 +4,6 @@ import { RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
-import { Toast } from 'primeng/toast';
 import { FechaCortaPipe, NombrePropioPipe } from '../../../../shared/pipes/formato.pipe';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { CiesInfoHintComponent } from '../../components/cies-info-hint';
@@ -23,7 +22,7 @@ interface QuickStartCard {
 @Component({
     selector: 'app-dashboard',
     standalone: true,
-    imports: [CommonModule, RouterModule, ButtonModule, TableModule, TagModule, Toast, CiesInfoHintComponent, FechaCortaPipe, NombrePropioPipe],
+    imports: [CommonModule, RouterModule, ButtonModule, TableModule, TagModule, CiesInfoHintComponent, FechaCortaPipe, NombrePropioPipe],
     template: `
         <div class="cies-page">
             <section class="card cies-hero">
@@ -150,8 +149,6 @@ interface QuickStartCard {
                 </p-table>
             </section>
         </div>
-
-        <p-toast></p-toast>
     `,
     styles: [
         `

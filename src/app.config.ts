@@ -1,5 +1,5 @@
 ﻿import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
-import { ApplicationConfig, isDevMode, provideZonelessChangeDetection } from '@angular/core';
+import { ApplicationConfig, isDevMode } from '@angular/core';
 import { provideRouter, withEnabledBlockingInitialNavigation, withInMemoryScrolling } from '@angular/router';
 import { provideServiceWorker } from '@angular/service-worker';
 import Aura from '@primeuix/themes/aura';
@@ -21,7 +21,6 @@ export const appConfig: ApplicationConfig = {
             withFetch(),
             withInterceptors([authInterceptor])
         ),
-        provideZonelessChangeDetection(),
         providePrimeNG({
             overlayAppendTo: 'body',
             zIndex: {

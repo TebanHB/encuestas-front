@@ -7,16 +7,9 @@ import { AuthService } from './auth.service';
 
 let refreshInFlight: Promise<string | null> | null = null;
 
-function ngrokHeaders(): Record<string, string> {
-    return environment.apiBaseUrl.includes('ngrok')
-        ? { 'ngrok-skip-browser-warning': 'true' }
-        : {};
-}
-
 function requestHeaders(): Record<string, string> {
     return {
-        Accept: 'application/json',
-        ...ngrokHeaders()
+        Accept: 'application/json'
     };
 }
 
