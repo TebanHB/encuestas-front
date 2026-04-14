@@ -92,23 +92,23 @@ body .p-connected-overlay {
         text-transform: uppercase;
     }
 
-    .cies-chip--slate {
+    .cies-chip--gris {
         background: rgba(15, 23, 42, 0.72);
     }
 
-    .cies-chip--emerald {
+    .cies-chip--verde {
         background: var(--layout-accent-soft);
     }
 
-    .cies-chip--amber {
+    .cies-chip--naranja {
         background: rgba(245, 158, 11, 0.18);
     }
 
-    .cies-chip--blue {
+    .cies-chip--azul {
         background: rgba(59, 130, 246, 0.18);
     }
 
-    .cies-chip--violet {
+    .cies-chip--morado {
         background: rgba(139, 92, 246, 0.18);
     }
 
@@ -510,6 +510,23 @@ body .p-connected-overlay {
     .p-select,
     .p-textarea {
         border-radius: 0.9rem;
+    }
+
+    .text-muted {
+        color: var(--cies-muted);
+    }
+
+    .font-medium {
+        font-weight: 600;
+        color: var(--cies-ink);
+    }
+
+    .font-mono {
+        font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+    }
+
+    .text-sm {
+        font-size: 0.85rem;
     }
 }
 

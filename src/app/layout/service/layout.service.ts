@@ -28,7 +28,7 @@ export class LayoutService {
 
     layoutConfig = signal<LayoutConfig>({
         preset: 'Aura',
-        primary: 'emerald',
+        primary: 'Esmeralda',
         surface: null,
         darkTheme: false,
         menuMode: 'static'

@@ -3,12 +3,14 @@ import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { StyleClassModule } from 'primeng/styleclass';
+import { ButtonModule } from 'primeng/button';
+import { AppConfigurator } from './app.configurator';
 import { AuthService } from '../../core/auth/auth.service';
 
 @Component({
     selector: 'app-topbar',
     standalone: true,
-    imports: [RouterModule, CommonModule, StyleClassModule],
+    imports: [RouterModule, CommonModule, StyleClassModule, ButtonModule, AppConfigurator],
     template: ` <div class="layout-topbar">
         <div class="layout-topbar-logo-container">
             <button class="layout-menu-button layout-topbar-action" (click)="layoutService.onMenuToggle()">
@@ -38,22 +40,16 @@ import { AuthService } from '../../core/auth/auth.service';
             </a>
 
             <div class="layout-config-menu">
+                <div class="relative">
+                    <button type="button" class="layout-topbar-action" pStyleClass="@next" enterFromClass="hidden" enterActiveClass="animate-scalein" leaveToClass="hidden" leaveActiveClass="animate-fadeout" [hideOnOutsideClick]="true">
+                        <i class="pi pi-palette"></i>
+                    </button>
+                    <app-configurator />
+                </div>
                 <button type="button" class="layout-topbar-action layout-topbar-action-highlight" (click)="toggleDarkMode()">
                     <i [ngClass]="{ 'pi ': true, 'pi-sun': layoutService.isDarkTheme(), 'pi-moon': !layoutService.isDarkTheme() }"></i>
                 </button>
             </div>
-
-            <button
-                class="layout-topbar-menu-button layout-topbar-action"
-                pStyleClass="@next"
-                enterFromClass="hidden"
-                enterActiveClass="animate-scalein"
-                leaveToClass="hidden"
-                leaveActiveClass="animate-fadeout"
-                [hideOnOutsideClick]="true"
-            >
-                <i class="pi pi-ellipsis-v"></i>
-            </button>
 
             <div class="layout-topbar-menu hidden lg:block">
                 <div class="layout-topbar-menu-content">
@@ -112,18 +108,6 @@ export class AppTopbar {
     }
 
     get currentRoleLabel(): string {
-        if (this.authService.isAdministrador()) {
-            return 'Configura y supervisa';
-        }
-
-        if (this.authService.isEncuestador()) {
-            return 'Aplica entrevistas';
-        }
-
-        if (this.authService.isAnalista()) {
-            return 'Analiza resultados';
-        }
-
         return this.currentUser?.rol || '';
     }
 

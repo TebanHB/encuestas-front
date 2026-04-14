@@ -1,6 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { HttpErrorResponse } from '@angular/common/http';
-import { Component, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
@@ -38,6 +37,7 @@ import { AuthService, LoginResponse } from '../../../core/auth/auth.service';
                                 placeholder="Correo electrónico"
                                 class="w-full md:w-120 mb-8"
                                 [(ngModel)]="email"
+                                (input)="errorMessage = ''"
                                 autocomplete="username"
                             />
 
@@ -51,6 +51,7 @@ import { AuthService, LoginResponse } from '../../../core/auth/auth.service';
                                 styleClass="mb-4"
                                 [fluid]="true"
                                 [feedback]="false"
+                                (onInput)="errorMessage = ''"
                                 autocomplete="current-password"
                             ></p-password>
 
@@ -61,8 +62,11 @@ import { AuthService, LoginResponse } from '../../../core/auth/auth.service';
                                 </div>
                             </div>
 
-                            <div *ngIf="errorMessage" class="mb-4 text-red-500 font-medium">
-                                {{ errorMessage }}
+                            <div *ngIf="errorMessage" class="mb-4">
+                                <div class="flex items-center gap-2 text-red-500 font-medium">
+                                    <i class="pi pi-exclamation-circle"></i>
+                                    <span>{{ errorMessage }}</span>
+                                </div>
                             </div>
 
                             <button
@@ -70,7 +74,7 @@ import { AuthService, LoginResponse } from '../../../core/auth/auth.service';
                                 type="submit"
                                 [label]="loading ? 'Ingresando...' : 'Iniciar sesión'"
                                 icon="pi pi-sign-in"
-                                class="w-full"
+                                class="w-full login-btn"
                                 [disabled]="loading"
                             ></button>
                         </form>
@@ -84,7 +88,7 @@ import { AuthService, LoginResponse } from '../../../core/auth/auth.service';
             .login-shell {
                 border-radius: 56px;
                 padding: 0.3rem;
-                background: linear-gradient(180deg, var(--primary-color) 10%, rgba(33, 150, 243, 0) 30%);
+                background: linear-gradient(180deg, #0f766e 10%, rgba(33, 150, 243, 0) 30%);
             }
 
             .login-card {
@@ -97,12 +101,32 @@ import { AuthService, LoginResponse } from '../../../core/auth/auth.service';
                 object-fit: contain;
                 display: block;
             }
+
+            .login-btn {
+                background: #0f766e !important;
+                border-color: #0f766e !important;
+                color: #fff !important;
+                font-weight: 700;
+                transition: all 0.2s ease;
+            }
+
+            .login-btn:hover {
+                background: #0d6b63 !important;
+                border-color: #0d6b63 !important;
+            }
+
+            .login-btn:disabled {
+                background: #9ca3af !important;
+                border-color: #9ca3af !important;
+                opacity: 0.7;
+            }
         `
     ]
 })
 export class Login {
     private authService = inject(AuthService);
     private router = inject(Router);
+    private cdr = inject(ChangeDetectorRef);
 
     email = '';
     password = '';
@@ -112,9 +136,11 @@ export class Login {
 
     onLogin(): void {
         this.errorMessage = '';
+        this.cdr.detectChanges();
 
         if (!this.email.trim() || !this.password.trim()) {
             this.errorMessage = 'Debes ingresar tu correo y contraseña.';
+            this.cdr.detectChanges();
             return;
         }
 
@@ -123,6 +149,7 @@ export class Login {
         }
 
         this.loading = true;
+        this.cdr.detectChanges();
 
         this.authService
             .login({
@@ -136,16 +163,24 @@ export class Login {
                     void this.router.navigate([role === 'ANALISTA' ? '/pages/reporteria' : role === 'ENCUESTADOR' ? '/pages/entrevistas' : '/']);
                     this.loading = false;
                 },
-                error: (error: HttpErrorResponse) => {
-                    if (error.status === 401) {
-                        this.errorMessage = 'Correo o contraseña incorrectos.';
-                    } else if (error.status === 0) {
-                        this.errorMessage = 'No se pudo conectar con el servidor.';
-                    } else {
-                        this.errorMessage = error.error || 'Ocurrió un error al iniciar sesión.';
-                    }
-
+                error: (err) => {
                     this.loading = false;
+                    const status = err?.status;
+                    const body = err?.error;
+                    const bodyText = typeof body === 'string' ? body : '';
+
+                    if (status === 401) {
+                        this.errorMessage = 'Correo o contraseña incorrectos.';
+                    } else if (status === 0) {
+                        this.errorMessage = 'No se pudo conectar con el servidor.';
+                    } else if (status >= 500) {
+                        this.errorMessage = 'Error interno del servidor.';
+                    } else if (bodyText) {
+                        this.errorMessage = bodyText;
+                    } else {
+                        this.errorMessage = 'Error al iniciar sesión.';
+                    }
+                    this.cdr.detectChanges();
                 }
             });
     }

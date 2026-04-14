@@ -1,11 +1,11 @@
 ﻿import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { RouterModule } from '@angular/router';
-import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { Toast } from 'primeng/toast';
+import { FechaCortaPipe, NombrePropioPipe } from '../../../../shared/pipes/formato.pipe';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { CiesInfoHintComponent } from '../../components/cies-info-hint';
 import { CiesService, PersonaElegible, ReporteResumen } from '../../services/cies.service';
@@ -23,13 +23,12 @@ interface QuickStartCard {
 @Component({
     selector: 'app-dashboard',
     standalone: true,
-    imports: [CommonModule, RouterModule, ButtonModule, TableModule, TagModule, Toast, CiesInfoHintComponent],
-    providers: [MessageService],
+    imports: [CommonModule, RouterModule, ButtonModule, TableModule, TagModule, Toast, CiesInfoHintComponent, FechaCortaPipe, NombrePropioPipe],
     template: `
         <div class="cies-page">
             <section class="card cies-hero">
                 <div class="cies-hero__content">
-                    <div class="cies-chip cies-chip--slate">Sistema CIES</div>
+                    <div class="cies-chip cies-chip--gris">Sistema CIES</div>
                     <h1 class="cies-hero__title">{{ titulo }}</h1>
                     <p class="cies-hero__copy">{{ subtitulo }}</p>
                 </div>
@@ -130,20 +129,22 @@ interface QuickStartCard {
                 <p-table [value]="pendientes" [tableStyle]="{ 'min-width': '48rem' }" responsiveLayout="scroll" class="cies-table">
                     <ng-template pTemplate="header">
                         <tr>
-                            <th>Código</th>
+                            <th>Entrevista</th>
                             <th>Persona</th>
-                            <th>Clínica</th>
+                            <th>Sede</th>
                             <th>Regional</th>
                             <th>Fecha</th>
                         </tr>
                     </ng-template>
                     <ng-template pTemplate="body" let-item>
                         <tr>
-                            <td>{{ item.codigoEntrevista || 'Pendiente' }}</td>
-                            <td>{{ item.nombreCompleto }}</td>
+                            <td>
+                                <span class="font-medium">{{ item.codigoEntrevista || 'Sin código' }}</span>
+                            </td>
+                            <td>{{ item.nombreCompleto | nombrePropio }}</td>
                             <td>{{ item.clinica }}</td>
                             <td>{{ item.regional }}</td>
-                            <td>{{ item.fechaConsulta }}</td>
+                            <td class="text-muted">{{ item.fechaConsulta | fechaCorta }}</td>
                         </tr>
                     </ng-template>
                 </p-table>
@@ -164,8 +165,6 @@ export class Dashboard implements OnInit {
     private authService = inject(AuthService);
     private ciesService = inject(CiesService);
     private cdr = inject(ChangeDetectorRef);
-    private messageService = inject(MessageService);
-
     resumen: ReporteResumen | null = null;
     pendientes: PersonaElegible[] = [];
     totalPendientes = 0;

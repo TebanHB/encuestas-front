@@ -11,7 +11,7 @@ import { ButtonModule } from 'primeng/button';
             <div class="state-card">
                 <span class="state-code">403</span>
                 <h1>Acceso restringido</h1>
-                <p>No tienes permisos para entrar a esta seccion. Si crees que es un error, solicita revision al administrador.</p>
+                <p>No tienes permisos para entrar a esta sección. Si crees que es un error, solicita revisión al administrador.</p>
                 <p-button label="Volver al inicio" routerLink="/" severity="warn" />
             </div>
         </div>

@@ -9,104 +9,167 @@ import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { TextareaModule } from 'primeng/textarea';
 import { Toast } from 'primeng/toast';
+import { FechaCortaPipe, EstadoTextoPipe } from '../../../../shared/pipes/formato.pipe';
 import { CiesInfoHintComponent } from '../../components/cies-info-hint';
-import { CiesService, EjecucionSeleccion, LoteMedicare, MedicareOutboxItem } from '../../services/cies.service';
+import { CiesService, EjecucionSeleccion, LoteMedicare } from '../../services/cies.service';
 
 @Component({
     selector: 'app-seleccion-page',
     standalone: true,
-    imports: [CommonModule, FormsModule, RouterModule, ButtonModule, InputTextModule, TableModule, TagModule, TextareaModule, Toast, CiesInfoHintComponent],
+    imports: [CommonModule, FormsModule, RouterModule, ButtonModule, InputTextModule, TableModule, TagModule, TextareaModule, Toast, FechaCortaPipe, EstadoTextoPipe, CiesInfoHintComponent],
     providers: [MessageService],
     template: `
         <div class="cies-page">
             <section class="card cies-hero">
                 <div class="cies-hero__content">
-                    <div class="cies-chip cies-chip--violet">Registro de personas</div>
+                    <div class="cies-chip cies-chip--morado">Registro de personas</div>
                     <h1 class="cies-hero__title">Registrar personas para entrevistar</h1>
-                    <p class="cies-hero__copy">Si tienes varias personas, pega aqui el listado. Si solo llego una, usa la entrevista directa y evita trabajar con archivos.</p>
+                    <p class="cies-hero__copy">Registra a las personas que serán entrevistadas. Puedes hacerlo de dos formas:</p>
                 </div>
                 <div class="cies-hero__actions">
-                    <a routerLink="/pages/entrevistas"><button pButton type="button" label="Entrevistar a una sola persona" icon="pi pi-user-plus"></button></a>
+                    <a routerLink="/pages/entrevistas"><button pButton type="button" label="👤 Entrevistar a una persona" icon="pi pi-user-plus"></button></a>
                 </div>
             </section>
 
-            <section class="cies-guidance-grid">
-                <article class="card cies-guidance-card">
-                    <div class="cies-guidance-step">1</div>
-                    <div class="cies-stack">
-                        <h4>Si es una sola persona</h4>
-                        <p>Ve a entrevistas. Alli puedes registrarla y abrir su entrevista en el mismo momento.</p>
-                    </div>
-                    <div class="cies-guidance-actions">
-                        <a routerLink="/pages/entrevistas"><button pButton type="button" label="Ir a entrevista directa"></button></a>
-                    </div>
-                </article>
-
-                <article class="card cies-guidance-card">
-                    <div class="cies-guidance-step">2</div>
-                    <div class="cies-stack">
-                        <h4>Si son varias personas</h4>
-                        <p>Pon un nombre al listado, pega el contenido o sube un archivo y guarda todo de una sola vez.</p>
-                    </div>
-                </article>
-
-                <article class="card cies-guidance-card">
-                    <div class="cies-guidance-step">3</div>
-                    <div class="cies-stack">
-                        <h4>Despues dejalas listas</h4>
-                        <p>Cuando el listado aparezca abajo, pulsa el boton de preparacion para enviarlas a la bandeja de entrevistas.</p>
-                    </div>
-                </article>
+            <!-- PASOS VISUALES -->
+            <section class="steps-container">
+                <div class="step-card">
+                    <div class="step-icon">👤</div>
+                    <h3>Una sola persona</h3>
+                    <p>Ve a entrevistas y regístrala directamente.</p>
+                    <a routerLink="/pages/entrevistas"><button pButton type="button" label="Ir ahora" icon="pi pi-arrow-right" size="small"></button></a>
+                </div>
+                <div class="step-connector"></div>
+                <div class="step-card step-card--active">
+                    <div class="step-icon">👥</div>
+                    <h3>Varias personas</h3>
+                    <p>Usa el formulario de abajo para cargar un listado completo.</p>
+                </div>
+                <div class="step-connector"></div>
+                <div class="step-card">
+                    <div class="step-icon">✅</div>
+                    <h3>Preparar</h3>
+                    <p>Pulsa "Preparar" para enviarlas a entrevistas.</p>
+                </div>
             </section>
 
-            <section class="card cies-stack">
+            <!-- FORMULARIO DE CARGA -->
+            <section class="card carga-section">
                 <div class="cies-section-head">
                     <div class="cies-section-head__content">
                         <div>
-                            <h3>{{ editingLoteId ? 'Editar listado' : 'Registrar varias personas' }}</h3>
-                            <p>{{ editingLoteId ? 'Corrige el nombre o el contenido antes de dejar listo el listado para entrevistas.' : 'Admite JSON o CSV con los datos basicos del flujo Medicare.' }}</p>
+                            <h3>{{ editingLoteId ? '✏️ Editando listado' : '📋 Registrar un listado de personas' }}</h3>
+                            <p>{{ editingLoteId ? 'Corrige el nombre o el contenido del listado.' : 'Ponle nombre, pega los datos o sube un archivo CSV/JSON.' }}</p>
                         </div>
-                        <app-cies-info-hint text="Puedes pegar el contenido manualmente o subir un archivo. El sistema validara clinica, regional y fecha de consulta."></app-cies-info-hint>
                     </div>
                 </div>
 
                 <div *ngIf="editingLoteId" class="cies-soft-note">
-                    Estas editando un listado ya guardado. Si cambias las personas, se reemplazara el contenido actual del listado.
+                    ℹ️ Estás editando un listado existente. Si cambias las personas, se reemplazará el contenido actual.
                 </div>
 
-                <div class="cies-form-grid cies-form-grid--two">
-                    <div>
-                        <label>Nombre del listado</label>
-                        <input pInputText [(ngModel)]="nombreLote" class="w-full" placeholder="Ejemplo: Mujeres marzo - Clinica Central" />
+                <!-- Paso 1: Nombre -->
+                <div class="carga-paso">
+                    <div class="carga-paso-header">
+                        <span class="carga-paso-num">1</span>
+                        <h4>Ponle nombre al listado</h4>
                     </div>
-                    <div>
-                        <label>Subir archivo</label>
-                        <input type="file" accept=".csv,.json" class="cies-native-input" (change)="onFileSelected($event)" />
+                    <input pInputText [(ngModel)]="nombreLote" class="w-full" placeholder="Ejemplo: Mujeres marzo - Clínica Central" />
+                </div>
+
+                <!-- Paso 2: Subir archivo o pegar datos -->
+                <div class="carga-paso">
+                    <div class="carga-paso-header">
+                        <span class="carga-paso-num">2</span>
+                        <h4>Agrega los datos de las personas</h4>
+                    </div>
+
+                    <!-- Zona de subida de archivo -->
+                    <div
+                        class="file-drop-zone"
+                        [class.file-drop-zone--dragover]="isDragging"
+                        [class.file-drop-zone--loaded]="archivoCargado"
+                        (dragover)="onDragOver($event)"
+                        (dragleave)="onDragLeave()"
+                        (drop)="onDrop($event)"
+                    >
+                        <input
+                            #fileInput
+                            type="file"
+                            accept=".csv,.json"
+                            class="file-input-hidden"
+                            (change)="onFileSelected($event)"
+                        />
+
+                        <div class="file-drop-content" *ngIf="!archivoCargado">
+                            <div class="file-drop-icon">📁</div>
+                            <div class="file-drop-title">Arrastra tu archivo aquí</div>
+                            <div class="file-drop-subtitle">o pulsa el botón para seleccionar</div>
+                            <button pButton type="button" label="📂 Elegir archivo CSV o JSON" severity="secondary" outlined (click)="fileInput.click()"></button>
+                            <div class="file-drop-formats">
+                                <span class="format-badge">.CSV</span>
+                                <span class="format-badge">.JSON</span>
+                            </div>
+                        </div>
+
+                        <div class="file-drop-content file-drop-content--loaded" *ngIf="archivoCargado">
+                            <div class="file-drop-icon">✅</div>
+                            <div class="file-drop-title">{{ archivoNombre }}</div>
+                            <button pButton type="button" label="Cambiar archivo" severity="secondary" text size="small" (click)="fileInput.click()"></button>
+                        </div>
+                    </div>
+
+                    <!-- Separador -->
+                    <div class="carga-separador">
+                        <span>o pega los datos manualmente</span>
+                    </div>
+
+                    <!-- Textarea para pegar -->
+                    <div class="carga-textarea-wrapper">
+                        <textarea
+                            pTextarea
+                            [(ngModel)]="cargaMasiva"
+                            rows="8"
+                            class="w-full carga-textarea"
+                            placeholder="medicarePersonId,nombre,apellido,ci,pasaporte,clinica,regional,fechaConsulta,tipoConsulta&#10;MED-001,María,López,1234567,,Clínica Central,La Paz,2026-03-29,PRIMERA_CONSULTA_SSR"
+                            (focus)="textareaFocused = true"
+                            (blur)="textareaFocused = false"
+                        ></textarea>
+                        <div class="carga-textarea-hint" [class.visible]="textareaFocused || !cargaMasiva">
+                            💡 Pega aquí tu CSV o JSON con los datos de las personas
+                        </div>
                     </div>
                 </div>
 
-                <div>
-                    <label>Pega el listado aqui</label>
-                    <textarea
-                        pTextarea
-                        [(ngModel)]="cargaMasiva"
-                        rows="10"
-                        class="w-full"
-                        placeholder="medicarePersonId,nombre,apellido,ci,pasaporte,clinica,regional,fechaConsulta,tipoConsulta"
-                    ></textarea>
-                </div>
-
+                <!-- Errores -->
                 <div class="cies-note cies-note--warning" *ngIf="cargaError">
-                    {{ cargaError }}
+                    ⚠️ {{ cargaError }}
                 </div>
 
-                <div class="cies-helper-block">
-                    Columnas admitidas: medicarePersonId, nombre, apellido, nombreCompleto, ci, pasaporte, documento, clinica, regional, fechaConsulta, tipoConsulta.
+                <!-- Columnas admitidas -->
+                <div class="columnas-info">
+                    <details>
+                        <summary>📖 Ver columnas admitidas</summary>
+                        <div class="columnas-grid">
+                            <span class="columna-tag">medicarePersonId</span>
+                            <span class="columna-tag">nombre</span>
+                            <span class="columna-tag">apellido</span>
+                            <span class="columna-tag">nombreCompleto</span>
+                            <span class="columna-tag">ci</span>
+                            <span class="columna-tag">pasaporte</span>
+                            <span class="columna-tag">documento</span>
+                            <span class="columna-tag">clinica</span>
+                            <span class="columna-tag">regional</span>
+                            <span class="columna-tag">fechaConsulta</span>
+                            <span class="columna-tag">tipoConsulta</span>
+                        </div>
+                    </details>
                 </div>
 
+                <!-- Botones de acción -->
                 <div class="cies-actions-row">
-                    <button pButton type="button" [label]="editingLoteId ? 'Guardar cambios' : 'Guardar listado'" icon="pi pi-upload" (click)="registrarLote()"></button>
-                    <button pButton type="button" [label]="editingLoteId ? 'Cancelar edicion' : 'Limpiar'" severity="secondary" [outlined]="true" icon="pi pi-eraser" (click)="limpiarCarga()"></button>
+                    <button pButton type="button" [label]="editingLoteId ? '💾 Guardar cambios' : '💾 Guardar listado'" icon="pi pi-upload" (click)="registrarLote()"></button>
+                    <button pButton type="button" [label]="editingLoteId ? 'Cancelar' : '🗑️ Limpiar'" severity="secondary" [outlined]="true" icon="pi pi-eraser" (click)="limpiarCarga()"></button>
                 </div>
             </section>
 
@@ -115,7 +178,7 @@ import { CiesService, EjecucionSeleccion, LoteMedicare, MedicareOutboxItem } fro
                     <div class="cies-section-head__content">
                         <div>
                             <h3>Listados guardados</h3>
-                            <p>Ahora estan separados por estado para que no mezcles lo que falta preparar con lo que ya esta listo.</p>
+                            <p>Ahora están separados por estado para que no mezcles lo que falta preparar con lo que ya está listo.</p>
                         </div>
                         <app-cies-info-hint text="Cada listado conserva responsable, fecha y total de personas para trazabilidad."></app-cies-info-hint>
                     </div>
@@ -125,8 +188,8 @@ import { CiesService, EjecucionSeleccion, LoteMedicare, MedicareOutboxItem } fro
                     <div class="cies-empty-state__icon">
                         <i class="pi pi-users"></i>
                     </div>
-                    <h3>Aun no registraste ningun listado</h3>
-                    <p>Si tienes varias personas, pega el contenido arriba y pulsa <strong>Guardar listado</strong>. Si solo tienes una, entra directo a entrevistas y registrala alli mismo.</p>
+                    <h3>Aún no registraste ningún listado</h3>
+                    <p>Si tienes varias personas, pega el contenido arriba y pulsa <strong>Guardar listado</strong>. Si solo tienes una, entra directo a entrevistas y regístrala allí mismo.</p>
                     <div class="cies-empty-state__actions">
                         <a routerLink="/pages/entrevistas"><button pButton type="button" label="Entrevistar a una sola persona" severity="secondary" [outlined]="true"></button></a>
                     </div>
@@ -136,7 +199,7 @@ import { CiesService, EjecucionSeleccion, LoteMedicare, MedicareOutboxItem } fro
                     <div class="cies-section-head">
                         <div>
                             <h3>Listados por preparar</h3>
-                            <p>Estos todavia no pasaron a la bandeja de entrevistas.</p>
+                            <p>Estos todavía no pasaron a la bandeja de entrevistas.</p>
                         </div>
                     </div>
 
@@ -154,15 +217,14 @@ import { CiesService, EjecucionSeleccion, LoteMedicare, MedicareOutboxItem } fro
                         </ng-template>
                         <ng-template pTemplate="body" let-item>
                             <tr>
-                                <td>{{ item.id }}</td>
-                                <td>{{ item.nombre }}</td>
-                                <td><p-tag [value]="item.estado" severity="warn"></p-tag></td>
+                                <td class="font-medium">{{ item.nombre }}</td>
+                                <td><p-tag [value]="item.estado | estadoTexto" severity="warn"></p-tag></td>
                                 <td>{{ item.totalPersonas }}</td>
-                                <td>{{ item.creadoPor }}</td>
-                                <td>{{ item.fechaCreacion }}</td>
+                                <td class="text-muted">{{ item.creadoPor }}</td>
+                                <td class="text-muted">{{ item.fechaCreacion | fechaCorta }}</td>
                                 <td>
                                     <div class="cies-inline-actions">
-                                        <button pButton type="button" label="Dejar listas" icon="pi pi-play" size="small" (click)="ejecutar(item)"></button>
+                                        <button pButton type="button" label="Preparar" icon="pi pi-play" size="small" (click)="ejecutar(item)"></button>
                                         <button pButton type="button" icon="pi pi-pencil" text rounded severity="info" (click)="editarLote(item)"></button>
                                         <button pButton type="button" icon="pi pi-trash" text rounded severity="danger" (click)="eliminarLote(item)"></button>
                                     </div>
@@ -193,12 +255,11 @@ import { CiesService, EjecucionSeleccion, LoteMedicare, MedicareOutboxItem } fro
                         </ng-template>
                         <ng-template pTemplate="body" let-item>
                             <tr>
-                                <td>{{ item.id }}</td>
-                                <td>{{ item.nombre }}</td>
-                                <td><p-tag [value]="item.estado" severity="success"></p-tag></td>
+                                <td class="font-medium">{{ item.nombre }}</td>
+                                <td><p-tag [value]="item.estado | estadoTexto" severity="success"></p-tag></td>
                                 <td>{{ item.totalPersonas }}</td>
-                                <td>{{ item.creadoPor }}</td>
-                                <td>{{ item.fechaCreacion }}</td>
+                                <td class="text-muted">{{ item.creadoPor }}</td>
+                                <td class="text-muted">{{ item.fechaCreacion | fechaCorta }}</td>
                             </tr>
                         </ng-template>
                     </p-table>
@@ -210,61 +271,29 @@ import { CiesService, EjecucionSeleccion, LoteMedicare, MedicareOutboxItem } fro
                     <div class="cies-section-head__content">
                         <div>
                             <h3>Selecciones recientes</h3>
-                            <p>Quien ejecuto la seleccion y cuantas personas quedaron listas.</p>
+                            <p>Quién ejecutó la selección y cuántas personas quedaron listas.</p>
                         </div>
-                        <app-cies-info-hint text="La semilla registrada permite repetir y auditar el proceso de seleccion cuando sea necesario."></app-cies-info-hint>
+                        <app-cies-info-hint text="La semilla registrada permite repetir y auditar el proceso de selección cuando sea necesario."></app-cies-info-hint>
                     </div>
                 </div>
 
                 <p-table [value]="ejecuciones" [tableStyle]="{ 'min-width': '58rem' }" responsiveLayout="scroll" class="cies-table">
                     <ng-template pTemplate="header">
                         <tr>
-                            <th>ID</th>
                             <th>Listado</th>
                             <th>Semilla</th>
-                            <th>Personas listas</th>
+                            <th>Seleccionadas</th>
                             <th>Ejecutado por</th>
                             <th>Fecha</th>
                         </tr>
                     </ng-template>
                     <ng-template pTemplate="body" let-item>
                         <tr>
-                            <td>{{ item.id }}</td>
-                            <td>{{ item.loteId }}</td>
-                            <td>{{ item.semilla }}</td>
+                            <td class="font-medium">#{{ item.loteId }}</td>
+                            <td class="font-mono text-sm">{{ item.semilla }}</td>
                             <td>{{ item.totalSeleccionadas }}</td>
-                            <td>{{ item.ejecutadoPor }}</td>
-                            <td>{{ item.fechaEjecucion }}</td>
-                        </tr>
-                    </ng-template>
-                </p-table>
-            </section>
-
-            <section class="card" *ngIf="outbox.length">
-                <div class="cies-section-head">
-                    <div class="cies-section-head__content">
-                        <div>
-                            <h3>Trazas de integracion Medicare</h3>
-                            <p>Registros tecnicos de salida para soporte y auditoria.</p>
-                        </div>
-                        <app-cies-info-hint text="Este bloque no es para trabajo diario. Solo sirve para seguimiento tecnico si algo falla en la integracion."></app-cies-info-hint>
-                    </div>
-                </div>
-                <p-table [value]="outbox" [tableStyle]="{ 'min-width': '64rem' }" responsiveLayout="scroll" class="cies-table">
-                    <ng-template pTemplate="header">
-                        <tr>
-                            <th>Tipo</th>
-                            <th>Referencia</th>
-                            <th>Fecha</th>
-                            <th>Payload</th>
-                        </tr>
-                    </ng-template>
-                    <ng-template pTemplate="body" let-item>
-                        <tr>
-                            <td>{{ item.tipo }}</td>
-                            <td>{{ item.referenciaId }}</td>
-                            <td>{{ item.fecha }}</td>
-                            <td><textarea pTextarea [ngModel]="item.payloadJson" rows="3" class="w-full" readonly></textarea></td>
+                            <td class="text-muted">{{ item.ejecutadoPor }}</td>
+                            <td class="text-muted">{{ item.fechaEjecucion | fechaCorta }}</td>
                         </tr>
                     </ng-template>
                 </p-table>
@@ -275,20 +304,291 @@ import { CiesService, EjecucionSeleccion, LoteMedicare, MedicareOutboxItem } fro
     `,
     styles: [
         `
-            .cies-native-input {
-                width: 100%;
-                min-height: 2.75rem;
-                border: 1px solid var(--layout-border-strong);
-                border-radius: 0.9rem;
-                padding: 0.7rem 0.85rem;
-                background: var(--layout-panel-soft-background);
-                color: var(--layout-text-strong);
+            .steps-container {
+                display: flex;
+                align-items: flex-start;
+                gap: 0;
+                margin: 1.5rem 0;
+                padding: 0 0.5rem;
             }
 
-            .cies-helper-block {
-                color: var(--layout-text-muted);
-                font-size: 0.92rem;
+            .step-card {
+                flex: 1;
+                text-align: center;
+                padding: 1.25rem 1rem;
+                background: var(--surface-card);
+                border: 2px solid var(--primary-color);
+                border-radius: 1rem;
+                transition: all 0.2s ease;
+            }
+
+            .step-icon {
+                font-size: 2rem;
+                margin-bottom: 0.5rem;
+            }
+
+            .step-card h3 {
+                margin: 0 0 0.25rem;
+                font-size: 0.95rem;
+                color: var(--text-color);
+            }
+
+            .step-card p {
+                margin: 0 0 0.75rem;
+                font-size: 0.82rem;
+                color: var(--text-color-secondary);
+                line-height: 1.4;
+            }
+
+            .step-connector {
+                flex: 0 0 2rem;
+                height: 2px;
+                background: var(--surface-border);
+                margin-top: 2.5rem;
+            }
+
+            .carga-section {
+                scroll-margin-top: 6rem;
+            }
+
+            .carga-paso {
+                margin-bottom: 1.5rem;
+            }
+
+            .carga-paso-header {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                margin-bottom: 0.75rem;
+            }
+
+            .carga-paso-num {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 1.75rem;
+                height: 1.75rem;
+                border-radius: 50%;
+                background: var(--primary-color);
+                color: var(--primary-color-text);
+                font-size: 0.8rem;
+                font-weight: 700;
+                flex-shrink: 0;
+            }
+
+            .carga-paso-header h4 {
+                margin: 0;
+                font-size: 0.95rem;
+            }
+
+            .file-drop-zone {
+                border: 2px dashed var(--surface-border);
+                border-radius: 1rem;
+                padding: 2rem;
+                text-align: center;
+                transition: all 0.25s ease;
+                background: var(--surface-ground);
+                cursor: pointer;
+                position: relative;
+            }
+
+            .file-drop-zone:hover {
+                border-color: var(--primary-color);
+                background: var(--primary-color);
+                background-opacity: 0.04;
+            }
+
+            .file-drop-zone--dragover {
+                border-color: var(--primary-color);
+                background: var(--primary-color);
+                background-opacity: 0.08;
+                transform: scale(1.01);
+            }
+
+            .file-drop-zone--loaded {
+                border-style: solid;
+                border-color: #22c55e;
+                background: rgba(34, 197, 94, 0.06);
+            }
+
+            .file-input-hidden {
+                display: none;
+            }
+
+            .file-drop-content {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 0.5rem;
+            }
+
+            .file-drop-icon {
+                font-size: 3rem;
+                line-height: 1;
+            }
+
+            .file-drop-title {
+                font-size: 1.05rem;
+                font-weight: 600;
+                color: var(--text-color);
+            }
+
+            .file-drop-subtitle {
+                font-size: 0.85rem;
+                color: var(--text-color-secondary);
+            }
+
+            .file-drop-formats {
+                display: flex;
+                gap: 0.5rem;
+                margin-top: 0.25rem;
+            }
+
+            .format-badge {
+                display: inline-block;
+                padding: 0.2rem 0.6rem;
+                border-radius: 0.4rem;
+                background: var(--surface-card);
+                border: 1px solid var(--surface-border);
+                font-size: 0.75rem;
+                font-weight: 600;
+                font-family: monospace;
+                color: var(--text-color-secondary);
+            }
+
+            .carga-separador {
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+                margin: 1.25rem 0;
+                color: var(--text-color-secondary);
+                font-size: 0.85rem;
+            }
+
+            .carga-separador::before,
+            .carga-separador::after {
+                content: '';
+                flex: 1;
+                height: 1px;
+                background: var(--surface-border);
+            }
+
+            .carga-textarea-wrapper {
+                position: relative;
+            }
+
+            .carga-textarea {
+                font-family: 'Courier New', monospace;
+                font-size: 0.85rem;
                 line-height: 1.5;
+                border-radius: 0.75rem;
+                border: 2px solid var(--surface-border);
+                transition: border-color 0.2s ease;
+            }
+
+            .carga-textarea:focus {
+                border-color: var(--primary-color);
+            }
+
+            .carga-textarea-hint {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                color: var(--text-color-secondary);
+                font-size: 0.88rem;
+                pointer-events: none;
+                opacity: 0;
+                transition: opacity 0.2s ease;
+            }
+
+            .carga-textarea-hint.visible {
+                opacity: 1;
+            }
+
+            .columnas-info {
+                margin-top: 1rem;
+            }
+
+            .columnas-info details {
+                background: var(--surface-ground);
+                border: 1px solid var(--surface-border);
+                border-radius: 0.75rem;
+                padding: 0.75rem 1rem;
+            }
+
+            .columnas-info summary {
+                cursor: pointer;
+                font-size: 0.88rem;
+                color: var(--text-color-secondary);
+                user-select: none;
+            }
+
+            .columnas-grid {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.4rem;
+                margin-top: 0.75rem;
+            }
+
+            .columna-tag {
+                display: inline-block;
+                padding: 0.2rem 0.5rem;
+                border-radius: 0.4rem;
+                background: var(--surface-card);
+                border: 1px solid var(--surface-border);
+                font-size: 0.75rem;
+                font-family: monospace;
+                color: var(--text-color);
+            }
+
+            .cies-actions-row {
+                display: flex;
+                gap: 0.5rem;
+                margin-top: 1.5rem;
+                justify-content: flex-end;
+            }
+
+            @media (max-width: 768px) {
+                .steps-container {
+                    flex-direction: column;
+                    gap: 0.5rem;
+                }
+
+                .step-connector {
+                    display: none;
+                }
+
+                .step-card {
+                    text-align: left;
+                    display: flex;
+                    align-items: center;
+                    gap: 1rem;
+                    padding: 1rem;
+                }
+
+                .step-icon {
+                    font-size: 1.5rem;
+                    margin-bottom: 0;
+                }
+
+                .step-card h3 {
+                    margin: 0;
+                    font-size: 0.9rem;
+                }
+
+                .step-card p {
+                    margin: 0;
+                    font-size: 0.8rem;
+                }
+
+                .file-drop-zone {
+                    padding: 1.5rem 1rem;
+                }
+
+                .file-drop-icon {
+                    font-size: 2rem;
+                }
             }
         `
     ]
@@ -304,7 +604,11 @@ export class SeleccionPage implements OnInit {
     cargaError = '';
     lotes: LoteMedicare[] = [];
     ejecuciones: EjecucionSeleccion[] = [];
-    outbox: MedicareOutboxItem[] = [];
+
+    isDragging = false;
+    archivoCargado = false;
+    archivoNombre = '';
+    textareaFocused = false;
 
     ngOnInit(): void {
         this.load();
@@ -338,12 +642,6 @@ export class SeleccionPage implements OnInit {
                 console.error('Error loading ejecuciones:', error);
             }
         });
-        this.ciesService.getMedicareOutbox().subscribe({
-            next: (response) => {
-                this.outbox = response;
-                this.cdr.detectChanges();
-            }
-        });
     }
 
     onFileSelected(event: Event): void {
@@ -352,6 +650,47 @@ export class SeleccionPage implements OnInit {
         if (!file) {
             return;
         }
+
+        this.archivoNombre = file.name;
+        this.archivoCargado = true;
+
+        const reader = new FileReader();
+        reader.onload = () => {
+            this.cargaMasiva = String(reader.result || '');
+            this.cargaError = '';
+            this.cdr.detectChanges();
+        };
+        reader.readAsText(file);
+    }
+
+    onDragOver(event: DragEvent): void {
+        event.preventDefault();
+        event.stopPropagation();
+        this.isDragging = true;
+    }
+
+    onDragLeave(): void {
+        this.isDragging = false;
+    }
+
+    onDrop(event: DragEvent): void {
+        event.preventDefault();
+        event.stopPropagation();
+        this.isDragging = false;
+
+        const file = event.dataTransfer?.files?.[0];
+        if (!file) return;
+
+        const validTypes = ['text/csv', 'application/json', 'text/plain'];
+        const ext = file.name.split('.').pop()?.toLowerCase();
+        if (!validTypes.includes(file.type) && !['csv', 'json'].includes(ext || '')) {
+            this.cargaError = 'Solo se aceptan archivos .csv o .json';
+            this.cdr.detectChanges();
+            return;
+        }
+
+        this.archivoNombre = file.name;
+        this.archivoCargado = true;
 
         const reader = new FileReader();
         reader.onload = () => {
@@ -398,6 +737,10 @@ export class SeleccionPage implements OnInit {
         this.nombreLote = '';
         this.cargaMasiva = '';
         this.cargaError = '';
+        this.isDragging = false;
+        this.archivoCargado = false;
+        this.archivoNombre = '';
+        this.textareaFocused = false;
         this.cdr.detectChanges();
     }
 
@@ -441,7 +784,7 @@ export class SeleccionPage implements OnInit {
     }
 
     eliminarLote(item: LoteMedicare): void {
-        if (!window.confirm(`Se eliminara el listado ${item.nombre}. Esta accion solo debe usarse si el listado aun no fue preparado. Deseas continuar?`)) {
+        if (!window.confirm(`Se eliminará el listado ${item.nombre}. Esta acción solo debe usarse si el listado aún no fue preparado. ¿Deseas continuar?`)) {
             return;
         }
 
@@ -476,7 +819,7 @@ export class SeleccionPage implements OnInit {
             .filter((item) => item['clinica'] && item['regional'] && item['fechaConsulta']);
 
         if (!personas.length) {
-            throw new Error('No se encontraron registros validos. Revisa columnas y formato del archivo.');
+            throw new Error('No se encontraron registros válidos. Revisa columnas y formato del archivo.');
         }
 
         return personas;

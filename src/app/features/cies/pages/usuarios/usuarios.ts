@@ -10,19 +10,20 @@ import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { Toast } from 'primeng/toast';
+import { NombrePropioPipe } from '../../../../shared/pipes/formato.pipe';
 import { CiesInfoHintComponent } from '../../components/cies-info-hint';
 import { CiesService, UsuarioAdmin, UsuarioUpsertRequest } from '../../services/cies.service';
 
 @Component({
     selector: 'app-usuarios-page',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, DialogModule, InputTextModule, PasswordModule, SelectModule, TableModule, TagModule, Toast, CiesInfoHintComponent],
+    imports: [CommonModule, FormsModule, ButtonModule, DialogModule, InputTextModule, PasswordModule, SelectModule, TableModule, TagModule, Toast, NombrePropioPipe, CiesInfoHintComponent],
     providers: [MessageService],
     template: `
         <div class="cies-page">
             <section class="card cies-hero">
                 <div class="cies-hero__content">
-                    <div class="cies-chip cies-chip--blue">Administración</div>
+                    <div class="cies-chip cies-chip--azul">Administración</div>
                     <h1 class="cies-hero__title">Usuarios del sistema</h1>
                     <p class="cies-hero__copy">Gestiona administradores, encuestadores y analistas con bloqueo, activación y cambio de rol.</p>
                 </div>
@@ -93,7 +94,7 @@ import { CiesService, UsuarioAdmin, UsuarioUpsertRequest } from '../../services/
                     <ng-template pTemplate="body" let-user>
                         <tr>
                             <td>{{ user.id }}</td>
-                            <td>{{ user.nombre }} {{ user.apellido }}</td>
+                            <td>{{ user.nombre | nombrePropio }} {{ user.apellido | nombrePropio }}</td>
                             <td>{{ user.email }}</td>
                             <td><p-tag [value]="user.rol" [severity]="user.rol === 'ADMINISTRADOR' ? 'danger' : user.rol === 'ENCUESTADOR' ? 'info' : 'warn'"></p-tag></td>
                             <td><p-tag [value]="user.activo ? 'Activo' : 'Inactivo'" [severity]="user.activo ? 'success' : 'secondary'"></p-tag></td>
@@ -270,7 +271,7 @@ export class UsuariosPage implements OnInit {
     }
 
     remove(user: UsuarioAdmin): void {
-        if (!window.confirm(`Se eliminara la cuenta de ${user.nombre} ${user.apellido}. Esta accion la ocultara del sistema. Deseas continuar?`)) {
+        if (!window.confirm(`Se eliminará la cuenta de ${user.nombre} ${user.apellido}. Esta acción la ocultará del sistema. ¿Deseas continuar?`)) {
             return;
         }
 

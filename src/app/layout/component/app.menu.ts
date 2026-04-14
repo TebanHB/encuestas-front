@@ -38,7 +38,12 @@ export class AppMenu implements OnInit {
                         { label: 'Configurar preguntas y puntajes', icon: 'pi pi-fw pi-sliders-h', routerLink: ['/pages/metodologia'] },
                         { label: 'Registrar personas', icon: 'pi pi-fw pi-share-alt', routerLink: ['/pages/seleccion'] },
                         { label: 'Aplicar entrevistas', icon: 'pi pi-fw pi-file-edit', routerLink: ['/pages/entrevistas'] },
-                        { label: 'Ver resultados', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/pages/reporteria'] },
+                        { label: 'Ver resultados', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/pages/reporteria'] }
+                    ]
+                },
+                {
+                    label: 'Administrar',
+                    items: [
                         { label: 'Administrar usuarios', icon: 'pi pi-fw pi-users', routerLink: ['/pages/usuarios'] },
                         { label: 'Revisar auditoría', icon: 'pi pi-fw pi-shield', routerLink: ['/pages/auditoria'] }
                     ]

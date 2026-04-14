@@ -158,7 +158,7 @@ export interface ReporteResumen {
     porcentajeExcluidas: number;
     porcentajeSubatendidas: number;
     tendencias: { etiqueta: string; total: number; pobres: number; excluidas: number; subatendidas: number }[];
-    comparativoClinicas: { clinica: string; total: number; porcentajePobres: number; porcentajeExcluidas: number; porcentajeSubatendidas: number }[];
+    comparativoClinicas: { clinica: string; regional: string; total: number; porcentajePobres: number; porcentajeExcluidas: number; porcentajeSubatendidas: number }[];
 }
 
 export interface SerieReporte {
@@ -189,6 +189,21 @@ export interface MedicareOutboxItem {
     referenciaId: string;
     payloadJson: string;
     fecha: string;
+}
+
+export interface AuditoriaRegistro {
+    id: number;
+    tipo: string;
+    usuario: string;
+    fechaHora: string;
+    entidadAfectada?: string;
+    idEntidad?: number;
+    descripcion?: string;
+    datosAnteriores?: string;
+    datosNuevos?: string;
+    direccionIp?: string;
+    userAgent?: string;
+    resultado: string;
 }
 
 @Injectable({
@@ -275,6 +290,10 @@ export class CiesService {
         return this.http.get<MetodologiaComparativo>(`${this.apiBase}/metodologias/${id}/comparativo`);
     }
 
+    duplicateMetodologia(id: number): Observable<Metodologia> {
+        return this.http.post<Metodologia>(`${this.apiBase}/metodologias/${id}/duplicar`, {});
+    }
+
     deleteMetodologia(id: number): Observable<void> {
         return this.http.delete<void>(`${this.apiBase}/metodologias/${id}`).pipe(tap(() => this.resetMetodologiaCache()));
     }
@@ -341,6 +360,14 @@ export class CiesService {
 
     getMedicareOutbox(): Observable<MedicareOutboxItem[]> {
         return this.http.get<MedicareOutboxItem[]>(`${this.apiBase}/integraciones/medicare/outbox`);
+    }
+
+    listAuditoria(filters?: Record<string, string | number | null | undefined>): Observable<AuditoriaRegistro[]> {
+        return this.http.get<AuditoriaRegistro[]>(`${this.apiBase}/auditoria`, { params: this.toParams(filters) });
+    }
+
+    getAuditoriaDetalle(id: number): Observable<AuditoriaRegistro> {
+        return this.http.get<AuditoriaRegistro>(`${this.apiBase}/auditoria/${id}`);
     }
 
     private readInstrumentoCache(): Metodologia | null {
