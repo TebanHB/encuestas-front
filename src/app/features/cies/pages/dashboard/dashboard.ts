@@ -316,10 +316,10 @@ export class Dashboard implements OnInit {
         }
 
         if (this.isAdmin || this.isEncuestador) {
-            this.ciesService.getPendientesEntrevista().subscribe({
+            this.ciesService.getPendientesResumen(8).subscribe({
                 next: (response) => {
-                    this.totalPendientes = response.length;
-                    this.pendientes = response.slice(0, 8);
+                    this.totalPendientes = response.total;
+                    this.pendientes = response.items;
                     this.cdr.detectChanges();
                 },
                 error: (err) => {

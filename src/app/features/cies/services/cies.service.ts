@@ -91,6 +91,11 @@ export interface PersonaElegible {
     loteNombre?: string;
 }
 
+export interface PendientesEntrevistaResumen {
+    total: number;
+    items: PersonaElegible[];
+}
+
 export interface LoteMedicare {
     id: number;
     nombre: string;
@@ -215,6 +220,11 @@ export class CiesService {
     private readonly apiBase = environment.apiBaseUrl;
     private instrumentoActivoRequest$: Observable<Metodologia> | null = null;
     private metodologiasRequest$: Observable<Metodologia[]> | null = null;
+    private pendientesRequest$: Observable<PersonaElegible[]> | null = null;
+    private pendientesResumenRequests = new Map<number, Observable<PendientesEntrevistaResumen>>();
+    private lotesRequest$: Observable<LoteMedicare[]> | null = null;
+    private ejecucionesRequest$: Observable<EjecucionSeleccion[]> | null = null;
+    private reporteResumenRequests = new Map<string, Observable<ReporteResumen>>();
 
     listUsuarios(): Observable<UsuarioAdmin[]> {
         return this.http.get<UsuarioAdmin[]>(`${this.apiBase}/usuarios`);
@@ -275,15 +285,15 @@ export class CiesService {
     }
 
     createMetodologia(payload: Partial<Metodologia>): Observable<Metodologia> {
-        return this.http.post<Metodologia>(`${this.apiBase}/metodologias`, payload).pipe(tap(() => this.resetMetodologiaCache()));
+        return this.http.post<Metodologia>(`${this.apiBase}/metodologias`, payload).pipe(tap(() => this.resetAllCaches()));
     }
 
     updateMetodologia(id: number, payload: Partial<Metodologia>): Observable<Metodologia> {
-        return this.http.put<Metodologia>(`${this.apiBase}/metodologias/${id}`, payload).pipe(tap(() => this.resetMetodologiaCache()));
+        return this.http.put<Metodologia>(`${this.apiBase}/metodologias/${id}`, payload).pipe(tap(() => this.resetAllCaches()));
     }
 
     activateMetodologia(id: number): Observable<Metodologia> {
-        return this.http.post<Metodologia>(`${this.apiBase}/metodologias/${id}/activar`, {}).pipe(tap(() => this.resetMetodologiaCache()));
+        return this.http.post<Metodologia>(`${this.apiBase}/metodologias/${id}/activar`, {}).pipe(tap(() => this.resetAllCaches()));
     }
 
     getMetodologiaComparativo(id: number): Observable<MetodologiaComparativo> {
@@ -295,43 +305,99 @@ export class CiesService {
     }
 
     deleteMetodologia(id: number): Observable<void> {
-        return this.http.delete<void>(`${this.apiBase}/metodologias/${id}`).pipe(tap(() => this.resetMetodologiaCache()));
+        return this.http.delete<void>(`${this.apiBase}/metodologias/${id}`).pipe(tap(() => this.resetAllCaches()));
     }
 
     createLote(nombre: string, personas: Array<Record<string, unknown>>): Observable<LoteMedicare> {
-        return this.http.post<LoteMedicare>(`${this.apiBase}/seleccion/lotes`, { nombre, personas });
+        return this.http.post<LoteMedicare>(`${this.apiBase}/seleccion/lotes`, { nombre, personas }).pipe(tap(() => this.resetOperacionCache()));
     }
 
     updateLote(id: number, nombre: string, personas: Array<Record<string, unknown>>): Observable<LoteMedicare> {
-        return this.http.put<LoteMedicare>(`${this.apiBase}/seleccion/lotes/${id}`, { nombre, personas });
+        return this.http.put<LoteMedicare>(`${this.apiBase}/seleccion/lotes/${id}`, { nombre, personas }).pipe(tap(() => this.resetOperacionCache()));
     }
 
     listLotes(): Observable<LoteMedicare[]> {
-        return this.http.get<LoteMedicare[]>(`${this.apiBase}/seleccion/lotes`);
+        if (!this.lotesRequest$) {
+            this.lotesRequest$ = this.http.get<LoteMedicare[]>(`${this.apiBase}/seleccion/lotes`).pipe(
+                catchError((error) => {
+                    this.lotesRequest$ = null;
+                    return throwError(() => error);
+                }),
+                shareReplay(1)
+            );
+        }
+
+        return this.lotesRequest$;
     }
 
     deleteLote(id: number): Observable<void> {
-        return this.http.delete<void>(`${this.apiBase}/seleccion/lotes/${id}`);
+        return this.http.delete<void>(`${this.apiBase}/seleccion/lotes/${id}`).pipe(tap(() => this.resetOperacionCache()));
     }
 
     executeSeleccion(loteId: number, semilla?: string): Observable<EjecucionSeleccion> {
-        return this.http.post<EjecucionSeleccion>(`${this.apiBase}/seleccion/ejecuciones`, { loteId, semilla });
+        return this.http.post<EjecucionSeleccion>(`${this.apiBase}/seleccion/ejecuciones`, { loteId, semilla }).pipe(tap(() => this.resetOperacionCache()));
     }
 
     listEjecuciones(): Observable<EjecucionSeleccion[]> {
-        return this.http.get<EjecucionSeleccion[]>(`${this.apiBase}/seleccion/ejecuciones`);
+        if (!this.ejecucionesRequest$) {
+            this.ejecucionesRequest$ = this.http.get<EjecucionSeleccion[]>(`${this.apiBase}/seleccion/ejecuciones`).pipe(
+                catchError((error) => {
+                    this.ejecucionesRequest$ = null;
+                    return throwError(() => error);
+                }),
+                shareReplay(1)
+            );
+        }
+
+        return this.ejecucionesRequest$;
     }
 
-    getPendientesEntrevista(): Observable<PersonaElegible[]> {
-        return this.http.get<PersonaElegible[]>(`${this.apiBase}/entrevistas/pendientes`);
+    getPendientesEntrevista(forceRefresh = false): Observable<PersonaElegible[]> {
+        if (forceRefresh) {
+            this.pendientesRequest$ = null;
+        }
+
+        if (!this.pendientesRequest$) {
+            this.pendientesRequest$ = this.http.get<PersonaElegible[]>(`${this.apiBase}/entrevistas/pendientes`).pipe(
+                catchError((error) => {
+                    this.pendientesRequest$ = null;
+                    return throwError(() => error);
+                }),
+                shareReplay(1)
+            );
+        }
+
+        return this.pendientesRequest$;
+    }
+
+    getPendientesResumen(limit = 8, forceRefresh = false): Observable<PendientesEntrevistaResumen> {
+        const safeLimit = Math.max(1, Math.min(limit, 25));
+        if (forceRefresh) {
+            this.pendientesResumenRequests.delete(safeLimit);
+        }
+
+        if (!this.pendientesResumenRequests.has(safeLimit)) {
+            const request$ = this.http.get<PendientesEntrevistaResumen>(`${this.apiBase}/entrevistas/pendientes/resumen`, {
+                params: new HttpParams().set('limit', String(safeLimit))
+            }).pipe(
+                catchError((error) => {
+                    this.pendientesResumenRequests.delete(safeLimit);
+                    return throwError(() => error);
+                }),
+                shareReplay(1)
+            );
+            this.pendientesResumenRequests.set(safeLimit, request$);
+        }
+
+        return this.pendientesResumenRequests.get(safeLimit)!;
     }
 
     iniciarEntrevista(personaId: number): Observable<Entrevista> {
-        return this.http.post<Entrevista>(`${this.apiBase}/entrevistas/${personaId}/iniciar`, {});
+        return this.http.post<Entrevista>(`${this.apiBase}/entrevistas/${personaId}/iniciar`, {}).pipe(tap(() => this.resetOperacionCache()));
     }
 
     finalizarEntrevista(entrevistaId: number, respuestas: RespuestaPayload[]): Observable<Entrevista> {
-        return this.http.post<Entrevista>(`${this.apiBase}/entrevistas/${entrevistaId}/finalizar`, { respuestas });
+        return this.http.post<Entrevista>(`${this.apiBase}/entrevistas/${entrevistaId}/finalizar`, { respuestas }).pipe(tap(() => this.resetAllCaches()));
     }
 
     getEntrevista(id: number): Observable<Entrevista> {
@@ -339,7 +405,20 @@ export class CiesService {
     }
 
     getReporteResumen(filters?: Record<string, string | number | null | undefined>): Observable<ReporteResumen> {
-        return this.http.get<ReporteResumen>(`${this.apiBase}/reportes/resumen`, { params: this.toParams(filters) });
+        const key = this.cacheKey(filters);
+
+        if (!this.reporteResumenRequests.has(key)) {
+            const request$ = this.http.get<ReporteResumen>(`${this.apiBase}/reportes/resumen`, { params: this.toParams(filters) }).pipe(
+                catchError((error) => {
+                    this.reporteResumenRequests.delete(key);
+                    return throwError(() => error);
+                }),
+                shareReplay(1)
+            );
+            this.reporteResumenRequests.set(key, request$);
+        }
+
+        return this.reporteResumenRequests.get(key)!;
     }
 
     getDistribucionVariable(filters?: Record<string, string | number | null | undefined>): Observable<DistribucionVariable> {
@@ -385,6 +464,23 @@ export class CiesService {
         localStorage.removeItem(this.instrumentoCacheKey);
     }
 
+    private resetOperacionCache(): void {
+        this.pendientesRequest$ = null;
+        this.pendientesResumenRequests.clear();
+        this.lotesRequest$ = null;
+        this.ejecucionesRequest$ = null;
+    }
+
+    private resetReporteCache(): void {
+        this.reporteResumenRequests.clear();
+    }
+
+    private resetAllCaches(): void {
+        this.resetMetodologiaCache();
+        this.resetOperacionCache();
+        this.resetReporteCache();
+    }
+
     private toParams(filters?: Record<string, string | number | null | undefined>): HttpParams {
         let params = new HttpParams();
         Object.entries(filters || {}).forEach(([key, value]) => {
@@ -393,5 +489,13 @@ export class CiesService {
             }
         });
         return params;
+    }
+
+    private cacheKey(filters?: Record<string, string | number | null | undefined>): string {
+        return JSON.stringify(
+            Object.entries(filters || {})
+                .filter(([, value]) => value !== null && value !== undefined && value !== '')
+                .sort(([left], [right]) => left.localeCompare(right))
+        );
     }
 }

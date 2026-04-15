@@ -184,7 +184,7 @@ interface ValidationError {
                             <td>{{ item.regional }}</td>
                             <td>{{ item.fechaConsulta }}</td>
                             <td>
-                                <button pButton type="button" label="▶ Iniciar" icon="pi pi-play"
+                                <button pButton type="button" label="Iniciar" icon="pi pi-play"
                                     size="small" (click)="start(item)"></button>
                             </td>
                         </tr>
@@ -1079,7 +1079,9 @@ export class EntrevistasPage implements OnInit, OnDestroy {
                 this.messageService.add({
                     severity: 'success',
                     summary: 'Datos cargados',
-                    detail: `Se encontraron \${response.length} persona(s) pendientes.`
+                    detail: response.length === 1
+                        ? 'Se encontró 1 persona pendiente para entrevistar.'
+                        : `Se encontraron ${response.length} personas pendientes para entrevistar.`
                 });
                 this.cdr.detectChanges();
             },
@@ -1112,7 +1114,7 @@ export class EntrevistasPage implements OnInit, OnDestroy {
                 this.messageService.add({
                     severity: 'success',
                     summary: 'Entrevista iniciada',
-                    detail: `Se abrió la entrevista de \${response.personaNombre}.`
+                    detail: `Se abrió la entrevista de ${response.personaNombre}.`
                 });
                 this.cdr.detectChanges();
                 setTimeout(() => {
@@ -1354,7 +1356,7 @@ export class EntrevistasPage implements OnInit, OnDestroy {
         this.messageService.add({
             severity: 'info',
             summary: '📦 Guardado offline',
-            detail: `Se guardó "\${this.currentInterview.codigo}" en la cola. Se enviará cuando haya conexión.`
+            detail: `Se guardó "${this.currentInterview.codigo}" en la cola. Se enviará cuando haya conexión.`
         });
         this.closeInterview();
     }
@@ -1396,7 +1398,7 @@ export class EntrevistasPage implements OnInit, OnDestroy {
 
         this.directRegistrationLoading = true;
         const personaPayload = {
-            medicarePersonId: this.directRegistrationForm.medicarePersonId.trim() || `DIRECTO-\${Date.now()}`,
+            medicarePersonId: this.directRegistrationForm.medicarePersonId.trim() || `DIRECTO-${Date.now()}`,
             nombre,
             apellido,
             ci: this.directRegistrationForm.documento.trim(),
@@ -1407,11 +1409,11 @@ export class EntrevistasPage implements OnInit, OnDestroy {
             tipoConsulta: this.directRegistrationForm.tipoConsulta
         };
 
-        const loteNombre = `Registro directo - \${nombre} \${apellido}`.trim();
+        const loteNombre = `Registro directo - ${nombre} ${apellido}`.trim();
 
         this.ciesService.createLote(loteNombre, [personaPayload]).subscribe({
             next: (lote) => {
-                this.ciesService.executeSeleccion(lote.id, `DIRECTO-\${Date.now()}`).subscribe({
+                this.ciesService.executeSeleccion(lote.id, `DIRECTO-${Date.now()}`).subscribe({
                     next: (ejecucion) => {
                         const persona = ejecucion.seleccionadas[0];
                         this.directRegistrationLoading = false;
@@ -1419,7 +1421,7 @@ export class EntrevistasPage implements OnInit, OnDestroy {
                         this.messageService.add({
                             severity: 'success',
                             summary: '✅ Registro exitoso',
-                            detail: `\${nombre} \${apellido} fue registrado/a correctamente.`
+                            detail: `${nombre} ${apellido} fue registrado/a correctamente.`
                         });
                         this.loadPendientes();
                         if (persona) {

@@ -733,7 +733,9 @@ export class AuditoriaPage implements OnInit {
                 this.messageService.add({
                     severity: 'success',
                     summary: 'Búsqueda completada',
-                    detail: `${response.length} registro(s) encontrado(s)`
+                    detail: response.length === 1
+                        ? 'Se encontró 1 registro de auditoría.'
+                        : `Se encontraron ${response.length} registros de auditoría.`
                 });
                 this.cdr.detectChanges();
             },

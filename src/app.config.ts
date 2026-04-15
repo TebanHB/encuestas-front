@@ -1,6 +1,6 @@
 ﻿import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { ApplicationConfig } from '@angular/core';
-import { provideRouter, withEnabledBlockingInitialNavigation, withInMemoryScrolling } from '@angular/router';
+import { PreloadAllModules, provideRouter, withEnabledBlockingInitialNavigation, withInMemoryScrolling, withPreloading } from '@angular/router';
 import Aura from '@primeuix/themes/aura';
 import { providePrimeNG } from 'primeng/config';
 import { appRoutes } from './app.routes';
@@ -14,6 +14,7 @@ export const appConfig: ApplicationConfig = {
                 anchorScrolling: 'enabled',
                 scrollPositionRestoration: 'enabled'
             }),
+            withPreloading(PreloadAllModules),
             withEnabledBlockingInitialNavigation()
         ),
         provideHttpClient(
