@@ -203,7 +203,7 @@ export class UsuariosPage implements OnInit {
             },
             error: (error) => {
                 console.error('Error loading users:', error);
-                this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los usuarios' });
+                this.messageService.add({ severity: 'error', summary: 'Error', detail: this.extractErrorMessage(error, 'No se pudieron cargar los usuarios') });
             }
         });
     }
@@ -228,12 +228,32 @@ export class UsuariosPage implements OnInit {
     }
 
     save(): void {
-        if (!this.form.nombre || !this.form.email) {
-            this.messageService.add({ severity: 'warn', summary: 'Validación', detail: 'Nombre y correo son obligatorios' });
+        const nombre = this.form.nombre?.trim() || '';
+        const apellido = this.form.apellido?.trim() || '';
+        const email = this.form.email?.trim().toLowerCase() || '';
+        const rol = this.form.rol?.trim() || 'ENCUESTADOR';
+        const password = this.form.password?.trim() || '';
+
+        if (!nombre || !email) {
+            this.messageService.add({ severity: 'warn', summary: 'Validacion', detail: 'Nombre y correo son obligatorios' });
             return;
         }
 
-        const request$ = this.editingId ? this.ciesService.updateUsuario(this.editingId, this.form) : this.ciesService.createUsuario(this.form);
+        if (!this.editingId && password.length < 5) {
+            this.messageService.add({ severity: 'warn', summary: 'Validacion', detail: 'La contrasena debe tener al menos 5 caracteres' });
+            return;
+        }
+
+        const payload: UsuarioUpsertRequest = {
+            nombre,
+            apellido,
+            email,
+            rol,
+            activo: this.form.activo !== false,
+            password: password || undefined
+        };
+
+        const request$ = this.editingId ? this.ciesService.updateUsuario(this.editingId, payload) : this.ciesService.createUsuario(payload);
         request$.subscribe({
             next: () => {
                 this.showDialog = false;
@@ -247,7 +267,7 @@ export class UsuariosPage implements OnInit {
             },
             error: (error) => {
                 console.error('Error saving user:', error);
-                this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar el usuario' });
+                this.messageService.add({ severity: 'error', summary: 'Error', detail: this.extractErrorMessage(error, 'No se pudo guardar el usuario') });
             }
         });
     }
@@ -265,7 +285,7 @@ export class UsuariosPage implements OnInit {
             },
             error: (error) => {
                 console.error('Error toggling user state:', error);
-                this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo actualizar el estado del usuario' });
+                this.messageService.add({ severity: 'error', summary: 'Error', detail: this.extractErrorMessage(error, 'No se pudo actualizar el estado del usuario') });
             }
         });
     }
@@ -286,9 +306,22 @@ export class UsuariosPage implements OnInit {
             },
             error: (error) => {
                 console.error('Error deleting user:', error);
-                this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo eliminar el usuario' });
+                this.messageService.add({ severity: 'error', summary: 'Error', detail: this.extractErrorMessage(error, 'No se pudo eliminar el usuario') });
             }
         });
+    }
+
+    private extractErrorMessage(error: unknown, fallback: string): string {
+        const payload = (error as { error?: { message?: string } | string })?.error;
+        if (typeof payload === 'string' && payload.trim()) {
+            return payload;
+        }
+
+        if (typeof payload === 'object' && payload && 'message' in payload && typeof payload.message === 'string' && payload.message.trim()) {
+            return payload.message;
+        }
+
+        return fallback;
     }
 }
 
