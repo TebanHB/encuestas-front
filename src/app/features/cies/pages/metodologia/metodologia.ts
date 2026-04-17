@@ -31,6 +31,13 @@ interface PreguntaEdit {
     opciones: { id: number; orden: number; codigo: string; etiqueta: string; valorNumerico: number }[];
 }
 
+interface CreateMetodologiaForm {
+    nombre: string;
+    descripcion: string;
+    comentarioCambio: string;
+    templateId: number | null;
+}
+
 @Component({
     selector: 'app-metodologia-page',
     standalone: true,
@@ -46,16 +53,54 @@ interface PreguntaEdit {
                 </div>
             </section>
 
+            <section class="card" *ngIf="metodologias.length">
+                <div class="cies-section-head">
+                    <div class="cies-section-head__content">
+                        <div>
+                            <h3>Administrar encuestas</h3>
+                            <p>Selecciona la encuesta que quieres revisar, editar, activar o usar como plantilla.</p>
+                        </div>
+                        <app-cies-info-hint text="La nueva encuesta toma por defecto la plantilla actualmente activa, pero puedes cambiarla desde el dropdown."></app-cies-info-hint>
+                    </div>
+                </div>
+
+                <div class="crud-toolbar">
+                    <div class="crud-toolbar__selector">
+                        <label>Encuesta seleccionada</label>
+                        <p-select [options]="metodologiaOptions" [(ngModel)]="selectedMetodologiaId"
+                            optionLabel="label" optionValue="value" appendTo="body" class="w-full"
+                            placeholder="Selecciona una encuesta" (ngModelChange)="selectMetodologia($event)"></p-select>
+                    </div>
+
+                    <div class="crud-toolbar__actions" *ngIf="canEditConfiguration">
+                        <button pButton type="button" label="Nueva encuesta" icon="pi pi-plus"
+                            (click)="openCreateDialog()"></button>
+                        <button pButton type="button" label="Usar en el sistema" icon="pi pi-check-circle"
+                            severity="success" [outlined]="true"
+                            *ngIf="active && !active.activa" (click)="activateSelected()"></button>
+                        <button pButton type="button" label="Eliminar" icon="pi pi-trash"
+                            severity="danger" [outlined]="true"
+                            *ngIf="active && !active.activa" (click)="deleteSelected()"></button>
+                    </div>
+                </div>
+            </section>
+
             <!-- TARJETA PRINCIPAL: Configuración actual -->
             <section class="card" *ngIf="active">
                 <div class="cies-section-head">
                     <div class="cies-section-head__content">
                         <div>
-                            <h3>📋 Configuración actual: {{ active.nombre }}</h3>
-                            <p>Estos son los valores que usa el sistema ahora mismo.</p>
+                            <h3>📋 Encuesta seleccionada: {{ active.nombre }}</h3>
+                            <p>Estos son los valores y preguntas de la encuesta que tienes abierta en pantalla.</p>
                         </div>
                         <app-cies-info-hint text="Si necesitas ajustar algo, pulsa 'Editar configuración' abajo."></app-cies-info-hint>
                     </div>
+                </div>
+
+                <div class="selected-survey-head">
+                    <p-tag *ngIf="active.activa" value="Activa en el sistema" severity="success"></p-tag>
+                    <p-tag *ngIf="!active.activa" value="Versión en borrador" severity="warn"></p-tag>
+                    <span class="selected-survey-meta">Creada por {{ active.creadoPor || 'sistema' }} · {{ active.fechaCreacion | date:'short' }}</span>
                 </div>
 
                 <!-- Puntos de corte -->
@@ -178,7 +223,7 @@ interface PreguntaEdit {
                     <h4 class="comparativo-col-title">
                         <span class="version-badge">v{{ i + 1 }}</span>
                         {{ item.nombre }}
-                        <p-tag *ngIf="item.id === active?.id" value="Activa" severity="success" styleClass="ml-2"></p-tag>
+                        <p-tag *ngIf="item.id === activeMetodologiaId" value="Activa" severity="success" styleClass="ml-2"></p-tag>
                     </h4>
                     <div class="comparativo-stat">
                         <span class="stat-label">Umbral Vulnerable</span>
@@ -210,6 +255,56 @@ interface PreguntaEdit {
             <ng-template pTemplate="footer">
                 <button pButton type="button" label="Cerrar" severity="secondary" [outlined]="true"
                     (click)="showComparativo = false"></button>
+            </ng-template>
+        </p-dialog>
+
+        <p-dialog
+            [(visible)]="showCreateDialog"
+            [modal]="true"
+            [style]="{ width: '40rem', 'max-width': '96vw' }"
+            [draggable]="false"
+            [resizable]="false"
+            header="Crear nueva encuesta"
+            styleClass="cies-dialog"
+        >
+            <div class="cies-dialog-content create-dialog-content">
+                <p class="dialog-intro">
+                    Crea una nueva encuesta a partir de una plantilla existente. Por defecto se usará la encuesta activa del sistema.
+                </p>
+
+                <div class="config-summary-grid">
+                    <div>
+                        <label>Nombre de la nueva encuesta</label>
+                        <input pInputText [(ngModel)]="createForm.nombre" class="w-full"
+                            placeholder="Ejemplo: CIES v2 - Piloto julio" />
+                    </div>
+                    <div>
+                        <label>Plantilla base</label>
+                        <p-select [options]="metodologiaOptions" [(ngModel)]="createForm.templateId"
+                            optionLabel="label" optionValue="value" appendTo="body" class="w-full"
+                            placeholder="Selecciona una plantilla"></p-select>
+                        <small class="field-help">La plantilla actual del sistema aparece seleccionada por defecto.</small>
+                    </div>
+                </div>
+
+                <div class="editor-section">
+                    <label>Descripción</label>
+                    <textarea pTextarea [(ngModel)]="createForm.descripcion" rows="3" class="w-full"
+                        placeholder="Describe para qué servirá esta nueva encuesta."></textarea>
+                </div>
+
+                <div class="editor-section editor-section--comentario">
+                    <label>Comentario del cambio</label>
+                    <textarea pTextarea [(ngModel)]="createForm.comentarioCambio" rows="2" class="w-full"
+                        placeholder="Ejemplo: Nueva versión para piloto regional y ajuste de clasificación."></textarea>
+                </div>
+            </div>
+
+            <ng-template pTemplate="footer">
+                <button pButton type="button" label="Cancelar" severity="secondary" [outlined]="true"
+                    (click)="closeCreateDialog()"></button>
+                <button pButton type="button" label="Crear encuesta" icon="pi pi-check"
+                    (click)="createSurvey()"></button>
             </ng-template>
         </p-dialog>
 
@@ -350,6 +445,47 @@ interface PreguntaEdit {
         </p-dialog>
     `,
     styles: [`
+        .crud-toolbar {
+            display: grid;
+            grid-template-columns: minmax(18rem, 1fr) auto;
+            gap: 1rem;
+            align-items: end;
+        }
+
+        .crud-toolbar__selector,
+        .create-dialog-content label {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .crud-toolbar__selector label,
+        .create-dialog-content label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .crud-toolbar__actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 0.5rem;
+        }
+
+        .selected-survey-head {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .selected-survey-meta {
+            font-size: 0.82rem;
+            color: var(--text-color-secondary);
+        }
+
         .config-summary-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
@@ -622,6 +758,14 @@ interface PreguntaEdit {
                 grid-template-columns: 1fr;
             }
 
+            .crud-toolbar {
+                grid-template-columns: 1fr;
+            }
+
+            .crud-toolbar__actions {
+                justify-content: flex-start;
+            }
+
             .pregunta-row {
                 flex-direction: column;
                 align-items: flex-start;
@@ -725,20 +869,42 @@ export class MetodologiaPage implements OnInit {
     comparativoData: MetodologiaComparativo[] = [];
     comparativoVersion1: number | null = null;
     comparativoVersion2: number | null = null;
+    activeMetodologiaId: number | null = null;
+    selectedMetodologiaId: number | null = null;
+    showCreateDialog = false;
+    createForm: CreateMetodologiaForm = this.createEmptyMetodologiaForm();
 
     get canEditConfiguration(): boolean {
         return this.authService.isAdministrador();
+    }
+
+    get metodologiaOptions(): Array<{ label: string; value: number }> {
+        return this.metodologias.map((item) => ({
+            label: item.nombre + (item.id === this.activeMetodologiaId ? ' (Activa)' : ''),
+            value: item.id
+        }));
     }
 
     ngOnInit(): void {
         this.load();
     }
 
-    load(): void {
+    load(preferredId?: number | null): void {
         this.ciesService.listMetodologias().subscribe({
             next: (response) => {
-                this.metodologias = response;
-                this.active = response.find((item) => item.activa) || null;
+                const metodologias = [...response].sort((left, right) =>
+                    new Date(right.fechaCreacion).getTime() - new Date(left.fechaCreacion).getTime()
+                );
+                this.metodologias = metodologias;
+                this.activeMetodologiaId = metodologias.find((item) => item.activa)?.id || null;
+
+                const targetId = preferredId
+                    || this.selectedMetodologiaId
+                    || this.activeMetodologiaId
+                    || metodologias[0]?.id
+                    || null;
+
+                this.selectMetodologia(targetId);
                 this.cdr.detectChanges();
             },
             error: (error) => {
@@ -780,6 +946,126 @@ export class MetodologiaPage implements OnInit {
         return icons[seccion] || '📄';
     }
 
+    openCreateDialog(): void {
+        if (!this.canEditConfiguration) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Sin permisos',
+                detail: 'Solo un administrador puede crear encuestas'
+            });
+            return;
+        }
+
+        this.createForm = this.createEmptyMetodologiaForm();
+        this.createForm.templateId = this.activeMetodologiaId || this.active?.id || this.metodologias[0]?.id || null;
+        this.showCreateDialog = true;
+        this.cdr.detectChanges();
+    }
+
+    closeCreateDialog(): void {
+        this.showCreateDialog = false;
+        this.createForm = this.createEmptyMetodologiaForm();
+        this.cdr.detectChanges();
+    }
+
+    createSurvey(): void {
+        if (!this.canEditConfiguration) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Sin permisos',
+                detail: 'Solo un administrador puede crear encuestas'
+            });
+            return;
+        }
+
+        const nombre = this.createForm.nombre.trim();
+        if (!nombre) {
+            this.messageService.add({ severity: 'warn', summary: 'Validación', detail: 'El nombre de la encuesta es obligatorio' });
+            return;
+        }
+
+        const template = this.metodologias.find((item) => item.id === this.createForm.templateId);
+        if (!template) {
+            this.messageService.add({ severity: 'warn', summary: 'Validación', detail: 'Debes elegir una plantilla base' });
+            return;
+        }
+
+        const payload = this.buildMetodologiaPayload(template, {
+            nombre,
+            descripcion: this.createForm.descripcion.trim() || template.descripcion,
+            comentarioCambio: this.createForm.comentarioCambio.trim() || `Nueva encuesta creada desde la plantilla ${template.nombre}`
+        });
+
+        this.ciesService.createMetodologia(payload).subscribe({
+            next: (created) => {
+                this.closeCreateDialog();
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Encuesta creada',
+                    detail: `Se creó ${created.nombre} usando ${template.nombre} como plantilla.`
+                });
+                this.load(created.id);
+            },
+            error: (error) => {
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: this.extractErrorMessage(error, 'No se pudo crear la encuesta')
+                });
+            }
+        });
+    }
+
+    activateSelected(): void {
+        if (!this.active || this.active.activa) return;
+
+        const selectedId = this.active.id;
+        this.ciesService.activateMetodologia(selectedId).subscribe({
+            next: () => {
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Encuesta activada',
+                    detail: `${this.active?.nombre} ahora es la encuesta activa del sistema.`
+                });
+                this.load(selectedId);
+            },
+            error: (error) => {
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: this.extractErrorMessage(error, 'No se pudo activar la encuesta')
+                });
+            }
+        });
+    }
+
+    deleteSelected(): void {
+        if (!this.active || this.active.activa) return;
+
+        if (!window.confirm(`Se eliminará la encuesta "${this.active.nombre}". ¿Deseas continuar?`)) {
+            return;
+        }
+
+        const deletedId = this.active.id;
+        this.ciesService.deleteMetodologia(deletedId).subscribe({
+            next: () => {
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Encuesta eliminada',
+                    detail: 'La encuesta se eliminó correctamente.'
+                });
+                this.load(this.activeMetodologiaId);
+            },
+            error: (error) => {
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: this.extractErrorMessage(error, 'No se pudo eliminar la encuesta')
+                });
+            }
+        });
+    }
+
     openComparativo(): void {
         this.showComparativo = true;
         this.comparativoVersion1 = this.active?.id || null;
@@ -806,9 +1092,9 @@ export class MetodologiaPage implements OnInit {
         if (!this.active) return;
 
         this.ciesService.duplicateMetodologia(this.active.id).subscribe({
-            next: () => {
+            next: (created) => {
                 this.messageService.add({ severity: 'success', summary: 'Versión duplicada', detail: 'Se creó una nueva versión basada en la configuración actual' });
-                this.load();
+                this.load(created.id);
             },
             error: (err) => {
                 this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo duplicar la versión' });
@@ -851,12 +1137,13 @@ export class MetodologiaPage implements OnInit {
             preguntas: this.editor.preguntas
         };
 
-        this.ciesService.updateMetodologia(this.editor.id, payload).subscribe({
+        const editedId = this.editor.id;
+        this.ciesService.updateMetodologia(editedId, payload).subscribe({
             next: () => {
                 this.showEditor = false;
                 this.editor = null;
                 this.cdr.detectChanges();
-                this.load();
+                this.load(editedId);
                 this.messageService.add({
                     severity: 'success',
                     summary: '✅ Configuración actualizada',
@@ -877,6 +1164,56 @@ export class MetodologiaPage implements OnInit {
                 });
             }
         });
+    }
+
+    selectMetodologia(id: number | null): void {
+        this.selectedMetodologiaId = id;
+        this.active = this.metodologias.find((item) => item.id === id) || null;
+        this.cdr.detectChanges();
+    }
+
+    private createEmptyMetodologiaForm(): CreateMetodologiaForm {
+        return {
+            nombre: '',
+            descripcion: '',
+            comentarioCambio: '',
+            templateId: null
+        };
+    }
+
+    private buildMetodologiaPayload(
+        template: Metodologia,
+        overrides: { nombre: string; descripcion: string; comentarioCambio: string }
+    ): Partial<Metodologia> {
+        return {
+            nombre: overrides.nombre,
+            descripcion: overrides.descripcion,
+            formulaTexto: template.formulaTexto,
+            reglaNormalizacion: template.reglaNormalizacion,
+            umbralPobre: template.umbralPobre,
+            umbralExcluido: template.umbralExcluido,
+            umbralSubatendido: template.umbralSubatendido,
+            comentarioCambio: overrides.comentarioCambio,
+            preguntas: template.preguntas.map((pregunta) => ({
+                orden: pregunta.orden,
+                numeroVisible: pregunta.numeroVisible,
+                codigoVariable: pregunta.codigoVariable,
+                tipo: pregunta.tipo,
+                seccion: pregunta.seccion,
+                etiqueta: pregunta.etiqueta,
+                obligatoria: pregunta.obligatoria,
+                metadato: pregunta.metadato,
+                ponderacion: pregunta.ponderacion,
+                logicaCondicional: pregunta.logicaCondicional,
+                validacionTexto: pregunta.validacionTexto,
+                opciones: pregunta.opciones.map((opcion) => ({
+                    orden: opcion.orden,
+                    codigo: opcion.codigo,
+                    etiqueta: opcion.etiqueta,
+                    valorNumerico: opcion.valorNumerico
+                }))
+            })) as unknown as Metodologia['preguntas']
+        } as Partial<Metodologia>;
     }
 
     private extractErrorMessage(error: unknown, fallback: string): string {

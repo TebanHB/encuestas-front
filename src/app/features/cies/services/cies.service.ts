@@ -301,7 +301,7 @@ export class CiesService {
     }
 
     duplicateMetodologia(id: number): Observable<Metodologia> {
-        return this.http.post<Metodologia>(`${this.apiBase}/metodologias/${id}/duplicar`, {});
+        return this.http.post<Metodologia>(`${this.apiBase}/metodologias/${id}/duplicar`, {}).pipe(tap(() => this.resetAllCaches()));
     }
 
     deleteMetodologia(id: number): Observable<void> {
