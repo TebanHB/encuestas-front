@@ -153,7 +153,7 @@ interface ValidationError {
                 <!-- Tabla -->
                 <p-table *ngIf="filteredPendientes.length" [value]="filteredPendientes"
                     [tableStyle]="{ 'min-width': '76rem' }" responsiveLayout="scroll"
-                    [paginator]="true" [rows]="10" [rowsPerPageOptions]="[5, 10, 20]"
+                    [paginator]="true" [rows]="5" [rowsPerPageOptions]="[5, 10, 20]"
                     class="cies-table">
                     <ng-template pTemplate="header">
                         <tr>
@@ -289,6 +289,8 @@ interface ValidationError {
                                         </div>
                                     </div>
                                     <div class="opcion-label">{{ opcion.etiqueta }}</div>
+                                    <i class="pi pi-check opcion-check"
+                                        *ngIf="answers[question.id]?.codigoOpcion === opcion.codigo"></i>
                                 </div>
                             </div>
                         </div>
@@ -683,14 +685,14 @@ interface ValidationError {
 
         .opcion-card:hover {
             border-color: var(--primary-color);
-            background: var(--primary-color);
-            opacity: 0.06;
+            background: rgba(16, 185, 129, 0.08);
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.12);
         }
 
         .opcion-card.opcion-selected {
             border-color: var(--primary-color);
-            background: var(--primary-color);
-            opacity: 0.1;
+            background: rgba(16, 185, 129, 0.14);
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.18);
         }
 
         .opcion-card.opcion-invalid {
@@ -729,6 +731,13 @@ interface ValidationError {
         .opcion-label {
             font-size: 0.88rem;
             color: var(--text-color);
+            flex: 1;
+        }
+
+        .opcion-check {
+            color: var(--primary-color);
+            font-size: 0.9rem;
+            flex-shrink: 0;
         }
 
         .input-texto, .input-texto-largo {
@@ -823,7 +832,7 @@ interface ValidationError {
         }
 
         .dialog-intro-text {
-            color: var(--text-color-secondary);
+            color: var(--text-color);
             font-size: 0.9rem;
             line-height: 1.5;
             margin: 0 0 1.5rem;
@@ -875,8 +884,7 @@ interface ValidationError {
         .registro-field input:focus {
             border-color: var(--primary-color);
             outline: none;
-            box-shadow: 0 0 0 2px var(--primary-color);
-            opacity: 0.15;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18);
         }
 
         .dialog-footer-actions {
@@ -1086,7 +1094,11 @@ export class EntrevistasPage implements OnInit, OnDestroy {
                 this.cdr.detectChanges();
             },
             error: (err) => {
-                this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar las personas pendientes.' });
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: this.extractErrorMessage(err, 'No se pudieron cargar las personas pendientes.')
+                });
                 console.error('Error loading pendientes:', err);
             }
         });
@@ -1122,7 +1134,11 @@ export class EntrevistasPage implements OnInit, OnDestroy {
                 }, 200);
             },
             error: (err) => {
-                this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo iniciar la entrevista.' });
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: this.extractErrorMessage(err, 'No se pudo iniciar la entrevista.')
+                });
                 console.error('Error starting interview:', err);
             }
         });
@@ -1488,6 +1504,19 @@ export class EntrevistasPage implements OnInit, OnDestroy {
             .toLowerCase()
             .normalize('NFD')
             .replace(/[\\u0300-\\u036f]/g, '');
+    }
+
+    private extractErrorMessage(error: unknown, fallback: string): string {
+        const payload = error as {
+            error?: { message?: string; detail?: string; error?: string };
+            message?: string;
+        } | null;
+
+        return payload?.error?.message
+            || payload?.error?.detail
+            || payload?.error?.error
+            || payload?.message
+            || fallback;
     }
 }
 

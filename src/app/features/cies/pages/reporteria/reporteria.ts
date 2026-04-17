@@ -113,11 +113,15 @@ interface ReportFilters {
                     </div>
                     <div>
                         <label>Regional</label>
-                        <input pInputText [(ngModel)]="filters.regional" class="w-full" placeholder="Todas" />
+                        <p-select [options]="regionalOptions" [(ngModel)]="filters.regional"
+                            optionLabel="label" optionValue="value" appendTo="body" class="w-full"
+                            placeholder="Todas"></p-select>
                     </div>
                     <div>
                         <label>Clínica</label>
-                        <input pInputText [(ngModel)]="filters.clinica" class="w-full" placeholder="Todas" />
+                        <p-select [options]="clinicaOptions" [(ngModel)]="filters.clinica"
+                            optionLabel="label" optionValue="value" appendTo="body" class="w-full"
+                            placeholder="Todas"></p-select>
                     </div>
                     <div>
                         <label>Versión metodológica</label>
@@ -260,7 +264,8 @@ interface ReportFilters {
                     <section class="card" style="margin-top: 1rem;" *ngIf="resumen.tendencias.length">
                         <h4 style="margin: 0 0 1rem; font-size: 0.95rem;">Detalle de tendencias</h4>
                         <p-table [value]="resumen.tendencias" [tableStyle]="{ 'min-width': '48rem' }"
-                            responsiveLayout="scroll" class="cies-table">
+                            responsiveLayout="scroll" [paginator]="true" [rows]="5"
+                            [rowsPerPageOptions]="[5, 10, 20]" class="cies-table">
                             <ng-template pTemplate="header">
                                 <tr>
                                     <th>Período</th>
@@ -302,7 +307,7 @@ interface ReportFilters {
                     <section class="card" style="margin-top: 1rem;">
                         <h4 style="margin: 0 0 1rem; font-size: 0.95rem;">Tabla comparativa detallada</h4>
                         <p-table [value]="resumen.comparativoClinicas" [tableStyle]="{ 'min-width': '58rem' }"
-                            [paginator]="true" [rows]="10" responsiveLayout="scroll"
+                            [paginator]="true" [rows]="5" [rowsPerPageOptions]="[5, 10, 20]" responsiveLayout="scroll"
                             class="cies-table">
                             <ng-template pTemplate="header">
                                 <tr>
@@ -358,7 +363,7 @@ interface ReportFilters {
                             </div>
                             <div>
                                 <p-table [value]="distribucion.items" [tableStyle]="{ 'min-width': '24rem' }"
-                                    [paginator]="true" [rows]="8" responsiveLayout="scroll"
+                                    [paginator]="true" [rows]="5" [rowsPerPageOptions]="[5, 10, 20]" responsiveLayout="scroll"
                                     class="cies-table">
                                     <ng-template pTemplate="header">
                                         <tr>
@@ -675,7 +680,11 @@ export class ReporteriaPage implements OnInit {
                 { label: 'Todas', value: '' },
                 ...regionales.map((r) => ({ label: r, value: r }))
             ];
+            return;
         }
+
+        this.regionalOptions = [{ label: 'Todas', value: '' }];
+        this.clinicaOptions = [{ label: 'Todas', value: '' }];
     }
 
     resetFilters(): void {

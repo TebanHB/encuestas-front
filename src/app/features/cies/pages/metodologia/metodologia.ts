@@ -13,6 +13,7 @@ import { AccordionModule } from 'primeng/accordion';
 import { Toast } from 'primeng/toast';
 import { TabsModule } from 'primeng/tabs';
 import { SelectModule } from 'primeng/select';
+import { AuthService } from '../../../../core/auth/auth.service';
 import { CiesInfoHintComponent } from '../../components/cies-info-hint';
 import { CiesService, Metodologia, MetodologiaComparativo } from '../../services/cies.service';
 
@@ -126,9 +127,13 @@ interface PreguntaEdit {
                 </p-accordion>
 
                 <div class="cies-actions-row">
-                    <button pButton type="button" label="Editar configuración" icon="pi pi-pencil" (click)="openEdit(active)"></button>
+                    <button *ngIf="canEditConfiguration" pButton type="button" label="Editar configuración" icon="pi pi-pencil" (click)="openEdit(active)"></button>
                     <button pButton type="button" label="Comparar versiones" icon="pi pi-clone" severity="secondary" [outlined]="true" (click)="openComparativo()"></button>
                     <button pButton type="button" label="Duplicar versión" icon="pi pi-copy" severity="info" [outlined]="true" (click)="duplicateVersion()"></button>
+                </div>
+
+                <div class="cies-soft-note" *ngIf="!canEditConfiguration">
+                    Puedes revisar esta configuración, pero solo un administrador puede editarla.
                 </div>
             </section>
 
@@ -434,7 +439,7 @@ interface PreguntaEdit {
         }
 
         .pregunta-row.pregunta-metadato {
-            opacity: 0.6;
+            opacity: 0.82;
         }
 
         .pregunta-info {
@@ -544,7 +549,7 @@ interface PreguntaEdit {
         }
 
         .muted-row {
-            opacity: 0.5;
+            opacity: 0.76;
         }
 
         .badge-metadato {
@@ -707,6 +712,7 @@ interface PreguntaEdit {
     `]
 })
 export class MetodologiaPage implements OnInit {
+    private authService = inject(AuthService);
     private ciesService = inject(CiesService);
     private cdr = inject(ChangeDetectorRef);
     private messageService = inject(MessageService);
@@ -719,6 +725,10 @@ export class MetodologiaPage implements OnInit {
     comparativoData: MetodologiaComparativo[] = [];
     comparativoVersion1: number | null = null;
     comparativoVersion2: number | null = null;
+
+    get canEditConfiguration(): boolean {
+        return this.authService.isAdministrador();
+    }
 
     ngOnInit(): void {
         this.load();
@@ -808,6 +818,15 @@ export class MetodologiaPage implements OnInit {
     }
 
     openEdit(item: Metodologia): void {
+        if (!this.canEditConfiguration) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Sin permisos',
+                detail: 'Solo un administrador puede editar la configuración'
+            });
+            return;
+        }
+
         this.editor = JSON.parse(JSON.stringify(item)) as Metodologia;
         this.showEditor = true;
     }
@@ -846,8 +865,30 @@ export class MetodologiaPage implements OnInit {
             },
             error: (error) => {
                 console.error('Error saving methodology:', error);
-                this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar la configuración' });
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: this.extractErrorMessage(
+                        error,
+                        this.canEditConfiguration
+                            ? 'No se pudo guardar la configuración'
+                            : 'Tu usuario no tiene permisos para editar la configuración'
+                    )
+                });
             }
         });
+    }
+
+    private extractErrorMessage(error: unknown, fallback: string): string {
+        const payload = error as {
+            error?: { message?: string; detail?: string; error?: string };
+            message?: string;
+        } | null;
+
+        return payload?.error?.message
+            || payload?.error?.detail
+            || payload?.error?.error
+            || payload?.message
+            || fallback;
     }
 }

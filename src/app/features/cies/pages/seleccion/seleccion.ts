@@ -203,7 +203,8 @@ import { CiesService, EjecucionSeleccion, LoteMedicare } from '../../services/ci
                         </div>
                     </div>
 
-                    <p-table [value]="lotesPendientes" [tableStyle]="{ 'min-width': '72rem' }" responsiveLayout="scroll" class="cies-table">
+                    <p-table [value]="lotesPendientes" [tableStyle]="{ 'min-width': '72rem' }" responsiveLayout="scroll"
+                        [paginator]="true" [rows]="5" [rowsPerPageOptions]="[5, 10, 20]" class="cies-table">
                         <ng-template pTemplate="header">
                             <tr>
                                 <th>ID</th>
@@ -217,6 +218,7 @@ import { CiesService, EjecucionSeleccion, LoteMedicare } from '../../services/ci
                         </ng-template>
                         <ng-template pTemplate="body" let-item>
                             <tr>
+                                <td>#{{ item.id }}</td>
                                 <td class="font-medium">{{ item.nombre }}</td>
                                 <td><p-tag [value]="item.estado | estadoTexto" severity="warn"></p-tag></td>
                                 <td>{{ item.totalPersonas }}</td>
@@ -242,7 +244,8 @@ import { CiesService, EjecucionSeleccion, LoteMedicare } from '../../services/ci
                         </div>
                     </div>
 
-                    <p-table [value]="lotesProcesados" [tableStyle]="{ 'min-width': '62rem' }" responsiveLayout="scroll" class="cies-table">
+                    <p-table [value]="lotesProcesados" [tableStyle]="{ 'min-width': '62rem' }" responsiveLayout="scroll"
+                        [paginator]="true" [rows]="5" [rowsPerPageOptions]="[5, 10, 20]" class="cies-table">
                         <ng-template pTemplate="header">
                             <tr>
                                 <th>ID</th>
@@ -255,6 +258,7 @@ import { CiesService, EjecucionSeleccion, LoteMedicare } from '../../services/ci
                         </ng-template>
                         <ng-template pTemplate="body" let-item>
                             <tr>
+                                <td>#{{ item.id }}</td>
                                 <td class="font-medium">{{ item.nombre }}</td>
                                 <td><p-tag [value]="item.estado | estadoTexto" severity="success"></p-tag></td>
                                 <td>{{ item.totalPersonas }}</td>
@@ -277,7 +281,8 @@ import { CiesService, EjecucionSeleccion, LoteMedicare } from '../../services/ci
                     </div>
                 </div>
 
-                <p-table [value]="ejecuciones" [tableStyle]="{ 'min-width': '58rem' }" responsiveLayout="scroll" class="cies-table">
+                <p-table [value]="ejecuciones" [tableStyle]="{ 'min-width': '58rem' }" responsiveLayout="scroll"
+                    [paginator]="true" [rows]="5" [rowsPerPageOptions]="[5, 10, 20]" class="cies-table">
                     <ng-template pTemplate="header">
                         <tr>
                             <th>Listado</th>
@@ -495,11 +500,14 @@ import { CiesService, EjecucionSeleccion, LoteMedicare } from '../../services/ci
                 top: 50%;
                 left: 50%;
                 transform: translate(-50%, -50%);
-                color: var(--text-color-secondary);
+                color: var(--text-color);
                 font-size: 0.88rem;
                 pointer-events: none;
                 opacity: 0;
                 transition: opacity 0.2s ease;
+                background: rgba(15, 23, 42, 0.08);
+                padding: 0.45rem 0.75rem;
+                border-radius: 999px;
             }
 
             .carga-textarea-hint.visible {
@@ -723,7 +731,11 @@ export class SeleccionPage implements OnInit {
                 },
                 error: (error) => {
                     console.error('Error registering batch:', error);
-                    this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo registrar el listado' });
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: this.extractErrorMessage(error, 'No se pudo registrar el listado')
+                    });
                 }
             });
         } catch (error) {
@@ -927,5 +939,18 @@ export class SeleccionPage implements OnInit {
             .normalize('NFD')
             .replace(/[\u0300-\u036f]/g, '')
             .replace(/[^a-z0-9]/g, '');
+    }
+
+    private extractErrorMessage(error: unknown, fallback: string): string {
+        const payload = error as {
+            error?: { message?: string; detail?: string; error?: string };
+            message?: string;
+        } | null;
+
+        return payload?.error?.message
+            || payload?.error?.detail
+            || payload?.error?.error
+            || payload?.message
+            || fallback;
     }
 }
