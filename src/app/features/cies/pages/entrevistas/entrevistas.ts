@@ -1085,6 +1085,23 @@ interface ValidationError {
                 width: 100%;
             }
 
+            .dialog-footer-actions {
+                flex-direction: column;
+            }
+
+            .dialog-footer-actions button {
+                width: 100%;
+                min-width: 0;
+            }
+
+            ::ng-deep .dialog-registro-directo .p-dialog-content {
+                padding: 1rem;
+            }
+
+            ::ng-deep .dialog-registro-directo .p-dialog-footer {
+                padding: 0.85rem 1rem 1rem;
+            }
+
             .close-confirm-actions {
                 flex-direction: column;
             }

@@ -857,6 +857,42 @@ interface CreateMetodologiaForm {
             font-size: 0.95rem;
             font-weight: 700;
         }
+
+        @media (max-width: 768px) {
+            .cies-actions-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .cies-actions-row button,
+            .crud-toolbar__actions button,
+            .comparativo-btn-wrapper button {
+                width: 100%;
+            }
+
+            .pregunta-ponderacion {
+                width: 100%;
+                margin-left: 0;
+            }
+
+            .comparativo-selectors-row,
+            .comparativo-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .comparativo-btn-wrapper {
+                height: auto;
+            }
+
+            .comparativo-col {
+                padding: 1rem;
+            }
+
+            .comparativo-col-title {
+                align-items: flex-start;
+                flex-wrap: wrap;
+            }
+        }
     `]
 })
 export class MetodologiaPage implements OnInit {

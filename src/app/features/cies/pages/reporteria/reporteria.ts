@@ -61,8 +61,6 @@ interface SelectOption {
                     </p>
                 </div>
                 <div class="cies-hero__actions">
-                    <button pButton type="button" label="Ver todo" icon="pi pi-eye"
-                        severity="secondary" [outlined]="true" [disabled]="loading || downloading" (click)="resetFilters()"></button>
                     <button pButton type="button" label="Excel" icon="pi pi-file-excel"
                         severity="success" [loading]="downloading" [disabled]="loading || downloading || !resumen" (click)="download('excel')"></button>
                     <button pButton type="button" label="CSV" icon="pi pi-download"
@@ -383,7 +381,7 @@ interface SelectOption {
                             <app-cies-info-hint text="Muestra cómo se repartieron las respuestas en una pregunta específica del instrumento."></app-cies-info-hint>
                         </div>
 
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1rem;">
+                        <div class="distribution-layout">
                             <div class="chart-container" style="min-height: 20rem;">
                                 <p-chart type="pie" [data]="distributionChartData" [options]="pieChartOptions"></p-chart>
                             </div>
@@ -503,6 +501,13 @@ interface SelectOption {
 
         .chart-container {
             padding: 1rem 0;
+        }
+
+        .distribution-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            gap: 1.5rem;
+            margin-top: 1rem;
         }
 
         ::ng-deep .chart-container canvas {
@@ -666,6 +671,15 @@ interface SelectOption {
 
             .chart-container {
                 min-height: 18rem;
+            }
+
+            .distribution-layout {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .cies-chart-card {
+                min-height: auto;
             }
 
             p-chart canvas {

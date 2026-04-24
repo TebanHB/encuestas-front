@@ -16,7 +16,7 @@ import { AuthService, LoginResponse } from '../../../core/auth/auth.service';
     imports: [CommonModule, ButtonModule, CheckboxModule, InputTextModule, PasswordModule, FormsModule, RouterModule, RippleModule, AppFloatingConfigurator],
     template: `
         <app-floating-configurator />
-        <div class="bg-surface-50 dark:bg-surface-950 flex items-center justify-center min-h-screen min-w-screen overflow-hidden">
+        <div class="login-page bg-surface-50 dark:bg-surface-950 flex items-center justify-center min-h-screen min-w-screen">
             <div class="flex flex-col items-center justify-center">
                 <div class="login-shell">
                     <div class="login-card w-full bg-surface-0 dark:bg-surface-900 py-20 px-8 sm:px-20">
@@ -86,6 +86,7 @@ import { AuthService, LoginResponse } from '../../../core/auth/auth.service';
     styles: [
         `
             .login-shell {
+                width: min(100%, 32rem);
                 border-radius: 56px;
                 padding: 0.3rem;
                 background: linear-gradient(180deg, #0f766e 10%, rgba(33, 150, 243, 0) 30%);
@@ -93,6 +94,12 @@ import { AuthService, LoginResponse } from '../../../core/auth/auth.service';
 
             .login-card {
                 border-radius: 53px;
+            }
+
+            .login-page {
+                min-height: 100dvh;
+                padding: clamp(1rem, 4vw, 2rem);
+                overflow: auto;
             }
 
             .login-logo {
@@ -119,6 +126,37 @@ import { AuthService, LoginResponse } from '../../../core/auth/auth.service';
                 background: #9ca3af !important;
                 border-color: #9ca3af !important;
                 opacity: 0.7;
+            }
+
+            @media (max-width: 520px) {
+                .login-page {
+                    align-items: flex-start;
+                    padding: 0.85rem;
+                }
+
+                .login-shell {
+                    border-radius: 1.6rem;
+                    padding: 0.22rem;
+                }
+
+                .login-card {
+                    border-radius: 1.45rem;
+                    padding: 1.4rem 1rem !important;
+                }
+
+                .login-logo {
+                    width: 4.15rem;
+                    height: 4.15rem;
+                }
+
+                .login-card :where(.text-3xl) {
+                    font-size: 1.55rem !important;
+                    line-height: 1.15;
+                }
+
+                .login-card :where(.text-xl) {
+                    font-size: 1rem !important;
+                }
             }
         `
     ]

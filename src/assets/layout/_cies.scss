@@ -512,6 +512,16 @@ body .p-connected-overlay {
         border-radius: 0.9rem;
     }
 
+    .p-tablist-tab-list {
+        overflow-x: auto;
+        scrollbar-width: thin;
+    }
+
+    .p-tab {
+        flex: 0 0 auto;
+        white-space: nowrap;
+    }
+
     .text-muted {
         color: var(--cies-muted);
     }
@@ -543,16 +553,30 @@ body .p-connected-overlay {
         .cies-hero {
             grid-template-columns: 1fr;
             min-height: auto;
+            padding: clamp(1rem, 4vw, 1.35rem);
         }
 
         .cies-hero__actions {
             justify-content: flex-start;
+        }
+
+        .cies-hero__title {
+            font-size: clamp(1.6rem, 7vw, 2.15rem);
+            line-height: 1.08;
+        }
+
+        .cies-hero__copy {
+            font-size: 0.95rem;
         }
     }
 }
 
 @media (max-width: 768px) {
     .layout-main {
+        .cies-page {
+            gap: 0.85rem;
+        }
+
         .cies-form-grid--two,
         .cies-form-grid--three,
         .cies-form-grid--filters {
@@ -567,6 +591,96 @@ body .p-connected-overlay {
         .cies-section-head {
             flex-direction: column;
             align-items: stretch;
+        }
+
+        .cies-hero__actions,
+        .cies-actions-row,
+        .cies-inline-actions,
+        .cies-guidance-actions,
+        .cies-empty-state__actions {
+            width: 100%;
+            align-items: stretch;
+        }
+
+        .cies-hero__actions > a,
+        .cies-inline-actions > a,
+        .cies-guidance-actions > a,
+        .cies-empty-state__actions > a,
+        .cies-hero__actions .p-button,
+        .cies-actions-row .p-button,
+        .cies-inline-actions .p-button,
+        .cies-guidance-actions .p-button,
+        .cies-empty-state__actions .p-button {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .cies-stats-grid,
+        .cies-chart-grid,
+        .cies-summary-grid,
+        .cies-guidance-grid,
+        .cies-question-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .cies-table .p-datatable-table {
+            min-width: 42rem;
+        }
+
+        .cies-dialog {
+            width: 96vw !important;
+            max-width: 96vw !important;
+        }
+
+        .cies-dialog .p-dialog {
+            max-height: 92dvh;
+        }
+
+        .cies-dialog .p-dialog-content {
+            padding: 1rem;
+        }
+
+        .cies-dialog .p-dialog-footer {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+            padding: 0.85rem 1rem 1rem;
+        }
+
+        .cies-dialog .p-dialog-footer .p-button {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .cies-table .cies-inline-actions,
+        .cies-table .cies-inline-actions .p-button {
+            width: auto;
+        }
+    }
+}
+
+@media (max-width: 480px) {
+    .layout-main {
+        .cies-hero {
+            border-radius: 1.15rem;
+        }
+
+        .cies-chip {
+            max-width: 100%;
+            line-height: 1.25;
+            white-space: normal;
+        }
+
+        .cies-card-caption {
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .cies-subcard,
+        .cies-soft-note,
+        .cies-question-card {
+            border-radius: 0.9rem;
+            padding: 0.85rem;
         }
     }
 }
