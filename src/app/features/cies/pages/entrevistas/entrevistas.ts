@@ -70,20 +70,6 @@ interface ValidationError {
             </section>
 
             <!-- ===================== VISTA: Lista de pendientes ===================== -->
-            <section *ngIf="!currentInterview" class="direct-registration-callout">
-                <div class="direct-registration-callout__icon">
-                    <i class="pi pi-user-plus"></i>
-                </div>
-                <div class="direct-registration-callout__content">
-                    <span class="direct-registration-eyebrow">Atajo rápido</span>
-                    <h2>¿Llegó una persona que no está en la lista?</h2>
-                    <p>Regístrala aquí y el sistema abrirá su entrevista automáticamente.</p>
-                </div>
-                <button pButton type="button" label="Registrar persona nueva" icon="pi pi-arrow-right"
-                    class="direct-registration-button direct-registration-button--callout"
-                    [disabled]="isInterviewActionBusy" (click)="openDirectRegistration()"></button>
-            </section>
-
             <section *ngIf="!currentInterview" class="cies-guidance-grid">
                 <article class="card cies-guidance-card">
                     <div class="cies-guidance-step">1</div>
@@ -143,19 +129,19 @@ interface ValidationError {
                     <div class="cies-field--wide">
                         <label>🔍 Buscar persona</label>
                         <input pInputText [(ngModel)]="searchTerm" class="w-full" pTooltip="Busca por nombre, documento, código o clínica"
-                            placeholder="Nombre, documento, código o clínica..." />
+                            placeholder="Nombre, documento, código o clínica..." (ngModelChange)="onFiltersChange()" />
                     </div>
                     <div>
                         <label>Clínica</label>
                         <p-select [options]="clinicaOptions" [(ngModel)]="selectedClinica"
                             optionLabel="label" optionValue="value" appendTo="body" class="w-full"
-                            placeholder="Todas las clínicas"></p-select>
+                            placeholder="Todas las clínicas" (ngModelChange)="onFiltersChange()"></p-select>
                     </div>
                     <div>
                         <label>Listado</label>
                         <p-select [options]="loteOptions" [(ngModel)]="selectedLote"
                             optionLabel="label" optionValue="value" appendTo="body" class="w-full"
-                            placeholder="Todos los listados"></p-select>
+                            placeholder="Todos los listados" (ngModelChange)="onFiltersChange()"></p-select>
                     </div>
                 </div>
 
@@ -491,53 +477,6 @@ interface ValidationError {
         <p-toast></p-toast>
     `,
     styles: [`
-        .direct-registration-callout {
-            display: grid;
-            grid-template-columns: auto minmax(0, 1fr) auto;
-            gap: 1.25rem;
-            align-items: center;
-            margin: 1.25rem 0;
-            padding: 1.35rem;
-            border-radius: 1.35rem;
-            border: 1px solid rgba(15, 118, 110, 0.28);
-            background: linear-gradient(135deg, #ecfdf5 0%, #f0fdfa 48%, #fff7ed 100%);
-            box-shadow: 0 18px 40px rgba(15, 118, 110, 0.16);
-        }
-
-        .direct-registration-callout__icon {
-            width: 4rem;
-            height: 4rem;
-            border-radius: 1.25rem;
-            display: grid;
-            place-items: center;
-            color: #ffffff;
-            background: linear-gradient(135deg, #0f766e, #14b8a6);
-            box-shadow: 0 12px 24px rgba(15, 118, 110, 0.26);
-            font-size: 1.6rem;
-        }
-
-        .direct-registration-eyebrow {
-            display: inline-flex;
-            margin-bottom: 0.25rem;
-            font-size: 0.72rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            color: #0f766e;
-        }
-
-        .direct-registration-callout h2 {
-            margin: 0;
-            color: #0f172a;
-            font-size: clamp(1.15rem, 2vw, 1.55rem);
-            font-weight: 850;
-        }
-
-        .direct-registration-callout p {
-            margin: 0.25rem 0 0;
-            color: #475569;
-            line-height: 1.45;
-        }
-
         ::ng-deep .direct-registration-button.p-button {
             border: none !important;
             color: #ffffff !important;
@@ -554,12 +493,6 @@ interface ValidationError {
 
         ::ng-deep .direct-registration-button--hero.p-button {
             padding: 0.8rem 1.1rem !important;
-        }
-
-        ::ng-deep .direct-registration-button--callout.p-button {
-            min-width: 14rem;
-            padding: 0.95rem 1.25rem !important;
-            font-size: 1rem !important;
         }
 
         .entrevista-header {
@@ -1062,18 +995,6 @@ interface ValidationError {
         }
 
         @media (max-width: 768px) {
-            .direct-registration-callout {
-                grid-template-columns: 1fr;
-                text-align: center;
-                justify-items: center;
-                padding: 1.25rem;
-            }
-
-            ::ng-deep .direct-registration-button--callout.p-button {
-                width: 100%;
-                min-width: auto;
-            }
-
             .entrevista-header {
                 flex-direction: column;
                 gap: 1rem;
@@ -1221,15 +1142,16 @@ export class EntrevistasPage implements OnInit, OnDestroy {
 
     get filteredPendientes(): PersonaElegible[] {
         const search = this.normalizeText(this.searchTerm);
+        const searchTokens = search.split(' ').filter(Boolean);
         return this.pendientes
             .filter((i) => !this.selectedClinica || i.clinica === this.selectedClinica)
             .filter((i) => !this.selectedLote || (i.loteNombre || 'Sin listado') === this.selectedLote)
             .filter((i) => {
-                if (!search) return true;
+                if (!searchTokens.length) return true;
                 const haystack = this.normalizeText(
                     [i.nombreCompleto, i.documento, i.codigoEntrevista, i.clinica, i.regional, i.loteNombre, i.medicarePersonId].filter(Boolean).join(' ')
                 );
-                return haystack.includes(search);
+                return searchTokens.every((token) => haystack.includes(token));
             })
             .sort((a, b) => {
                 const loteCompare = (a.loteNombre || '').localeCompare(b.loteNombre || '');
@@ -1623,6 +1545,10 @@ export class EntrevistasPage implements OnInit, OnDestroy {
         this.cdr.detectChanges();
     }
 
+    onFiltersChange(): void {
+        this.cdr.detectChanges();
+    }
+
     closeDirectRegistration(): void {
         if (this.directRegistrationLoading) return;
 
@@ -1732,12 +1658,15 @@ export class EntrevistasPage implements OnInit, OnDestroy {
         };
     }
 
-    private normalizeText(value: string | undefined | null): string {
-        return (value || '')
+    private normalizeText(value: unknown): string {
+        return String(value ?? '')
             .trim()
             .toLowerCase()
             .normalize('NFD')
-            .replace(/[\\u0300-\\u036f]/g, '');
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9\s-]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
     }
 
     private extractErrorMessage(error: unknown, fallback: string): string {
