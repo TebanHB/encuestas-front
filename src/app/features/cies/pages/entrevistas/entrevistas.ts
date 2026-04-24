@@ -408,7 +408,9 @@ interface ValidationError {
                         <div class="registro-field">
                             <label>Documento de identidad</label>
                             <input pInputText [(ngModel)]="directRegistrationForm.documento" class="w-full"
-                                placeholder="Ejemplo: CI-12345678" />
+                                inputmode="numeric" pattern="[0-9]*" maxlength="12"
+                                placeholder="Ejemplo: 12345678"
+                                (ngModelChange)="onDirectDocumentChange($event)" />
                         </div>
                         <div class="registro-field">
                             <label>ID Medicare</label>
@@ -417,13 +419,18 @@ interface ValidationError {
                         </div>
                         <div class="registro-field">
                             <label>Clínica <span class="required-star">*</span></label>
-                            <input pInputText [(ngModel)]="directRegistrationForm.clinica" class="w-full"
-                                placeholder="Ejemplo: Clínica Central" />
+                            <p-select [options]="ciesClinicOptions"
+                                [(ngModel)]="directRegistrationForm.clinica"
+                                optionLabel="label" optionValue="value" appendTo="body" class="w-full"
+                                placeholder="Selecciona una clínica"
+                                (ngModelChange)="onDirectClinicChange($event)"></p-select>
                         </div>
                         <div class="registro-field">
                             <label>Regional <span class="required-star">*</span></label>
-                            <input pInputText [(ngModel)]="directRegistrationForm.regional" class="w-full"
-                                placeholder="Ejemplo: La Paz" />
+                            <p-select [options]="ciesRegionalOptions"
+                                [(ngModel)]="directRegistrationForm.regional"
+                                optionLabel="label" optionValue="value" appendTo="body" class="w-full"
+                                placeholder="Selecciona una ciudad"></p-select>
                         </div>
                         <div class="registro-field">
                             <label>Fecha de consulta <span class="required-star">*</span></label>
@@ -1079,6 +1086,32 @@ export class EntrevistasPage implements OnInit, OnDestroy {
         { label: 'Control', value: 'CONTROL' }
     ];
 
+    readonly ciesRegionalOptions = [
+        { label: 'Cobija', value: 'Cobija' },
+        { label: 'Cochabamba', value: 'Cochabamba' },
+        { label: 'El Alto', value: 'El Alto' },
+        { label: 'La Paz', value: 'La Paz' },
+        { label: 'Oruro', value: 'Oruro' },
+        { label: 'Potosí', value: 'Potosí' },
+        { label: 'Riberalta', value: 'Riberalta' },
+        { label: 'Santa Cruz de la Sierra', value: 'Santa Cruz de la Sierra' },
+        { label: 'Sucre', value: 'Sucre' },
+        { label: 'Tarija', value: 'Tarija' }
+    ];
+
+    readonly ciesClinicOptions = [
+        { label: 'CIES Cobija', value: 'CIES Cobija', regional: 'Cobija' },
+        { label: 'CIES Cochabamba', value: 'CIES Cochabamba', regional: 'Cochabamba' },
+        { label: 'CIES El Alto', value: 'CIES El Alto', regional: 'El Alto' },
+        { label: 'CIES La Paz', value: 'CIES La Paz', regional: 'La Paz' },
+        { label: 'CIES Oruro', value: 'CIES Oruro', regional: 'Oruro' },
+        { label: 'CIES Potosí', value: 'CIES Potosí', regional: 'Potosí' },
+        { label: 'CIES Riberalta', value: 'CIES Riberalta', regional: 'Riberalta' },
+        { label: 'CIES Santa Cruz', value: 'CIES Santa Cruz', regional: 'Santa Cruz de la Sierra' },
+        { label: 'CIES Sucre', value: 'CIES Sucre', regional: 'Sucre' },
+        { label: 'CIES Tarija', value: 'CIES Tarija', regional: 'Tarija' }
+    ];
+
     directRegistrationForm = this.createDirectRegistrationForm();
 
     get isInterviewActionBusy(): boolean {
@@ -1566,6 +1599,20 @@ export class EntrevistasPage implements OnInit, OnDestroy {
         this.cdr.detectChanges();
     }
 
+    onDirectDocumentChange(value: string): void {
+        const normalizado = this.normalizeIdentityDocument(value);
+        if (this.directRegistrationForm.documento !== normalizado) {
+            this.directRegistrationForm.documento = normalizado;
+        }
+    }
+
+    onDirectClinicChange(value: string): void {
+        const seleccion = this.ciesClinicOptions.find((item) => item.value === value);
+        if (seleccion) {
+            this.directRegistrationForm.regional = seleccion.regional;
+        }
+    }
+
     closeDirectRegistration(): void {
         if (this.directRegistrationLoading) return;
 
@@ -1584,6 +1631,7 @@ export class EntrevistasPage implements OnInit, OnDestroy {
         const apellido = this.directRegistrationForm.apellido.trim();
         const clinica = this.directRegistrationForm.clinica.trim();
         const regional = this.directRegistrationForm.regional.trim();
+        const documento = this.normalizeIdentityDocument(this.directRegistrationForm.documento);
 
         if (!nombre || !apellido || !clinica || !regional || !this.directRegistrationForm.fechaConsulta) {
             this.directRegistrationError = 'Completa nombre, apellido, clínica, regional y fecha de consulta.';
@@ -1596,8 +1644,8 @@ export class EntrevistasPage implements OnInit, OnDestroy {
             nombre,
             apellido,
             nombreCompleto: `${nombre} ${apellido}`.trim(),
-            ci: this.directRegistrationForm.documento.trim(),
-            documento: this.directRegistrationForm.documento.trim(),
+            ci: documento,
+            documento,
             clinica,
             regional,
             fechaConsulta: this.directRegistrationForm.fechaConsulta,
@@ -1660,6 +1708,10 @@ export class EntrevistasPage implements OnInit, OnDestroy {
 
     isDirectRegistration(item: PersonaElegible): boolean {
         return (item.loteNombre || '').toLowerCase().startsWith('registro directo');
+    }
+
+    private normalizeIdentityDocument(value: unknown): string {
+        return String(value ?? '').replace(/\D/g, '');
     }
 
     private createDirectRegistrationForm() {
