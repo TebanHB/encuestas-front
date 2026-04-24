@@ -15,105 +15,213 @@ import { AuthService, LoginResponse } from '../../../core/auth/auth.service';
     standalone: true,
     imports: [CommonModule, ButtonModule, CheckboxModule, InputTextModule, PasswordModule, FormsModule, RouterModule, RippleModule, AppFloatingConfigurator],
     template: `
-        <app-floating-configurator />
-        <div class="login-page bg-surface-50 dark:bg-surface-950 flex items-center justify-center min-h-screen min-w-screen">
-            <div class="flex flex-col items-center justify-center">
-                <div class="login-shell">
-                    <div class="login-card w-full bg-surface-0 dark:bg-surface-900 py-20 px-8 sm:px-20">
-                        <div class="text-center mb-8">
-                            <img src="/branding/cies-logo-solo.svg" alt="CIES" class="login-logo mb-6 mx-auto" />
+        <app-floating-configurator class="login-configurator" />
+        <div class="login-page">
+            <main class="login-shell" aria-label="Inicio de sesion">
+                <section class="login-card">
+                    <header class="login-header">
+                        <img src="/branding/cies-logo-solo.svg" alt="CIES" class="login-logo" />
+                        <p class="login-kicker">CIES</p>
+                        <h1>Bienvenido</h1>
+                        <p>Inicia sesion para continuar</p>
+                    </header>
 
-                            <div class="text-surface-900 dark:text-surface-0 text-3xl font-medium mb-4">Bienvenido</div>
-                            <span class="text-muted-color font-medium">Inicia sesión para continuar</span>
-                        </div>
-
-                        <form (ngSubmit)="onLogin()" autocomplete="on">
-                            <label for="email1" class="block text-surface-900 dark:text-surface-0 text-xl font-medium mb-2">Correo</label>
+                    <form class="login-form" (ngSubmit)="onLogin()" autocomplete="on">
+                        <div class="login-field">
+                            <label for="email1">Correo</label>
                             <input
                                 pInputText
                                 id="email1"
                                 name="email"
                                 type="email"
-                                placeholder="Correo electrónico"
-                                class="w-full md:w-120 mb-8"
+                                placeholder="Correo electronico"
+                                class="w-full"
                                 [(ngModel)]="email"
                                 (input)="errorMessage = ''"
                                 autocomplete="username"
                             />
+                        </div>
 
-                            <label for="password1" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Contraseña</label>
+                        <div class="login-field">
+                            <label for="password1">Contrasena</label>
                             <p-password
                                 id="password1"
                                 name="password"
                                 [(ngModel)]="password"
-                                placeholder="Contraseña"
+                                placeholder="Contrasena"
                                 [toggleMask]="true"
-                                styleClass="mb-4"
+                                styleClass="w-full"
+                                inputStyleClass="w-full"
                                 [fluid]="true"
                                 [feedback]="false"
                                 (onInput)="errorMessage = ''"
                                 autocomplete="current-password"
                             ></p-password>
+                        </div>
 
-                            <div class="flex items-center justify-between mt-2 mb-8 gap-8">
-                                <div class="flex items-center">
-                                    <p-checkbox [(ngModel)]="rememberMe" name="rememberme" id="rememberme1" binary class="mr-2"></p-checkbox>
-                                    <label for="rememberme1">Recordarme</label>
-                                </div>
+                        <div class="login-options">
+                            <div class="login-remember">
+                                <p-checkbox [(ngModel)]="rememberMe" name="rememberme" id="rememberme1" binary></p-checkbox>
+                                <label for="rememberme1">Recordarme</label>
                             </div>
+                        </div>
 
-                            <div *ngIf="errorMessage" class="mb-4">
-                                <div class="flex items-center gap-2 text-red-500 font-medium">
-                                    <i class="pi pi-exclamation-circle"></i>
-                                    <span>{{ errorMessage }}</span>
-                                </div>
-                            </div>
+                        <div *ngIf="errorMessage" class="login-error">
+                            <i class="pi pi-exclamation-circle"></i>
+                            <span>{{ errorMessage }}</span>
+                        </div>
 
-                            <button
-                                pButton
-                                type="submit"
-                                [label]="loading ? 'Ingresando...' : 'Iniciar sesión'"
-                                icon="pi pi-sign-in"
-                                class="w-full login-btn"
-                                [disabled]="loading"
-                            ></button>
-                        </form>
-                    </div>
-                </div>
-            </div>
+                        <button
+                            pButton
+                            type="submit"
+                            [label]="loading ? 'Ingresando...' : 'Iniciar sesion'"
+                            icon="pi pi-sign-in"
+                            class="w-full login-btn"
+                            [disabled]="loading"
+                        ></button>
+                    </form>
+                </section>
+            </main>
         </div>
     `,
     styles: [
         `
-            .login-shell {
-                width: min(100%, 32rem);
-                border-radius: 56px;
-                padding: 0.3rem;
-                background: linear-gradient(180deg, #0f766e 10%, rgba(33, 150, 243, 0) 30%);
+            :host {
+                display: block;
+                min-height: 100dvh;
             }
 
-            .login-card {
-                border-radius: 53px;
+            :host ::ng-deep .login-configurator > div {
+                z-index: 5;
             }
 
             .login-page {
                 min-height: 100dvh;
+                width: 100%;
+                display: grid;
+                place-items: center;
                 padding: clamp(1rem, 4vw, 2rem);
+                background:
+                    radial-gradient(circle at 18% 14%, rgba(20, 184, 166, 0.16), transparent 28rem),
+                    linear-gradient(145deg, var(--surface-50), var(--surface-100));
                 overflow: auto;
             }
 
+            .login-shell {
+                width: min(100%, 30rem);
+            }
+
+            .login-card {
+                width: 100%;
+                padding: clamp(1.5rem, 5vw, 3.25rem);
+                border-radius: 1.35rem;
+                background: color-mix(in srgb, var(--surface-card) 96%, transparent);
+                border: 1px solid color-mix(in srgb, var(--surface-border) 74%, transparent);
+                box-shadow: 0 24px 70px rgba(15, 23, 42, 0.14);
+                backdrop-filter: blur(16px);
+            }
+
+            .login-header {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+                gap: 0.45rem;
+                margin-bottom: 1.75rem;
+            }
+
             .login-logo {
-                width: 5rem;
-                height: 5rem;
+                width: 4.6rem;
+                height: 4.6rem;
                 object-fit: contain;
                 display: block;
+                margin-bottom: 0.35rem;
+            }
+
+            .login-kicker {
+                margin: 0;
+                color: #0f766e;
+                font-size: 0.76rem;
+                font-weight: 800;
+                letter-spacing: 0.16em;
+            }
+
+            .login-header h1 {
+                margin: 0;
+                color: var(--text-color);
+                font-size: clamp(1.7rem, 5vw, 2.15rem);
+                line-height: 1.1;
+                font-weight: 800;
+            }
+
+            .login-header p:not(.login-kicker) {
+                margin: 0;
+                color: var(--text-color-secondary);
+                font-weight: 600;
+            }
+
+            .login-form,
+            .login-field {
+                display: flex;
+                flex-direction: column;
+            }
+
+            .login-form {
+                gap: 1rem;
+            }
+
+            .login-field {
+                gap: 0.45rem;
+            }
+
+            .login-field label {
+                color: var(--text-color);
+                font-size: 0.92rem;
+                font-weight: 700;
+            }
+
+            :host ::ng-deep .login-field .p-inputtext,
+            :host ::ng-deep .login-field .p-password-input {
+                min-height: 2.9rem;
+                border-radius: 0.85rem;
+                font-size: 1rem;
+            }
+
+            .login-options {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 1rem;
+                min-height: 1.8rem;
+            }
+
+            .login-remember {
+                display: flex;
+                align-items: center;
+                gap: 0.55rem;
+                color: var(--text-color-secondary);
+                font-weight: 600;
+            }
+
+            .login-error {
+                display: flex;
+                align-items: flex-start;
+                gap: 0.55rem;
+                padding: 0.75rem 0.85rem;
+                border-radius: 0.85rem;
+                background: color-mix(in srgb, #ef4444 10%, transparent);
+                color: #dc2626;
+                font-weight: 700;
+                line-height: 1.35;
             }
 
             .login-btn {
+                min-height: 2.9rem;
                 background: #0f766e !important;
                 border-color: #0f766e !important;
                 color: #fff !important;
                 font-weight: 700;
+                border-radius: 0.9rem;
                 transition: all 0.2s ease;
             }
 
@@ -129,33 +237,74 @@ import { AuthService, LoginResponse } from '../../../core/auth/auth.service';
             }
 
             @media (max-width: 520px) {
+                :host ::ng-deep .login-configurator {
+                    display: none;
+                }
+
                 .login-page {
-                    align-items: flex-start;
-                    padding: 0.85rem;
+                    place-items: start center;
+                    padding: 0.9rem;
+                    background: var(--surface-ground);
                 }
 
                 .login-shell {
-                    border-radius: 1.6rem;
-                    padding: 0.22rem;
+                    width: 100%;
+                    min-height: calc(100dvh - 1.8rem);
+                    display: flex;
+                    align-items: center;
                 }
 
                 .login-card {
-                    border-radius: 1.45rem;
-                    padding: 1.4rem 1rem !important;
+                    padding: 1.25rem;
+                    border-radius: 1.05rem;
+                    box-shadow: 0 14px 38px rgba(15, 23, 42, 0.1);
                 }
 
                 .login-logo {
-                    width: 4.15rem;
-                    height: 4.15rem;
+                    width: 4rem;
+                    height: 4rem;
                 }
 
-                .login-card :where(.text-3xl) {
-                    font-size: 1.55rem !important;
-                    line-height: 1.15;
+                .login-header {
+                    gap: 0.35rem;
+                    margin-bottom: 1.25rem;
                 }
 
-                .login-card :where(.text-xl) {
-                    font-size: 1rem !important;
+                .login-header h1 {
+                    font-size: 1.65rem;
+                }
+
+                .login-header p:not(.login-kicker) {
+                    font-size: 0.92rem;
+                }
+
+                .login-form {
+                    gap: 0.85rem;
+                }
+
+                :host ::ng-deep .login-field .p-inputtext,
+                :host ::ng-deep .login-field .p-password-input,
+                .login-btn {
+                    min-height: 2.75rem;
+                }
+            }
+
+            @media (max-width: 360px) {
+                .login-page {
+                    padding: 0.65rem;
+                }
+
+                .login-shell {
+                    min-height: calc(100dvh - 1.3rem);
+                }
+
+                .login-card {
+                    padding: 1rem;
+                }
+
+                .login-logo {
+                    width: 3.5rem;
+                    height: 3.5rem;
                 }
             }
         `
@@ -177,7 +326,7 @@ export class Login {
         this.cdr.detectChanges();
 
         if (!this.email.trim() || !this.password.trim()) {
-            this.errorMessage = 'Debes ingresar tu correo y contraseña.';
+            this.errorMessage = 'Debes ingresar tu correo y contrasena.';
             this.cdr.detectChanges();
             return;
         }
@@ -209,7 +358,6 @@ export class Login {
                     const bodyMessage = typeof body?.message === 'string' ? body.message : '';
                     const backendMessage = bodyText || bodyMessage;
 
-                    // Log para diagnóstico
                     console.error('Login Error Details:', {
                         status,
                         statusText: err?.statusText,
@@ -219,20 +367,20 @@ export class Login {
                     });
 
                     if (status === 401) {
-                        this.errorMessage = backendMessage || 'Correo o contraseña incorrectos.';
+                        this.errorMessage = backendMessage || 'Correo o contrasena incorrectos.';
                         this.cdr.detectChanges();
                         return;
                     }
 
                     if (status === 403) {
-                        this.errorMessage = 'Acceso denegado. Verifica la configuración CORS del servidor.';
+                        this.errorMessage = 'Acceso denegado. Verifica la configuracion CORS del servidor.';
                         console.warn('CORS Error: El backend rechaza la solicitud desde este origen');
                         this.cdr.detectChanges();
                         return;
                     }
 
                     if (status === 0) {
-                        this.errorMessage = 'No se pudo conectar con el servidor. Verifica que el backend esté disponible.';
+                        this.errorMessage = 'No se pudo conectar con el servidor. Verifica que el backend este disponible.';
                         console.warn('Connection Error: No se puede alcanzar el backend');
                         this.cdr.detectChanges();
                         return;
@@ -245,7 +393,7 @@ export class Login {
                     }
 
                     if (status === 504 || status === 503 || status === 502) {
-                        this.errorMessage = 'El backend no está disponible. Intenta en unos momentos.';
+                        this.errorMessage = 'El backend no esta disponible. Intenta en unos momentos.';
                         console.error('Backend Unavailable:', status);
                         this.cdr.detectChanges();
                         return;
@@ -264,7 +412,7 @@ export class Login {
                     }
 
                     if (status === 401) {
-                        this.errorMessage = 'Correo o contraseña incorrectos.';
+                        this.errorMessage = 'Correo o contrasena incorrectos.';
                     } else if (status === 0) {
                         this.errorMessage = 'No se pudo conectar con el servidor.';
                     } else if (status >= 500) {
@@ -272,7 +420,7 @@ export class Login {
                     } else if (bodyText) {
                         this.errorMessage = bodyText;
                     } else {
-                        this.errorMessage = `Error al iniciar sesión (${status || 'desconocido'})`;
+                        this.errorMessage = `Error al iniciar sesion (${status || 'desconocido'})`;
                     }
                     this.cdr.detectChanges();
                 }
