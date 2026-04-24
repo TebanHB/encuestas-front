@@ -107,7 +107,7 @@ interface ValidationError {
                         <app-cies-info-hint text="Solo se muestran casos pendientes o entrevistas en curso vinculadas al encuestador actual."></app-cies-info-hint>
                     </div>
                     <p-tag *ngIf="pendientes.length"
-                        [value]="filteredPendientes.length + ' de ' + pendientes.length + ' visibles'"
+                        [value]="filteredPendientesList.length + ' de ' + pendientes.length + ' visibles'"
                         severity="info"></p-tag>
                 </div>
 
@@ -128,25 +128,25 @@ interface ValidationError {
                 <div *ngIf="pendientes.length" class="cies-form-grid cies-form-grid--three">
                     <div class="cies-field--wide">
                         <label>🔍 Buscar persona</label>
-                        <input pInputText [(ngModel)]="searchTerm" class="w-full" pTooltip="Busca por nombre, documento, código o clínica"
-                            placeholder="Nombre, documento, código o clínica..." (ngModelChange)="onFiltersChange()" />
+                        <input pInputText [ngModel]="searchTerm" class="w-full" pTooltip="Busca por nombre, documento, código o clínica"
+                            placeholder="Nombre, documento, código o clínica..." (ngModelChange)="onSearchTermChange($event)" />
                     </div>
                     <div>
                         <label>Clínica</label>
-                        <p-select [options]="clinicaOptions" [(ngModel)]="selectedClinica"
+                        <p-select [options]="clinicaOptions" [ngModel]="selectedClinica"
                             optionLabel="label" optionValue="value" appendTo="body" class="w-full"
-                            placeholder="Todas las clínicas" (ngModelChange)="onFiltersChange()"></p-select>
+                            placeholder="Todas las clínicas" (ngModelChange)="onClinicaChange($event)"></p-select>
                     </div>
                     <div>
                         <label>Listado</label>
-                        <p-select [options]="loteOptions" [(ngModel)]="selectedLote"
+                        <p-select [options]="loteOptions" [ngModel]="selectedLote"
                             optionLabel="label" optionValue="value" appendTo="body" class="w-full"
-                            placeholder="Todos los listados" (ngModelChange)="onFiltersChange()"></p-select>
+                            placeholder="Todos los listados" (ngModelChange)="onLoteChange($event)"></p-select>
                     </div>
                 </div>
 
                 <!-- Sin resultados -->
-                <div *ngIf="pendientes.length && !filteredPendientes.length" class="cies-empty-state">
+                <div *ngIf="pendientes.length && !filteredPendientesList.length" class="cies-empty-state">
                     <div class="cies-empty-state__icon"><i class="pi pi-search"></i></div>
                     <h3>No hay coincidencias</h3>
                     <p>Prueba quitando filtros para ver todas las personas.</p>
@@ -157,7 +157,7 @@ interface ValidationError {
                 </div>
 
                 <!-- Tabla -->
-                <p-table *ngIf="filteredPendientes.length" [value]="filteredPendientes"
+                <p-table *ngIf="filteredPendientesList.length" [value]="filteredPendientesList"
                     [tableStyle]="{ 'min-width': '76rem' }" responsiveLayout="scroll"
                     [paginator]="true" [rows]="5" [rowsPerPageOptions]="[5, 10, 20]"
                     class="cies-table">
@@ -1070,6 +1070,7 @@ export class EntrevistasPage implements OnInit, OnDestroy {
     searchTerm = '';
     selectedClinica = '';
     selectedLote = '';
+    filteredPendientesList: PersonaElegible[] = [];
     navigatorOnLine = navigator.onLine;
 
     readonly tipoConsultaOptions = [
@@ -1140,10 +1141,10 @@ export class EntrevistasPage implements OnInit, OnDestroy {
         return [{ label: 'Todos', value: '' }, ...values.map((v) => ({ label: v, value: v }))];
     }
 
-    get filteredPendientes(): PersonaElegible[] {
+    private applyPendingFilters(): void {
         const search = this.normalizeText(this.searchTerm);
         const searchTokens = search.split(' ').filter(Boolean);
-        return this.pendientes
+        this.filteredPendientesList = this.pendientes
             .filter((i) => !this.selectedClinica || i.clinica === this.selectedClinica)
             .filter((i) => !this.selectedLote || (i.loteNombre || 'Sin listado') === this.selectedLote)
             .filter((i) => {
@@ -1180,6 +1181,7 @@ export class EntrevistasPage implements OnInit, OnDestroy {
             next: (response) => {
                 this.loadingPendientes = false;
                 this.pendientes = response;
+                this.applyPendingFilters();
                 this.cdr.detectChanges();
             },
             error: (err) => {
@@ -1542,10 +1544,25 @@ export class EntrevistasPage implements OnInit, OnDestroy {
         this.searchTerm = '';
         this.selectedClinica = '';
         this.selectedLote = '';
+        this.applyPendingFilters();
         this.cdr.detectChanges();
     }
 
-    onFiltersChange(): void {
+    onSearchTermChange(value: string): void {
+        this.searchTerm = value ?? '';
+        this.applyPendingFilters();
+        this.cdr.detectChanges();
+    }
+
+    onClinicaChange(value: string): void {
+        this.selectedClinica = value ?? '';
+        this.applyPendingFilters();
+        this.cdr.detectChanges();
+    }
+
+    onLoteChange(value: string): void {
+        this.selectedLote = value ?? '';
+        this.applyPendingFilters();
         this.cdr.detectChanges();
     }
 
