@@ -13,6 +13,7 @@ import { TextareaModule } from 'primeng/textarea';
 import { Toast } from 'primeng/toast';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { TooltipModule } from 'primeng/tooltip';
+import { firstValueFrom } from 'rxjs';
 import { CiesInfoHintComponent } from '../../components/cies-info-hint';
 import { CiesService, Entrevista, PersonaElegible, PreguntaInstrumento, RespuestaPayload } from '../../services/cies.service';
 import { OfflineInterviewQueueService } from '../../services/offline-interview-queue.service';
@@ -55,10 +56,11 @@ interface ValidationError {
                 </div>
                 <div class="cies-hero__actions">
                     <button pButton type="button" label="Registrar persona nueva" icon="pi pi-user-plus"
-                        severity="secondary" [outlined]="true" pTooltip="Registra una persona que aún no está en el listado"
+                        class="direct-registration-button direct-registration-button--hero"
+                        [disabled]="isInterviewActionBusy" pTooltip="Registra una persona que aún no está en el listado"
                         (click)="openDirectRegistration()"></button>
-                    <button pButton type="button" label="Actualizar listado" icon="pi pi-refresh"
-                        severity="secondary" [text]="true"
+                    <button pButton type="button" [label]="loadingPendientes ? 'Actualizando...' : 'Actualizar listado'" icon="pi pi-refresh"
+                        severity="secondary" [text]="true" [disabled]="isInterviewActionBusy"
                         pTooltip="Vuelve a consultar las personas pendientes"
                         (click)="loadPendientes(true)"></button>
                     <p-tag [value]="'📦 Cola offline: ' + offlineQueue.count()"
@@ -68,6 +70,20 @@ interface ValidationError {
             </section>
 
             <!-- ===================== VISTA: Lista de pendientes ===================== -->
+            <section *ngIf="!currentInterview" class="direct-registration-callout">
+                <div class="direct-registration-callout__icon">
+                    <i class="pi pi-user-plus"></i>
+                </div>
+                <div class="direct-registration-callout__content">
+                    <span class="direct-registration-eyebrow">Atajo rápido</span>
+                    <h2>¿Llegó una persona que no está en la lista?</h2>
+                    <p>Regístrala aquí y el sistema abrirá su entrevista automáticamente.</p>
+                </div>
+                <button pButton type="button" label="Registrar persona nueva" icon="pi pi-arrow-right"
+                    class="direct-registration-button direct-registration-button--callout"
+                    [disabled]="isInterviewActionBusy" (click)="openDirectRegistration()"></button>
+            </section>
+
             <section *ngIf="!currentInterview" class="cies-guidance-grid">
                 <article class="card cies-guidance-card">
                     <div class="cies-guidance-step">1</div>
@@ -116,6 +132,8 @@ interface ValidationError {
                     <p>Si acaba de llegar una persona, puedes registrarla directamente.</p>
                     <div class="cies-empty-state__actions">
                         <button pButton type="button" label="Registrar persona nueva" icon="pi pi-user-plus"
+                            class="direct-registration-button"
+                            [disabled]="isInterviewActionBusy"
                             (click)="openDirectRegistration()"></button>
                     </div>
                 </div>
@@ -186,8 +204,9 @@ interface ValidationError {
                             <td>{{ item.regional }}</td>
                             <td>{{ item.fechaConsulta }}</td>
                             <td>
-                                <button pButton type="button" label="Iniciar" icon="pi pi-play"
-                                    size="small" (click)="start(item)"></button>
+                                <button pButton type="button" [label]="startingPersonaId === item.id ? 'Abriendo...' : 'Iniciar'" icon="pi pi-play"
+                                    size="small" [loading]="startingPersonaId === item.id"
+                                    [disabled]="isInterviewActionBusy && startingPersonaId !== item.id" (click)="start(item)"></button>
                             </td>
                         </tr>
                     </ng-template>
@@ -362,6 +381,7 @@ interface ValidationError {
                     <div class="footer-left">
                         <button pButton type="button" label="📦 Guardar offline" severity="secondary"
                             [outlined]="true" icon="pi pi-download"
+                            [disabled]="submitting"
                             pTooltip="Guarda localmente y se envía cuando haya conexión"
                             (click)="saveOffline()"></button>
                     </div>
@@ -370,6 +390,7 @@ interface ValidationError {
                             [label]="terminatesInterview ? 'Finalizar (terminación temprana)' : '✅ Finalizar entrevista'"
                             [severity]="terminatesInterview ? 'warn' : 'success'"
                             [loading]="submitting"
+                            [disabled]="submitting"
                             icon="pi pi-check-circle"
                             (click)="submit()"></button>
                     </div>
@@ -437,15 +458,16 @@ interface ValidationError {
                     </div>
                 </div>
 
-                <ng-template pTemplate="footer">
-                    <div class="dialog-footer-actions">
-                        <button pButton type="button" label="Cancelar" severity="secondary" [outlined]="true"
-                            (click)="closeDirectRegistration()"></button>
-                        <button pButton type="button" label="✅ Crear y abrir entrevista"
-                            icon="pi pi-arrow-right" [loading]="directRegistrationLoading"
-                            (click)="registerDirectInterview()"></button>
-                    </div>
-                </ng-template>
+            <ng-template pTemplate="footer">
+                <div class="dialog-footer-actions">
+                    <button pButton type="button" label="Cancelar" severity="secondary" [outlined]="true"
+                            [disabled]="directRegistrationLoading" (click)="closeDirectRegistration()"></button>
+                    <button pButton type="button" label="✅ Crear y abrir entrevista"
+                        icon="pi pi-arrow-right" [loading]="directRegistrationLoading"
+                        [disabled]="directRegistrationLoading"
+                        (click)="registerDirectInterview()"></button>
+                </div>
+            </ng-template>
             </p-dialog>
 
             <!-- ===================== DIALOG: Confirmar cierre ===================== -->
@@ -469,6 +491,77 @@ interface ValidationError {
         <p-toast></p-toast>
     `,
     styles: [`
+        .direct-registration-callout {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr) auto;
+            gap: 1.25rem;
+            align-items: center;
+            margin: 1.25rem 0;
+            padding: 1.35rem;
+            border-radius: 1.35rem;
+            border: 1px solid rgba(15, 118, 110, 0.28);
+            background: linear-gradient(135deg, #ecfdf5 0%, #f0fdfa 48%, #fff7ed 100%);
+            box-shadow: 0 18px 40px rgba(15, 118, 110, 0.16);
+        }
+
+        .direct-registration-callout__icon {
+            width: 4rem;
+            height: 4rem;
+            border-radius: 1.25rem;
+            display: grid;
+            place-items: center;
+            color: #ffffff;
+            background: linear-gradient(135deg, #0f766e, #14b8a6);
+            box-shadow: 0 12px 24px rgba(15, 118, 110, 0.26);
+            font-size: 1.6rem;
+        }
+
+        .direct-registration-eyebrow {
+            display: inline-flex;
+            margin-bottom: 0.25rem;
+            font-size: 0.72rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: #0f766e;
+        }
+
+        .direct-registration-callout h2 {
+            margin: 0;
+            color: #0f172a;
+            font-size: clamp(1.15rem, 2vw, 1.55rem);
+            font-weight: 850;
+        }
+
+        .direct-registration-callout p {
+            margin: 0.25rem 0 0;
+            color: #475569;
+            line-height: 1.45;
+        }
+
+        ::ng-deep .direct-registration-button.p-button {
+            border: none !important;
+            color: #ffffff !important;
+            background: linear-gradient(135deg, #0f766e, #f97316) !important;
+            box-shadow: 0 12px 24px rgba(249, 115, 22, 0.24) !important;
+            font-weight: 800 !important;
+        }
+
+        ::ng-deep .direct-registration-button.p-button:not(:disabled):hover {
+            transform: translateY(-1px);
+            filter: saturate(1.08);
+            box-shadow: 0 16px 30px rgba(249, 115, 22, 0.3) !important;
+        }
+
+        ::ng-deep .direct-registration-button--hero.p-button {
+            padding: 0.8rem 1.1rem !important;
+        }
+
+        ::ng-deep .direct-registration-button--callout.p-button {
+            min-width: 14rem;
+            padding: 0.95rem 1.25rem !important;
+            font-size: 1rem !important;
+        }
+
         .entrevista-header {
             display: flex;
             align-items: flex-start;
@@ -969,6 +1062,18 @@ interface ValidationError {
         }
 
         @media (max-width: 768px) {
+            .direct-registration-callout {
+                grid-template-columns: 1fr;
+                text-align: center;
+                justify-items: center;
+                padding: 1.25rem;
+            }
+
+            ::ng-deep .direct-registration-button--callout.p-button {
+                width: 100%;
+                min-width: auto;
+            }
+
             .entrevista-header {
                 flex-direction: column;
                 gap: 1rem;
@@ -1035,6 +1140,8 @@ export class EntrevistasPage implements OnInit, OnDestroy {
     answers: Record<number, AnswerValue> = {};
     showValidation = false;
     submitting = false;
+    loadingPendientes = false;
+    startingPersonaId: number | null = null;
     directRegistrationVisible = false;
     directRegistrationLoading = false;
     directRegistrationError = '';
@@ -1051,6 +1158,10 @@ export class EntrevistasPage implements OnInit, OnDestroy {
     ];
 
     directRegistrationForm = this.createDirectRegistrationForm();
+
+    get isInterviewActionBusy(): boolean {
+        return this.loadingPendientes || this.startingPersonaId !== null || this.directRegistrationLoading || this.submitting;
+    }
 
     private onlineHandler = () => {
         this.navigatorOnLine = true;
@@ -1140,12 +1251,17 @@ export class EntrevistasPage implements OnInit, OnDestroy {
     }
 
     loadPendientes(forceRefresh = false): void {
+        if (this.loadingPendientes) return;
+
+        this.loadingPendientes = true;
         this.ciesService.getPendientesEntrevista(forceRefresh).subscribe({
             next: (response) => {
+                this.loadingPendientes = false;
                 this.pendientes = response;
                 this.cdr.detectChanges();
             },
             error: (err) => {
+                this.loadingPendientes = false;
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
@@ -1157,8 +1273,12 @@ export class EntrevistasPage implements OnInit, OnDestroy {
     }
 
     start(item: PersonaElegible): void {
+        if (this.startingPersonaId !== null || this.submitting || this.directRegistrationLoading) return;
+
+        this.startingPersonaId = item.id;
         this.ciesService.iniciarEntrevista(item.id).subscribe({
             next: (response) => {
+                this.startingPersonaId = null;
                 this.currentInterview = response;
                 this.currentStep = 0;
                 this.showValidation = false;
@@ -1182,6 +1302,7 @@ export class EntrevistasPage implements OnInit, OnDestroy {
                 }, 200);
             },
             error: (err) => {
+                this.startingPersonaId = null;
                 this.messageService.add({
                     severity: 'error',
                     summary: 'No se pudo iniciar la entrevista',
@@ -1216,6 +1337,7 @@ export class EntrevistasPage implements OnInit, OnDestroy {
         this.answers = {};
         this.showCloseConfirm = false;
         this.submitting = false;
+        this.startingPersonaId = null;
         this.cdr.detectChanges();
     }
 
@@ -1396,7 +1518,7 @@ export class EntrevistasPage implements OnInit, OnDestroy {
     }
 
     submit(): void {
-        if (!this.currentInterview) return;
+        if (!this.currentInterview || this.submitting) return;
 
         this.showValidation = true;
         if (this.validationErrors.length) {
@@ -1487,6 +1609,8 @@ export class EntrevistasPage implements OnInit, OnDestroy {
     }
 
     openDirectRegistration(): void {
+        if (this.isInterviewActionBusy) return;
+
         this.directRegistrationVisible = true;
         this.directRegistrationError = '';
         this.cdr.detectChanges();
@@ -1500,14 +1624,17 @@ export class EntrevistasPage implements OnInit, OnDestroy {
     }
 
     closeDirectRegistration(): void {
+        if (this.directRegistrationLoading) return;
+
         this.directRegistrationVisible = false;
-        this.directRegistrationLoading = false;
         this.directRegistrationError = '';
         this.directRegistrationForm = this.createDirectRegistrationForm();
         this.cdr.detectChanges();
     }
 
-    registerDirectInterview(): void {
+    async registerDirectInterview(): Promise<void> {
+        if (this.directRegistrationLoading) return;
+
         this.directRegistrationError = '';
 
         const nombre = this.directRegistrationForm.nombre.trim();
@@ -1521,7 +1648,6 @@ export class EntrevistasPage implements OnInit, OnDestroy {
             return;
         }
 
-        this.directRegistrationLoading = true;
         const personaPayload: Record<string, unknown> = {
             medicarePersonId: this.directRegistrationForm.medicarePersonId.trim() || `DIRECTO-${Date.now()}`,
             nombre,
@@ -1536,56 +1662,45 @@ export class EntrevistasPage implements OnInit, OnDestroy {
         };
 
         const loteNombre = `Registro directo - ${nombre} ${apellido}`.trim();
+        this.directRegistrationLoading = true;
 
-        this.ciesService.createLote(loteNombre, [personaPayload]).subscribe({
-            next: (lote) => {
-                this.ciesService.executeSeleccion(lote.id, `DIRECTO-${Date.now()}`).subscribe({
-                    next: (ejecucion) => {
-                        const persona = ejecucion.seleccionadas && ejecucion.seleccionadas[0];
-                        this.directRegistrationLoading = false;
-                        this.closeDirectRegistration();
-                        this.messageService.add({
-                            severity: 'success',
-                            summary: 'Registro exitoso',
-                            detail: `${nombre} ${apellido} fue registrado/a correctamente.`
-                        });
-                        this.loadPendientes(true);
-                        if (persona) {
-                            this.start(persona);
-                        } else {
-                            this.messageService.add({
-                                severity: 'warn',
-                                summary: 'Selección incompleta',
-                                detail: 'Se creó el registro pero no fue seleccionado automáticamente. Verifica el límite regional.'
-                            });
-                            this.cdr.detectChanges();
-                        }
-                    },
-                    error: (err) => {
-                        this.directRegistrationLoading = false;
-                        this.directRegistrationError = this.extractErrorMessage(err, 'Se creó el registro, pero falló la selección automática.');
-                        this.messageService.add({
-                            severity: 'warn',
-                            summary: 'Selección fallida',
-                            detail: this.directRegistrationError
-                        });
-                        console.error('Error executing selection:', err);
-                        this.cdr.detectChanges();
-                    }
-                });
-            },
-            error: (err) => {
-                this.directRegistrationLoading = false;
-                this.directRegistrationError = this.extractErrorMessage(err, 'No se pudo crear el registro individual.');
+        try {
+            const lote = await firstValueFrom(this.ciesService.createLote(loteNombre, [personaPayload]));
+            const ejecucion = await firstValueFrom(this.ciesService.executeSeleccion(lote.id, `DIRECTO-${Date.now()}`));
+            const persona = ejecucion.seleccionadas && ejecucion.seleccionadas[0];
+
+            this.directRegistrationLoading = false;
+            this.directRegistrationVisible = false;
+            this.directRegistrationError = '';
+            this.directRegistrationForm = this.createDirectRegistrationForm();
+            this.messageService.add({
+                severity: 'success',
+                summary: 'Registro exitoso',
+                detail: `${nombre} ${apellido} fue registrado/a correctamente.`
+            });
+            this.loadPendientes(true);
+
+            if (persona) {
+                this.start(persona);
+            } else {
                 this.messageService.add({
-                    severity: 'error',
-                    summary: 'Error al registrar',
-                    detail: this.directRegistrationError
+                    severity: 'warn',
+                    summary: 'Selección incompleta',
+                    detail: 'Se creó el registro pero no fue seleccionado automáticamente. Verifica el límite regional.'
                 });
-                console.error('Error creating direct registration lote:', err);
                 this.cdr.detectChanges();
             }
-        });
+        } catch (err) {
+            this.directRegistrationLoading = false;
+            this.directRegistrationError = this.extractErrorMessage(err, 'No se pudo crear y abrir la entrevista para esta persona.');
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Error al registrar',
+                detail: this.directRegistrationError
+            });
+            console.error('Error creating direct registration:', err);
+            this.cdr.detectChanges();
+        }
     }
 
     getQuestionTypeLabel(tipo: string): string {
@@ -1627,13 +1742,18 @@ export class EntrevistasPage implements OnInit, OnDestroy {
 
     private extractErrorMessage(error: unknown, fallback: string): string {
         const payload = error as {
-            error?: { message?: string; detail?: string; error?: string };
+            error?: { message?: string; detail?: string; error?: string } | string;
             message?: string;
         } | null;
 
-        return payload?.error?.message
-            || payload?.error?.detail
-            || payload?.error?.error
+        const errorBody = payload?.error;
+        if (typeof errorBody === 'string') {
+            return errorBody;
+        }
+
+        return errorBody?.message
+            || errorBody?.detail
+            || errorBody?.error
             || payload?.message
             || fallback;
     }
