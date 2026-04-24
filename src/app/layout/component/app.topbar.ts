@@ -51,6 +51,10 @@ import { AuthService } from '../../core/auth/auth.service';
                 </button>
             </div>
 
+            <button type="button" class="layout-topbar-action topbar-logout-mobile" title="Cerrar sesión" aria-label="Cerrar sesión" (click)="logout()">
+                <i class="pi pi-sign-out"></i>
+            </button>
+
             <div class="layout-topbar-menu hidden lg:block">
                 <div class="layout-topbar-menu-content">
                     <button type="button" class="layout-topbar-action" (click)="logout()">
@@ -90,9 +94,17 @@ import { AuthService } from '../../core/auth/auth.service';
                 font-size: 0.9rem;
             }
 
+            .topbar-logout-mobile {
+                display: none;
+            }
+
             @media (max-width: 991px) {
                 :host {
                     padding: var(--layout-topbar-offset) 0.75rem 0;
+                }
+
+                .topbar-logout-mobile {
+                    display: inline-flex;
                 }
             }
         `
