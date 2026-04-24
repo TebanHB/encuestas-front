@@ -837,7 +837,7 @@ export class ReporteriaPage implements OnInit {
         const filters = this.getFilterPayload();
 
         forkJoin({
-            resumen: this.ciesService.getReporteResumen(filters),
+            resumen: this.ciesService.getReporteResumen(filters, true),
             distribucion: this.ciesService.getDistribucionVariable(filters)
         }).subscribe({
             next: ({ resumen, distribucion }) => {

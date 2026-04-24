@@ -458,8 +458,11 @@ export class CiesService {
         return this.http.get<Entrevista>(`${this.apiBase}/entrevistas/${id}`);
     }
 
-    getReporteResumen(filters?: Record<string, string | number | null | undefined>): Observable<ReporteResumen> {
+    getReporteResumen(filters?: Record<string, string | number | null | undefined>, forceRefresh = false): Observable<ReporteResumen> {
         const key = this.cacheKey(filters);
+        if (forceRefresh) {
+            this.reporteResumenRequests.delete(key);
+        }
 
         if (!this.reporteResumenRequests.has(key)) {
             const request$ = this.http.get<ReporteResumen>(`${this.apiBase}/reportes/resumen`, { params: this.toParams(filters) }).pipe(

@@ -35,6 +35,8 @@ interface QuickStartCard {
                     <a *ngIf="isAdmin" routerLink="/pages/metodologia"><button pButton type="button" label="Configurar preguntas" icon="pi pi-sliders-h" severity="secondary"></button></a>
                     <a *ngIf="isEncuestador" routerLink="/pages/entrevistas"><button pButton type="button" label="Empezar a entrevistar" icon="pi pi-file-edit"></button></a>
                     <a *ngIf="isAnalista" routerLink="/pages/reporteria"><button pButton type="button" label="Ver resultados" icon="pi pi-chart-bar"></button></a>
+                    <button *ngIf="isAdmin || isAnalista" pButton type="button" label="Actualizar" icon="pi pi-refresh"
+                        severity="secondary" [outlined]="true" [loading]="dashboardLoading" (click)="loadDashboard(true)"></button>
                 </div>
             </section>
 
@@ -188,6 +190,12 @@ export class Dashboard implements OnInit {
     resumen: ReporteResumen | null = null;
     pendientes: PersonaElegible[] = [];
     totalPendientes = 0;
+    loadingResumen = false;
+    loadingPendientesResumen = false;
+
+    get dashboardLoading(): boolean {
+        return this.loadingResumen || this.loadingPendientesResumen;
+    }
 
     get isAdmin(): boolean {
         return this.authService.isAdministrador();
@@ -304,13 +312,20 @@ export class Dashboard implements OnInit {
     }
 
     ngOnInit(): void {
+        this.loadDashboard(true);
+    }
+
+    loadDashboard(forceRefresh = false): void {
         if (this.isAdmin || this.isAnalista) {
-            this.ciesService.getReporteResumen().subscribe({
+            this.loadingResumen = true;
+            this.ciesService.getReporteResumen(undefined, forceRefresh).subscribe({
                 next: (response) => {
+                    this.loadingResumen = false;
                     this.resumen = response;
                     this.cdr.detectChanges();
                 },
                 error: (err) => {
+                    this.loadingResumen = false;
                     console.error('Error al cargar resumen:', err);
                     // Mostrar resumen vacío en caso de error
                     this.resumen = {
@@ -330,13 +345,16 @@ export class Dashboard implements OnInit {
         }
 
         if (this.isAdmin || this.isEncuestador) {
-            this.ciesService.getPendientesResumen(8).subscribe({
+            this.loadingPendientesResumen = true;
+            this.ciesService.getPendientesResumen(8, forceRefresh).subscribe({
                 next: (response) => {
+                    this.loadingPendientesResumen = false;
                     this.totalPendientes = response.total;
                     this.pendientes = response.items;
                     this.cdr.detectChanges();
                 },
                 error: (err) => {
+                    this.loadingPendientesResumen = false;
                     console.error('Error al cargar pendientes:', err);
                     this.totalPendientes = 0;
                     this.pendientes = [];

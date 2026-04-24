@@ -14,6 +14,7 @@ import { Toast } from 'primeng/toast';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { TooltipModule } from 'primeng/tooltip';
 import { firstValueFrom } from 'rxjs';
+import { AuthService } from '../../../../core/auth/auth.service';
 import { CiesInfoHintComponent } from '../../components/cies-info-hint';
 import { CiesService, Entrevista, PersonaElegible, PreguntaInstrumento, RespuestaPayload } from '../../services/cies.service';
 
@@ -128,12 +129,18 @@ interface ValidationError {
                             placeholder="Nombre, documento, código o clínica..." (ngModelChange)="onSearchTermChange($event)" />
                     </div>
                     <div>
+                        <label>Estado</label>
+                        <p-select [options]="estadoOptions" [ngModel]="selectedEstado"
+                            optionLabel="label" optionValue="value" appendTo="body" class="w-full"
+                            placeholder="Todos los estados" (ngModelChange)="onEstadoChange($event)"></p-select>
+                    </div>
+                    <div *ngIf="isAdmin">
                         <label>Clínica</label>
                         <p-select [options]="clinicaOptions" [ngModel]="selectedClinica"
                             optionLabel="label" optionValue="value" appendTo="body" class="w-full"
                             placeholder="Todas las clínicas" (ngModelChange)="onClinicaChange($event)"></p-select>
                     </div>
-                    <div>
+                    <div *ngIf="isAdmin">
                         <label>Listado</label>
                         <p-select [options]="loteOptions" [ngModel]="selectedLote"
                             optionLabel="label" optionValue="value" appendTo="body" class="w-full"
@@ -287,12 +294,14 @@ interface ValidationError {
                         <!-- Respuesta: Opción única / Booleano -->
                         <div *ngIf="isOptionQuestion(question)" class="question-answer">
                             <div class="opciones-grid" [class.opciones-disabled]="shouldSkipQuestion(question)">
-                                <div *ngFor="let opcion of question.opciones"
+                                <button *ngFor="let opcion of question.opciones"
+                                    type="button"
                                     class="opcion-card"
                                     [class.opcion-selected]="answers[question.id]?.codigoOpcion === opcion.codigo"
                                     [class.opcion-invalid]="showValidation && isQuestionInvalid(question) && answers[question.id]?.codigoOpcion === opcion.codigo"
                                     [class.opcion-disabled]="shouldSkipQuestion(question)"
-                                    (click)="!shouldSkipQuestion(question) && selectOpcion(question.id, opcion.codigo)">
+                                    [disabled]="shouldSkipQuestion(question)"
+                                    (click)="selectOpcion(question.id, opcion.codigo)">
                                     <div class="opcion-radio">
                                         <div class="opcion-radio-circle"
                                             [class.checked]="answers[question.id]?.codigoOpcion === opcion.codigo">
@@ -301,7 +310,7 @@ interface ValidationError {
                                     <div class="opcion-label">{{ opcion.etiqueta }}</div>
                                     <i class="pi pi-check opcion-check"
                                         *ngIf="answers[question.id]?.codigoOpcion === opcion.codigo"></i>
-                                </div>
+                                </button>
                             </div>
 
                             <!-- Input cuando se selecciona "Otro" -->
@@ -789,15 +798,27 @@ interface ValidationError {
         }
 
         .opcion-card {
+            width: 100%;
+            border: 1.5px solid var(--surface-border);
+            appearance: none;
+            -webkit-appearance: none;
             display: flex;
             align-items: center;
             gap: 0.6rem;
             padding: 0.65rem 0.85rem;
             background: var(--surface-ground);
-            border: 1.5px solid var(--surface-border);
             border-radius: 0.5rem;
             cursor: pointer;
+            color: inherit;
+            font: inherit;
+            text-align: left;
+            touch-action: manipulation;
+            user-select: none;
             transition: all 0.15s ease;
+        }
+
+        .opcion-card:disabled {
+            cursor: not-allowed;
         }
 
         .opcion-card:hover {
@@ -1090,6 +1111,7 @@ interface ValidationError {
 export class EntrevistasPage implements OnInit {
     readonly OTRO_MAX_LENGTH = 120;
 
+    private authService = inject(AuthService);
     private ciesService = inject(CiesService);
     private cdr = inject(ChangeDetectorRef);
     private messageService = inject(MessageService);
@@ -1107,9 +1129,16 @@ export class EntrevistasPage implements OnInit {
     directRegistrationError = '';
     showCloseConfirm = false;
     searchTerm = '';
+    selectedEstado = '';
     selectedClinica = '';
     selectedLote = '';
     filteredPendientesList: PersonaElegible[] = [];
+
+    readonly estadoOptions = [
+        { label: 'Todos', value: '' },
+        { label: 'Por iniciar', value: 'PENDIENTE' },
+        { label: 'En curso', value: 'EN_CURSO' }
+    ];
 
     readonly tipoConsultaOptions = [
         { label: 'Primera consulta SSR', value: 'PRIMERA_CONSULTA_SSR' },
@@ -1144,6 +1173,14 @@ export class EntrevistasPage implements OnInit {
     ];
 
     directRegistrationForm = this.createDirectRegistrationForm();
+
+    get isAdmin(): boolean {
+        return this.authService.isAdministrador();
+    }
+
+    get isEncuestador(): boolean {
+        return this.authService.isEncuestador();
+    }
 
     get isInterviewActionBusy(): boolean {
         return this.loadingPendientes || this.startingPersonaId !== null || this.directRegistrationLoading || this.submitting;
@@ -1200,8 +1237,9 @@ export class EntrevistasPage implements OnInit {
         const search = this.normalizeText(this.searchTerm);
         const searchTokens = search.split(' ').filter(Boolean);
         this.filteredPendientesList = this.pendientes
-            .filter((i) => !this.selectedClinica || i.clinica === this.selectedClinica)
-            .filter((i) => !this.selectedLote || (i.loteNombre || 'Sin listado') === this.selectedLote)
+            .filter((i) => !this.selectedEstado || i.estadoEntrevista === this.selectedEstado)
+            .filter((i) => !this.isAdmin || !this.selectedClinica || i.clinica === this.selectedClinica)
+            .filter((i) => !this.isAdmin || !this.selectedLote || (i.loteNombre || 'Sin listado') === this.selectedLote)
             .filter((i) => {
                 if (!searchTokens.length) return true;
                 const haystack = this.normalizeText(
@@ -1558,6 +1596,7 @@ export class EntrevistasPage implements OnInit {
 
     clearFilters(): void {
         this.searchTerm = '';
+        this.selectedEstado = '';
         this.selectedClinica = '';
         this.selectedLote = '';
         this.applyPendingFilters();
@@ -1566,6 +1605,12 @@ export class EntrevistasPage implements OnInit {
 
     onSearchTermChange(value: string): void {
         this.searchTerm = value ?? '';
+        this.applyPendingFilters();
+        this.cdr.detectChanges();
+    }
+
+    onEstadoChange(value: string): void {
+        this.selectedEstado = value ?? '';
         this.applyPendingFilters();
         this.cdr.detectChanges();
     }
