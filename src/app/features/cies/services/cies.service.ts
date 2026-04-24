@@ -254,19 +254,19 @@ export class CiesService {
     }
 
     createUsuario(payload: UsuarioUpsertRequest): Observable<UsuarioAdmin> {
-        return this.http.post<UsuarioAdmin>(`${this.apiBase}/usuarios`, payload);
+        return this.http.post<UsuarioAdmin>(`${this.apiBase}/usuarios`, payload).pipe(tap(() => this.resetUsuarioRelatedCaches()));
     }
 
     updateUsuario(id: number, payload: UsuarioUpsertRequest): Observable<UsuarioAdmin> {
-        return this.http.put<UsuarioAdmin>(`${this.apiBase}/usuarios/${id}`, payload);
+        return this.http.put<UsuarioAdmin>(`${this.apiBase}/usuarios/${id}`, payload).pipe(tap(() => this.resetUsuarioRelatedCaches()));
     }
 
     toggleUsuario(id: number, activo: boolean): Observable<UsuarioAdmin> {
-        return this.http.patch<UsuarioAdmin>(`${this.apiBase}/usuarios/${id}/estado`, { activo });
+        return this.http.patch<UsuarioAdmin>(`${this.apiBase}/usuarios/${id}/estado`, { activo }).pipe(tap(() => this.resetUsuarioRelatedCaches()));
     }
 
     deleteUsuario(id: number): Observable<void> {
-        return this.http.delete<void>(`${this.apiBase}/usuarios/${id}`);
+        return this.http.delete<void>(`${this.apiBase}/usuarios/${id}`).pipe(tap(() => this.resetUsuarioRelatedCaches()));
     }
 
     getInstrumentoActivo(forceRefresh = false): Observable<Metodologia> {
@@ -496,6 +496,11 @@ export class CiesService {
 
     private resetReporteCache(): void {
         this.reporteResumenRequests.clear();
+    }
+
+    private resetUsuarioRelatedCaches(): void {
+        this.resetOperacionCache();
+        this.resetReporteCache();
     }
 
     private resetAllCaches(): void {

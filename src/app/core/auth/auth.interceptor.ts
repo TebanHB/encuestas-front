@@ -1,4 +1,4 @@
-﻿import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse, HttpInterceptorFn, HttpRequest } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, from, switchMap, throwError } from 'rxjs';
@@ -64,6 +64,42 @@ async function getValidToken(authService: AuthService): Promise<string | null> {
     return refreshInFlight;
 }
 
+async function cloneWithAuth(req: HttpRequest<unknown>, authService: AuthService, router: Router, forceRefresh = false): Promise<HttpRequest<unknown>> {
+    const hadSession = !!authService.getUser() || !!authService.getRefreshToken();
+    let token: string | null;
+
+    if (forceRefresh) {
+        if (!refreshInFlight) {
+            refreshInFlight = refreshAccessToken(authService).finally(() => {
+                refreshInFlight = null;
+            });
+        }
+        token = await refreshInFlight;
+    } else {
+        token = await getValidToken(authService);
+    }
+
+    if (!token && hadSession) {
+        queueMicrotask(() => void router.navigate(['/auth/login']));
+    }
+
+    const headers: Record<string, string> = { ...requestHeaders() };
+
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const user = authService.getUser();
+    if (user?.rol) {
+        headers['X-User-Role'] = user.rol;
+    }
+    if (user?.email) {
+        headers['X-User-Email'] = user.email;
+    }
+
+    return req.clone({ setHeaders: headers });
+}
+
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
     const authService = inject(AuthService);
     const router = inject(Router);
@@ -74,37 +110,15 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         return next(req.clone({ setHeaders: baseHeaders }));
     }
 
-    const run = async () => {
-        const hadSession = !!authService.getUser() || !!authService.getRefreshToken();
-        const token = await getValidToken(authService);
-
-        if (!token && hadSession) {
-            queueMicrotask(() => void router.navigate(['/auth/login']));
-        }
-
-        const headers: Record<string, string> = { ...baseHeaders };
-
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
-        }
-
-        const user = authService.getUser();
-        if (user?.rol) {
-            headers['X-User-Role'] = user.rol;
-        }
-        if (user?.email) {
-            headers['X-User-Email'] = user.email;
-        }
-
-        return req.clone({ setHeaders: headers });
-    };
-
-    return from(run()).pipe(
+    return from(cloneWithAuth(req, authService, router)).pipe(
         switchMap((authReq) => next(authReq)),
         catchError((error: HttpErrorResponse) => {
             console.error('Request error:', error.status, error.message, error.url);
+            if (error.status === 401 && authService.getRefreshToken()) {
+                return from(cloneWithAuth(req, authService, router, true)).pipe(switchMap((retryReq) => next(retryReq)));
+            }
+
             return throwError(() => error);
         })
     );
 };
-
