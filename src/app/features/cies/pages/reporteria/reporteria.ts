@@ -30,6 +30,11 @@ interface ReportFilters {
     codigoVariable: string;
 }
 
+interface SelectOption {
+    label: string;
+    value: string;
+}
+
 @Component({
     selector: 'app-reporteria-page',
     standalone: true,
@@ -74,10 +79,6 @@ interface ReportFilters {
                         <h4>Empieza viendo todo</h4>
                         <p>Si no estás seguro de qué filtro usar, primero mira el panorama general.</p>
                     </div>
-                    <div class="cies-guidance-actions">
-                        <button pButton type="button" label="Ver todo" size="small"
-                            (click)="resetFilters()"></button>
-                    </div>
                 </article>
                 <article class="card cies-guidance-card">
                     <div class="cies-guidance-step">2</div>
@@ -109,7 +110,18 @@ interface ReportFilters {
                 <div class="cies-form-grid cies-form-grid--filters">
                     <div>
                         <label>Año</label>
-                        <input pInputText [(ngModel)]="filters.anio" class="w-full" placeholder="Ej: 2026" />
+                        <input pInputText [(ngModel)]="filters.anio" class="w-full" placeholder="Ej: 2026"
+                            inputmode="numeric" maxlength="4" />
+                    </div>
+                    <div>
+                        <label>Fecha desde</label>
+                        <p-datepicker [(ngModel)]="filters.fechaDesde" dateFormat="yy-mm-dd"
+                            appendTo="body" class="w-full" [showIcon]="true" placeholder="Desde"></p-datepicker>
+                    </div>
+                    <div>
+                        <label>Fecha hasta</label>
+                        <p-datepicker [(ngModel)]="filters.fechaHasta" dateFormat="yy-mm-dd"
+                            appendTo="body" class="w-full" [showIcon]="true" placeholder="Hasta"></p-datepicker>
                     </div>
                     <div>
                         <label>Regional</label>
@@ -247,7 +259,7 @@ interface ReportFilters {
 
                 <!-- TAB 2: Tendencias -->
                 <p-tabpanel value="1">
-                    <section class="card cies-chart-card">
+                    <section class="card cies-chart-card" *ngIf="resumen.tendencias.length">
                         <div class="cies-section-head">
                             <div>
                                 <h3>Evolución temporal</h3>
@@ -286,11 +298,16 @@ interface ReportFilters {
                             </ng-template>
                         </p-table>
                     </section>
+                    <section class="card cies-empty-state" *ngIf="!resumen.tendencias.length">
+                        <i class="pi pi-chart-bar"></i>
+                        <h3>Sin tendencias para estos filtros</h3>
+                        <p>Prueba ampliando el rango de fechas, cambiando el año o limpiando los filtros.</p>
+                    </section>
                 </p-tabpanel>
 
                 <!-- TAB 3: Comparativo por Clínica -->
                 <p-tabpanel value="2">
-                    <section class="card cies-chart-card">
+                    <section class="card cies-chart-card" *ngIf="resumen.comparativoClinicas.length">
                         <div class="cies-section-head">
                             <div>
                                 <h3>Comparativo entre clínicas</h3>
@@ -304,7 +321,7 @@ interface ReportFilters {
                     </section>
 
                     <!-- Tabla comparativa -->
-                    <section class="card" style="margin-top: 1rem;">
+                    <section class="card" style="margin-top: 1rem;" *ngIf="resumen.comparativoClinicas.length">
                         <h4 style="margin: 0 0 1rem; font-size: 0.95rem;">Tabla comparativa detallada</h4>
                         <p-table [value]="resumen.comparativoClinicas" [tableStyle]="{ 'min-width': '58rem' }"
                             [paginator]="true" [rows]="5" [rowsPerPageOptions]="[5, 10, 20]" responsiveLayout="scroll"
@@ -344,11 +361,16 @@ interface ReportFilters {
                             </ng-template>
                         </p-table>
                     </section>
+                    <section class="card cies-empty-state" *ngIf="!resumen.comparativoClinicas.length">
+                        <i class="pi pi-building"></i>
+                        <h3>Sin comparativo disponible</h3>
+                        <p>No hay entrevistas terminadas por clínica con los filtros seleccionados.</p>
+                    </section>
                 </p-tabpanel>
 
                 <!-- TAB 4: Distribución por Variable -->
                 <p-tabpanel value="3">
-                    <section class="card" *ngIf="distribucion">
+                    <section class="card" *ngIf="distribucion && distribucion.items.length">
                         <div class="cies-section-head">
                             <div>
                                 <h3>{{ distribucion.etiquetaPregunta }}</h3>
@@ -382,6 +404,11 @@ interface ReportFilters {
                                 </p-table>
                             </div>
                         </div>
+                    </section>
+                    <section class="card cies-empty-state" *ngIf="distribucion && !distribucion.items.length">
+                        <i class="pi pi-chart-pie"></i>
+                        <h3>Sin distribución para esta variable</h3>
+                        <p>La variable seleccionada no tiene respuestas dentro de los filtros actuales.</p>
                     </section>
                 </p-tabpanel>
             </p-tabpanels>
@@ -617,11 +644,39 @@ export class ReporteriaPage implements OnInit {
                         value: item.nombre
                     }))
                 ];
+                const variableChanged = this.syncVariableOptions(response);
                 this.cdr.detectChanges();
+                if (variableChanged) {
+                    this.load();
+                }
             },
             error: (err) => console.error('Error loading metodologías:', err)
         });
         this.load();
+    }
+
+    private syncVariableOptions(metodologias: Metodologia[]): boolean {
+        const activa = metodologias.find((item) => item.activa) || metodologias[0];
+        if (!activa?.preguntas?.length) {
+            return false;
+        }
+
+        const previousVariable = this.filters.codigoVariable;
+        const variables = new Map<string, string>();
+        activa.preguntas
+            .filter((pregunta) => pregunta.codigoVariable)
+            .sort((a, b) => a.orden - b.orden)
+            .forEach((pregunta) => {
+                if (!variables.has(pregunta.codigoVariable)) {
+                    variables.set(pregunta.codigoVariable, pregunta.etiqueta || pregunta.codigoVariable);
+                }
+            });
+
+        this.variableOptions = Array.from(variables.entries()).map(([value, label]) => ({ label, value }));
+        if (!this.variableOptions.some((option) => option.value === this.filters.codigoVariable)) {
+            this.filters.codigoVariable = this.variableOptions[0]?.value || 'SERVICIO';
+        }
+        return this.filters.codigoVariable !== previousVariable;
     }
 
     get hasResults(): boolean {
@@ -630,16 +685,21 @@ export class ReporteriaPage implements OnInit {
 
     get activeFilterCount(): number {
         let count = 0;
+        if (this.filters.anio.trim()) count++;
         if (this.filters.fechaDesde) count++;
         if (this.filters.fechaHasta) count++;
         if (this.filters.regional) count++;
         if (this.filters.clinica) count++;
         if (this.filters.version) count++;
         if (this.filters.clasificacion) count++;
+        if (this.filters.codigoVariable && this.filters.codigoVariable !== 'SERVICIO') count++;
         return count;
     }
 
     load(): void {
+        if (!this.validateFilters()) {
+            return;
+        }
         this.loading = true;
         const filters = this.getFilterPayload();
 
@@ -670,16 +730,10 @@ export class ReporteriaPage implements OnInit {
 
     loadFilterOptions(): void {
         if (this.resumen?.comparativoClinicas) {
-            const clinicas = Array.from(new Set(this.resumen.comparativoClinicas.map((c) => c.clinica))).sort();
-            this.clinicaOptions = [
-                { label: 'Todas', value: '' },
-                ...clinicas.map((c) => ({ label: c, value: c }))
-            ];
-            const regionales = Array.from(new Set(this.resumen.comparativoClinicas.map((c) => c.regional || ''))).filter(Boolean).sort();
-            this.regionalOptions = [
-                { label: 'Todas', value: '' },
-                ...regionales.map((r) => ({ label: r, value: r }))
-            ];
+            const clinicas = Array.from(new Set(this.resumen.comparativoClinicas.map((c) => c.clinica))).filter(Boolean);
+            this.clinicaOptions = this.mergeFilterOptions(this.clinicaOptions, clinicas, this.filters.clinica);
+            const regionales = Array.from(new Set(this.resumen.comparativoClinicas.map((c) => c.regional || ''))).filter(Boolean);
+            this.regionalOptions = this.mergeFilterOptions(this.regionalOptions, regionales, this.filters.regional);
             return;
         }
 
@@ -704,6 +758,9 @@ export class ReporteriaPage implements OnInit {
     }
 
     download(type: 'excel' | 'csv' | 'sps'): void {
+        if (!this.validateFilters()) {
+            return;
+        }
         this.downloading = true;
         const filters = this.getFilterPayload();
         const request$ =
@@ -779,11 +836,49 @@ export class ReporteriaPage implements OnInit {
         }
     }
 
+    private validateFilters(): boolean {
+        const anio = this.filters.anio.trim();
+        if (anio && !/^\d{4}$/.test(anio)) {
+            this.messageService.add({ severity: 'warn', summary: 'Filtro inválido', detail: 'El año debe tener 4 dígitos, por ejemplo 2026.' });
+            return false;
+        }
+        if (this.filters.fechaDesde && this.filters.fechaHasta && this.filters.fechaDesde > this.filters.fechaHasta) {
+            this.messageService.add({ severity: 'warn', summary: 'Filtro inválido', detail: 'La fecha desde no puede ser posterior a la fecha hasta.' });
+            return false;
+        }
+        return true;
+    }
+
+    private mergeFilterOptions(currentOptions: SelectOption[], values: string[], selectedValue: string): SelectOption[] {
+        const merged = new Set<string>();
+        currentOptions
+            .map((option) => option.value)
+            .filter(Boolean)
+            .forEach((value) => merged.add(value));
+        values.filter(Boolean).forEach((value) => merged.add(value));
+        if (selectedValue) {
+            merged.add(selectedValue);
+        }
+        return [
+            { label: 'Todas', value: '' },
+            ...Array.from(merged)
+                .sort((a, b) => a.localeCompare(b))
+                .map((value) => ({ label: value, value }))
+        ];
+    }
+
+    private formatDateParam(date: Date): string {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
     private getFilterPayload(): Record<string, string> {
         return {
-            anio: this.filters.anio,
-            fechaDesde: this.filters.fechaDesde ? this.filters.fechaDesde.toISOString().split('T')[0] : '',
-            fechaHasta: this.filters.fechaHasta ? this.filters.fechaHasta.toISOString().split('T')[0] : '',
+            anio: this.filters.anio.trim(),
+            fechaDesde: this.filters.fechaDesde ? this.formatDateParam(this.filters.fechaDesde) : '',
+            fechaHasta: this.filters.fechaHasta ? this.formatDateParam(this.filters.fechaHasta) : '',
             regional: this.filters.regional,
             clinica: this.filters.clinica,
             version: this.filters.version,
