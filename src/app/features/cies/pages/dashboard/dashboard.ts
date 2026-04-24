@@ -15,8 +15,6 @@ interface QuickStartCard {
     descripcion: string;
     actionLabel: string;
     routerLink: string;
-    severity?: 'secondary' | 'success' | 'contrast' | 'info' | 'warn' | 'help' | 'danger';
-    outlined?: boolean;
 }
 
 @Component({
@@ -49,7 +47,8 @@ interface QuickStartCard {
                     </div>
                     <div class="cies-guidance-actions">
                         <a [routerLink]="item.routerLink">
-                            <button pButton type="button" [label]="item.actionLabel" [severity]="item.severity || undefined" [outlined]="item.outlined || false"></button>
+                            <button pButton type="button" class="cies-guidance-button"
+                                [label]="item.actionLabel" icon="pi pi-arrow-right" iconPos="right"></button>
                         </a>
                     </div>
                 </article>
@@ -156,6 +155,29 @@ interface QuickStartCard {
             .cies-hero__actions a {
                 display: inline-flex;
             }
+
+            .cies-guidance-actions a {
+                display: inline-flex;
+                width: 100%;
+            }
+
+            :host ::ng-deep .cies-guidance-button.p-button {
+                width: 100%;
+                justify-content: center;
+                min-height: 2.5rem;
+                font-weight: 700;
+                white-space: nowrap;
+            }
+
+            :host ::ng-deep .cies-guidance-button .p-button-label {
+                flex: 0 1 auto;
+            }
+
+            @media (min-width: 769px) {
+                .cies-guidance-actions {
+                    width: 100%;
+                }
+            }
         `
     ]
 })
@@ -206,17 +228,14 @@ export class Dashboard implements OnInit {
                     titulo: 'Si llegaron varias personas',
                     descripcion: 'Pega el listado o sube un CSV para registrar varias personas de una sola vez.',
                     actionLabel: 'Registrar varias personas',
-                    routerLink: '/pages/seleccion',
-                    severity: 'secondary'
+                    routerLink: '/pages/seleccion'
                 },
                 {
                     paso: '3',
                     titulo: 'Si cambió la forma de clasificar',
                     descripcion: 'Ajusta preguntas, ponderaciones y umbrales solo cuando realmente necesites cambiar la metodología.',
                     actionLabel: 'Configurar preguntas',
-                    routerLink: '/pages/metodologia',
-                    severity: 'secondary',
-                    outlined: true
+                    routerLink: '/pages/metodologia'
                 }
             ];
         }
@@ -235,17 +254,14 @@ export class Dashboard implements OnInit {
                     titulo: 'Si es una persona nueva',
                     descripcion: 'Usa el botón Entrevistar a una persona para registrarla y empezar en el mismo paso.',
                     actionLabel: 'Registrar y entrevistar',
-                    routerLink: '/pages/entrevistas',
-                    severity: 'secondary'
+                    routerLink: '/pages/entrevistas'
                 },
                 {
                     paso: '3',
                     titulo: 'Al finalizar',
                     descripcion: 'Revisa que no falten respuestas obligatorias y pulsa Finalizar entrevista para enviar los datos.',
                     actionLabel: 'Ver entrevistas',
-                    routerLink: '/pages/entrevistas',
-                    severity: 'secondary',
-                    outlined: true
+                    routerLink: '/pages/entrevistas'
                 }
             ];
         }
@@ -263,17 +279,14 @@ export class Dashboard implements OnInit {
                 titulo: 'Filtra solo si lo necesitas',
                 descripcion: 'Usa año, regional o clínica únicamente cuando quieras responder una pregunta puntual.',
                 actionLabel: 'Ir a resultados',
-                routerLink: '/pages/reporteria',
-                severity: 'secondary'
+                routerLink: '/pages/reporteria'
             },
             {
                 paso: '3',
                 titulo: 'Exporta cuando ya lo revisaste',
                 descripcion: 'Descarga Excel, CSV o SPSS directamente desde la misma pantalla de resultados.',
                 actionLabel: 'Ver y exportar',
-                routerLink: '/pages/reporteria',
-                severity: 'secondary',
-                outlined: true
+                routerLink: '/pages/reporteria'
             }
         ];
     }

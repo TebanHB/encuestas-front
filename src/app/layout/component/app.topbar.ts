@@ -112,10 +112,6 @@ export class AppTopbar {
     }
 
     get quickActionLabel(): string {
-        if (this.authService.isAdministrador()) {
-            return 'Registrar personas';
-        }
-
         if (this.authService.isEncuestador()) {
             return 'Entrevistar ahora';
         }
@@ -128,10 +124,6 @@ export class AppTopbar {
     }
 
     get quickActionRoute(): string {
-        if (this.authService.isAdministrador()) {
-            return '/pages/seleccion';
-        }
-
         if (this.authService.isEncuestador()) {
             return '/pages/entrevistas';
         }

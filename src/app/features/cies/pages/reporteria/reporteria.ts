@@ -97,7 +97,7 @@ interface SelectOption {
             </section>
 
             <!-- FILTROS -->
-            <section class="card">
+            <section class="card cies-filter-card">
                 <div class="cies-section-head">
                     <div class="cies-section-head__content">
                         <div>
@@ -106,54 +106,57 @@ interface SelectOption {
                         </div>
                         <app-cies-info-hint text="Los filtros afectan los indicadores, gráficos, comparativos y archivos exportados."></app-cies-info-hint>
                     </div>
+                    <span class="cies-filter-count" *ngIf="activeFilterCount">
+                        {{ activeFilterCount }} {{ activeFilterCount === 1 ? 'filtro activo' : 'filtros activos' }}
+                    </span>
                 </div>
-                <div class="cies-form-grid cies-form-grid--filters">
-                    <div>
+                <div class="cies-filter-grid">
+                    <div class="cies-filter-field cies-filter-field--short">
                         <label>Año</label>
                         <input pInputText [(ngModel)]="filters.anio" class="w-full" placeholder="Ej: 2026"
                             inputmode="numeric" maxlength="4" />
                     </div>
-                    <div>
+                    <div class="cies-filter-field cies-filter-field--date">
                         <label>Fecha desde</label>
                         <p-datepicker [(ngModel)]="filters.fechaDesde" dateFormat="yy-mm-dd"
                             appendTo="body" class="w-full" [showIcon]="true" placeholder="Desde"></p-datepicker>
                     </div>
-                    <div>
+                    <div class="cies-filter-field cies-filter-field--date">
                         <label>Fecha hasta</label>
                         <p-datepicker [(ngModel)]="filters.fechaHasta" dateFormat="yy-mm-dd"
                             appendTo="body" class="w-full" [showIcon]="true" placeholder="Hasta"></p-datepicker>
                     </div>
-                    <div>
+                    <div class="cies-filter-field">
                         <label>Regional</label>
                         <p-select [options]="regionalOptions" [(ngModel)]="filters.regional"
                             optionLabel="label" optionValue="value" appendTo="body" class="w-full"
                             placeholder="Todas"></p-select>
                     </div>
-                    <div>
+                    <div class="cies-filter-field">
                         <label>Clínica</label>
                         <p-select [options]="clinicaOptions" [(ngModel)]="filters.clinica"
                             optionLabel="label" optionValue="value" appendTo="body" class="w-full"
                             placeholder="Todas"></p-select>
                     </div>
-                    <div>
+                    <div class="cies-filter-field cies-filter-field--wide">
                         <label>Versión metodológica</label>
                         <p-select [options]="versionOptions" [(ngModel)]="filters.version"
                             optionLabel="label" optionValue="value" appendTo="body" class="w-full"
                             placeholder="Todas"></p-select>
                     </div>
-                    <div>
+                    <div class="cies-filter-field">
                         <label>Clasificación</label>
                         <p-select [options]="clasificaciones" [(ngModel)]="filters.clasificacion"
                             optionLabel="label" optionValue="value" appendTo="body" class="w-full"
                             placeholder="Todas"></p-select>
                     </div>
-                    <div>
+                    <div class="cies-filter-field cies-filter-field--variable">
                         <label>Variable</label>
                         <p-select [options]="variableOptions" [(ngModel)]="filters.codigoVariable"
                             optionLabel="label" optionValue="value" appendTo="body" class="w-full"
                             placeholder="Selecciona una variable"></p-select>
                     </div>
-                    <div class="cies-actions-row">
+                    <div class="cies-filter-actions">
                         <button pButton type="button" label="Aplicar filtros" icon="pi pi-filter"
                             [loading]="loading" (click)="load()"></button>
                         <button pButton type="button" label="Limpiar" severity="secondary"
@@ -529,9 +532,135 @@ interface SelectOption {
         .mini-bar--excluido { background: #f59e0b; }
         .mini-bar--subatendido { background: #0ea5e9; }
 
+        .cies-filter-card {
+            display: flex;
+            flex-direction: column;
+            gap: 1.15rem;
+        }
+
+        .cies-filter-card .cies-section-head {
+            margin-bottom: 0;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--surface-border);
+        }
+
+        .cies-filter-count {
+            flex: 0 0 auto;
+            display: inline-flex;
+            align-items: center;
+            min-height: 2rem;
+            padding: 0.35rem 0.7rem;
+            border-radius: 999px;
+            background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+            color: var(--primary-color);
+            font-size: 0.78rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .cies-filter-grid {
+            display: grid;
+            grid-template-columns: repeat(12, minmax(0, 1fr));
+            gap: 1rem;
+            align-items: end;
+        }
+
+        .cies-filter-field {
+            grid-column: span 3;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .cies-filter-field--short {
+            grid-column: span 2;
+        }
+
+        .cies-filter-field--date {
+            grid-column: span 3;
+        }
+
+        .cies-filter-field--wide {
+            grid-column: span 4;
+        }
+
+        .cies-filter-field--variable {
+            grid-column: span 5;
+        }
+
+        .cies-filter-field label {
+            display: block;
+            margin-bottom: 0.45rem;
+            font-weight: 700;
+            color: var(--cies-ink);
+        }
+
+        .cies-filter-actions {
+            grid-column: span 3;
+            display: flex;
+            justify-content: flex-end;
+            align-items: end;
+            gap: 0.75rem;
+            min-width: 0;
+        }
+
+        :host ::ng-deep .cies-filter-field .p-select,
+        :host ::ng-deep .cies-filter-field .p-datepicker,
+        :host ::ng-deep .cies-filter-field .p-inputtext {
+            width: 100%;
+        }
+
+        :host ::ng-deep .cies-filter-field .p-select-label {
+            min-width: 0;
+        }
+
+        @media (max-width: 1200px) {
+            .cies-filter-field,
+            .cies-filter-field--short,
+            .cies-filter-field--date {
+                grid-column: span 4;
+            }
+
+            .cies-filter-field--wide,
+            .cies-filter-field--variable {
+                grid-column: span 6;
+            }
+
+            .cies-filter-actions {
+                grid-column: 1 / -1;
+                justify-content: flex-start;
+            }
+        }
+
         @media (max-width: 768px) {
             .cies-stats-grid {
                 grid-template-columns: 1fr;
+            }
+
+            .cies-filter-card .cies-section-head {
+                align-items: stretch;
+            }
+
+            .cies-filter-count {
+                width: fit-content;
+            }
+
+            .cies-filter-field,
+            .cies-filter-field--short,
+            .cies-filter-field--date,
+            .cies-filter-field--wide,
+            .cies-filter-field--variable,
+            .cies-filter-actions {
+                grid-column: 1 / -1;
+            }
+
+            .cies-filter-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .cies-filter-actions button {
+                width: 100%;
             }
 
             .chart-container {
