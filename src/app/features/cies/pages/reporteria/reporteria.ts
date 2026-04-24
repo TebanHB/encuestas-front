@@ -15,6 +15,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { DatePickerModule } from 'primeng/datepicker';
 import { BadgeModule } from 'primeng/badge';
 import { OverlayBadgeModule } from 'primeng/overlaybadge';
+import { forkJoin } from 'rxjs';
 import { NumeroFormatoPipe } from '../../../../shared/pipes/formato.pipe';
 import { CiesInfoHintComponent } from '../../components/cies-info-hint';
 import { CiesService, DistribucionVariable, Metodologia, ReporteResumen } from '../../services/cies.service';
@@ -61,13 +62,13 @@ interface SelectOption {
                 </div>
                 <div class="cies-hero__actions">
                     <button pButton type="button" label="Ver todo" icon="pi pi-eye"
-                        severity="secondary" [outlined]="true" (click)="resetFilters()"></button>
+                        severity="secondary" [outlined]="true" [disabled]="loading || downloading" (click)="resetFilters()"></button>
                     <button pButton type="button" label="Excel" icon="pi pi-file-excel"
-                        severity="success" [loading]="downloading" (click)="download('excel')"></button>
+                        severity="success" [loading]="downloading" [disabled]="loading || downloading || !resumen" (click)="download('excel')"></button>
                     <button pButton type="button" label="CSV" icon="pi pi-download"
-                        severity="secondary" [loading]="downloading" (click)="download('csv')"></button>
+                        severity="secondary" [loading]="downloading" [disabled]="loading || downloading || !resumen" (click)="download('csv')"></button>
                     <button pButton type="button" label="SPSS" icon="pi pi-database"
-                        severity="contrast" [loading]="downloading" (click)="download('sps')"></button>
+                        severity="contrast" [loading]="downloading" [disabled]="loading || downloading || !resumen" (click)="download('sps')"></button>
                 </div>
             </section>
 
@@ -158,9 +159,9 @@ interface SelectOption {
                     </div>
                     <div class="cies-filter-actions">
                         <button pButton type="button" label="Aplicar filtros" icon="pi pi-filter"
-                            [loading]="loading" (click)="load()"></button>
+                            [loading]="loading" [disabled]="loading || downloading" (click)="load()"></button>
                         <button pButton type="button" label="Limpiar" severity="secondary"
-                            [outlined]="true" icon="pi pi-times" (click)="resetFilters()"></button>
+                            [outlined]="true" icon="pi pi-times" [disabled]="loading || downloading" (click)="resetFilters()"></button>
                     </div>
                 </div>
             </section>
@@ -425,7 +426,7 @@ interface SelectOption {
                     <p>Prueba quitando filtros o usando la vista general.</p>
                     <div class="cies-empty-state__actions">
                         <button pButton type="button" label="Ver todo" icon="pi pi-refresh"
-                            (click)="resetFilters()"></button>
+                            [disabled]="loading || downloading" (click)="resetFilters()"></button>
                     </div>
                 </div>
             </section>
@@ -773,15 +774,15 @@ export class ReporteriaPage implements OnInit {
                         value: item.nombre
                     }))
                 ];
-                const variableChanged = this.syncVariableOptions(response);
+                this.syncVariableOptions(response);
                 this.cdr.detectChanges();
-                if (variableChanged) {
-                    this.load();
-                }
+                this.load();
             },
-            error: (err) => console.error('Error loading metodologías:', err)
+            error: (err) => {
+                console.error('Error loading metodologías:', err);
+                this.load();
+            }
         });
-        this.load();
     }
 
     private syncVariableOptions(metodologias: Metodologia[]): boolean {
@@ -826,15 +827,22 @@ export class ReporteriaPage implements OnInit {
     }
 
     load(): void {
+        if (this.loading) {
+            return;
+        }
         if (!this.validateFilters()) {
             return;
         }
         this.loading = true;
         const filters = this.getFilterPayload();
 
-        this.ciesService.getReporteResumen(filters).subscribe({
-            next: (response) => {
-                this.resumen = response;
+        forkJoin({
+            resumen: this.ciesService.getReporteResumen(filters),
+            distribucion: this.ciesService.getDistribucionVariable(filters)
+        }).subscribe({
+            next: ({ resumen, distribucion }) => {
+                this.resumen = resumen;
+                this.distribucion = distribucion;
                 this.buildCharts();
                 this.loadFilterOptions();
                 this.loading = false;
@@ -842,19 +850,11 @@ export class ReporteriaPage implements OnInit {
             },
             error: (err) => {
                 this.loading = false;
-                console.error('Error loading resumen:', err);
+                console.error('Error loading reportes:', err);
                 this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los reportes' });
             }
         });
 
-        this.ciesService.getDistribucionVariable(filters).subscribe({
-            next: (response) => {
-                this.distribucion = response;
-                this.buildCharts();
-                this.cdr.detectChanges();
-            },
-            error: (err) => console.error('Error loading distribución:', err)
-        });
     }
 
     loadFilterOptions(): void {
@@ -871,6 +871,9 @@ export class ReporteriaPage implements OnInit {
     }
 
     resetFilters(): void {
+        if (this.loading || this.downloading) {
+            return;
+        }
         this.filters = {
             anio: '',
             fechaDesde: null,
@@ -887,6 +890,9 @@ export class ReporteriaPage implements OnInit {
     }
 
     download(type: 'excel' | 'csv' | 'sps'): void {
+        if (this.loading || this.downloading) {
+            return;
+        }
         if (!this.validateFilters()) {
             return;
         }

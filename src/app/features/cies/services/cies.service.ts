@@ -141,6 +141,7 @@ export interface Entrevista {
         codigoVariable: string;
         etiqueta: string;
         valorCrudo?: string;
+        valorOtro?: string;
         etiquetaRespuesta?: string;
         valorNumerico?: number;
     }[];

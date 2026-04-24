@@ -306,14 +306,18 @@ interface ValidationError {
 
                             <!-- Input cuando se selecciona "Otro" -->
                             <div *ngIf="isCurrentSelectedOtro(question) && !shouldSkipQuestion(question)" class="otro-input-wrapper">
-                                <label class="otro-label">Especifica la opción seleccionada
+                                <label class="otro-label">{{ getOtroLabel(question) }}
                                     <span class="required-marker" *ngIf="question.obligatoria">*</span>
                                 </label>
-                                <input pInputText [(ngModel)]="answers[question.id].valorOtro"
+                                <input pInputText [ngModel]="answers[question.id].valorOtro || ''"
                                     class="w-full input-texto"
+                                    [maxlength]="OTRO_MAX_LENGTH"
                                     [class.input-invalid]="showValidation && isQuestionInvalid(question)"
-                                    (ngModelChange)="onAnswerChange()"
-                                    placeholder="Describe la opción..." />
+                                    (ngModelChange)="onOtroChange(question.id, $event)"
+                                    [placeholder]="getOtroPlaceholder(question)" />
+                                <small class="otro-helper">
+                                    {{ getOtroLength(question.id) }}/{{ OTRO_MAX_LENGTH }} caracteres
+                                </small>
                             </div>
                         </div>
 
@@ -776,6 +780,14 @@ interface ValidationError {
             margin-bottom: 0.35rem;
         }
 
+        .otro-helper {
+            display: block;
+            margin-top: 0.35rem;
+            color: var(--text-color-secondary);
+            font-size: 0.75rem;
+            text-align: right;
+        }
+
         .opcion-card {
             display: flex;
             align-items: center;
@@ -1076,6 +1088,8 @@ interface ValidationError {
     `]
 })
 export class EntrevistasPage implements OnInit {
+    readonly OTRO_MAX_LENGTH = 120;
+
     private ciesService = inject(CiesService);
     private cdr = inject(ChangeDetectorRef);
     private messageService = inject(MessageService);
@@ -1249,7 +1263,7 @@ export class EntrevistasPage implements OnInit {
                         this.answers[q.id] = {
                             codigoOpcion: this.isOptionQuestion(q) ? (saved?.valorCrudo || '') : '',
                             valorTexto: this.isOptionQuestion(q) ? '' : (saved?.valorCrudo || ''),
-                            valorOtro: ''
+                            valorOtro: (saved?.valorOtro || '').slice(0, this.OTRO_MAX_LENGTH)
                         };
                     });
 
@@ -1306,6 +1320,30 @@ export class EntrevistasPage implements OnInit {
     isCurrentSelectedOtro(question: PreguntaInstrumento): boolean {
         const answer = this.answers[question.id];
         return !!answer && this.isOtroOption(question, answer.codigoOpcion);
+    }
+
+    getOtroLabel(question: PreguntaInstrumento): string {
+        return question.codigoVariable === 'SERVICIO'
+            ? 'Especifica a qué servicio viene'
+            : 'Especifica la opción seleccionada';
+    }
+
+    getOtroPlaceholder(question: PreguntaInstrumento): string {
+        return question.codigoVariable === 'SERVICIO'
+            ? 'Ej.: control, laboratorio, consulta externa...'
+            : 'Describe la opción...';
+    }
+
+    getOtroLength(preguntaId: number): number {
+        return (this.answers[preguntaId]?.valorOtro || '').length;
+    }
+
+    onOtroChange(preguntaId: number, value: string): void {
+        if (!this.answers[preguntaId]) {
+            this.answers[preguntaId] = {};
+        }
+        this.answers[preguntaId].valorOtro = (value || '').slice(0, this.OTRO_MAX_LENGTH);
+        this.onAnswerChange();
     }
 
     isQuestionAnswered(question: PreguntaInstrumento): boolean {
@@ -1461,7 +1499,9 @@ export class EntrevistasPage implements OnInit {
                     preguntaId: q.id,
                     codigoOpcion: answer.codigoOpcion,
                     valorTexto: answer.valorTexto,
-                    valorOtro: this.isOtroOption(q, answer.codigoOpcion) ? answer.valorOtro : undefined
+                    valorOtro: this.isOtroOption(q, answer.codigoOpcion)
+                        ? (answer.valorOtro || '').trim().slice(0, this.OTRO_MAX_LENGTH)
+                        : undefined
                 };
             });
     }
