@@ -357,6 +357,16 @@ export class CiesService {
         return this.http.delete<void>(`${this.apiBase}/seleccion/lotes/${id}`).pipe(tap(() => this.resetOperacionCache()));
     }
 
+    downloadPlantillaPersonas(): Observable<Blob> {
+        return this.http.get(`${this.apiBase}/exportaciones/plantilla-personas.xlsx`, { responseType: 'blob' });
+    }
+
+    leerPlantillaPersonas(file: File): Observable<Array<Record<string, unknown>>> {
+        const formData = new FormData();
+        formData.append('archivo', file);
+        return this.http.post<Array<Record<string, unknown>>>(`${this.apiBase}/seleccion/plantilla-personas/leer`, formData);
+    }
+
     executeSeleccion(loteId: number, semilla?: string): Observable<EjecucionSeleccion> {
         return this.http.post<EjecucionSeleccion>(`${this.apiBase}/seleccion/ejecuciones`, { loteId, semilla }).pipe(tap(() => this.resetOperacionCache()));
     }

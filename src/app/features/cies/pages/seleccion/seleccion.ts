@@ -59,8 +59,10 @@ import { CiesService, EjecucionSeleccion, LoteMedicare } from '../../services/ci
                     <div class="cies-section-head__content">
                         <div>
                             <h3>{{ editingLoteId ? '✏️ Editando listado' : '📋 Registrar un listado de personas' }}</h3>
-                            <p>{{ editingLoteId ? 'Corrige el nombre o el contenido del listado.' : 'Ponle nombre, pega los datos o sube un archivo CSV/JSON.' }}</p>
+                            <p>{{ editingLoteId ? 'Corrige el nombre o el contenido del listado.' : 'Ponle nombre, pega los datos o sube un archivo Excel, CSV o JSON.' }}</p>
                         </div>
+                        <button pButton type="button" [label]="downloadingTemplate ? 'Descargando...' : 'Descargar plantilla Excel'" icon="pi pi-file-excel"
+                            severity="success" [outlined]="true" [disabled]="downloadingTemplate" (click)="downloadTemplate()"></button>
                     </div>
                 </div>
 
@@ -96,7 +98,7 @@ import { CiesService, EjecucionSeleccion, LoteMedicare } from '../../services/ci
                         <input
                             #fileInput
                             type="file"
-                            accept=".csv,.json"
+                            accept=".xlsx,.xls,.csv,.json"
                             class="file-input-hidden"
                             (change)="onFileSelected($event)"
                         />
@@ -105,8 +107,9 @@ import { CiesService, EjecucionSeleccion, LoteMedicare } from '../../services/ci
                             <div class="file-drop-icon">📁</div>
                             <div class="file-drop-title">Arrastra tu archivo aquí</div>
                             <div class="file-drop-subtitle">o pulsa el botón para seleccionar</div>
-                            <button pButton type="button" label="📂 Elegir archivo CSV o JSON" severity="secondary" outlined (click)="fileInput.click()"></button>
+                            <button pButton type="button" [label]="loadingExcel ? 'Leyendo Excel...' : '📂 Elegir archivo Excel, CSV o JSON'" severity="secondary" outlined [disabled]="loadingExcel" (click)="fileInput.click()"></button>
                             <div class="file-drop-formats">
+                                <span class="format-badge">.XLSX</span>
                                 <span class="format-badge">.CSV</span>
                                 <span class="format-badge">.JSON</span>
                             </div>
@@ -617,6 +620,8 @@ export class SeleccionPage implements OnInit {
     archivoCargado = false;
     archivoNombre = '';
     textareaFocused = false;
+    downloadingTemplate = false;
+    loadingExcel = false;
 
     ngOnInit(): void {
         this.load();
@@ -652,6 +657,36 @@ export class SeleccionPage implements OnInit {
         });
     }
 
+    downloadTemplate(): void {
+        if (this.downloadingTemplate) return;
+
+        this.downloadingTemplate = true;
+        this.ciesService.downloadPlantillaPersonas().subscribe({
+            next: (blob) => {
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'plantilla-personas-cies.xlsx';
+                link.click();
+                window.URL.revokeObjectURL(url);
+                this.downloadingTemplate = false;
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Plantilla descargada',
+                    detail: 'Llena el Excel y vuelve a subirlo en esta misma pantalla.'
+                });
+            },
+            error: (error) => {
+                this.downloadingTemplate = false;
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: this.extractErrorMessage(error, 'No se pudo descargar la plantilla')
+                });
+            }
+        });
+    }
+
     onFileSelected(event: Event): void {
         const input = event.target as HTMLInputElement;
         const file = input.files?.[0];
@@ -659,16 +694,8 @@ export class SeleccionPage implements OnInit {
             return;
         }
 
-        this.archivoNombre = file.name;
-        this.archivoCargado = true;
-
-        const reader = new FileReader();
-        reader.onload = () => {
-            this.cargaMasiva = String(reader.result || '');
-            this.cargaError = '';
-            this.cdr.detectChanges();
-        };
-        reader.readAsText(file);
+        this.processSelectedFile(file);
+        input.value = '';
     }
 
     onDragOver(event: DragEvent): void {
@@ -689,16 +716,45 @@ export class SeleccionPage implements OnInit {
         const file = event.dataTransfer?.files?.[0];
         if (!file) return;
 
-        const validTypes = ['text/csv', 'application/json', 'text/plain'];
+        this.processSelectedFile(file);
+    }
+
+    private processSelectedFile(file: File): void {
+        const validTypes = ['text/csv', 'application/json', 'text/plain', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'];
         const ext = file.name.split('.').pop()?.toLowerCase();
-        if (!validTypes.includes(file.type) && !['csv', 'json'].includes(ext || '')) {
-            this.cargaError = 'Solo se aceptan archivos .csv o .json';
+        if (!validTypes.includes(file.type) && !['csv', 'json', 'xlsx', 'xls'].includes(ext || '')) {
+            this.cargaError = 'Solo se aceptan archivos .xlsx, .csv o .json';
             this.cdr.detectChanges();
             return;
         }
 
         this.archivoNombre = file.name;
         this.archivoCargado = true;
+
+        if (ext === 'xlsx' || ext === 'xls') {
+            this.loadingExcel = true;
+            this.ciesService.leerPlantillaPersonas(file).subscribe({
+                next: (personas) => {
+                    this.cargaMasiva = JSON.stringify(personas, null, 2);
+                    this.cargaError = '';
+                    this.loadingExcel = false;
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Excel leído',
+                        detail: `Se cargaron ${personas.length} persona${personas.length === 1 ? '' : 's'} desde la plantilla.`
+                    });
+                    this.cdr.detectChanges();
+                },
+                error: (error) => {
+                    this.cargaError = this.extractErrorMessage(error, 'No se pudo leer la plantilla Excel');
+                    this.archivoCargado = false;
+                    this.archivoNombre = '';
+                    this.loadingExcel = false;
+                    this.cdr.detectChanges();
+                }
+            });
+            return;
+        }
 
         const reader = new FileReader();
         reader.onload = () => {
@@ -753,6 +809,7 @@ export class SeleccionPage implements OnInit {
         this.archivoCargado = false;
         this.archivoNombre = '';
         this.textareaFocused = false;
+        this.loadingExcel = false;
         this.cdr.detectChanges();
     }
 
@@ -943,13 +1000,18 @@ export class SeleccionPage implements OnInit {
 
     private extractErrorMessage(error: unknown, fallback: string): string {
         const payload = error as {
-            error?: { message?: string; detail?: string; error?: string };
+            error?: { message?: string; detail?: string; error?: string } | string;
             message?: string;
         } | null;
 
-        return payload?.error?.message
-            || payload?.error?.detail
-            || payload?.error?.error
+        const errorBody = payload?.error;
+        if (typeof errorBody === 'string') {
+            return errorBody;
+        }
+
+        return errorBody?.message
+            || errorBody?.detail
+            || errorBody?.error
             || payload?.message
             || fallback;
     }
