@@ -13,6 +13,7 @@ import { AccordionModule } from 'primeng/accordion';
 import { Toast } from 'primeng/toast';
 import { TabsModule } from 'primeng/tabs';
 import { SelectModule } from 'primeng/select';
+import { firstValueFrom } from 'rxjs';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { CiesInfoHintComponent } from '../../components/cies-info-hint';
 import { CiesService, Metodologia, MetodologiaComparativo } from '../../services/cies.service';
@@ -74,12 +75,12 @@ interface CreateMetodologiaForm {
 
                     <div class="crud-toolbar__actions" *ngIf="canEditConfiguration">
                         <button pButton type="button" label="Nueva encuesta" icon="pi pi-plus"
-                            (click)="openCreateDialog()"></button>
-                        <button pButton type="button" label="Usar en el sistema" icon="pi pi-check-circle"
-                            severity="success" [outlined]="true"
+                            [disabled]="isBusy" (click)="openCreateDialog()"></button>
+                        <button pButton type="button" [label]="activating ? 'Activando...' : 'Usar en el sistema'" icon="pi pi-check-circle"
+                            severity="success" [outlined]="true" [disabled]="isBusy"
                             *ngIf="active && !active.activa" (click)="activateSelected()"></button>
-                        <button pButton type="button" label="Eliminar" icon="pi pi-trash"
-                            severity="danger" [outlined]="true"
+                        <button pButton type="button" [label]="deleting ? 'Eliminando...' : 'Eliminar'" icon="pi pi-trash"
+                            severity="danger" [outlined]="true" [disabled]="isBusy"
                             *ngIf="active && !active.activa" (click)="deleteSelected()"></button>
                     </div>
                 </div>
@@ -172,9 +173,9 @@ interface CreateMetodologiaForm {
                 </p-accordion>
 
                 <div class="cies-actions-row">
-                    <button *ngIf="canEditConfiguration" pButton type="button" label="Editar configuración" icon="pi pi-pencil" (click)="openEdit(active)"></button>
-                    <button pButton type="button" label="Comparar versiones" icon="pi pi-clone" severity="secondary" [outlined]="true" (click)="openComparativo()"></button>
-                    <button pButton type="button" label="Duplicar versión" icon="pi pi-copy" severity="info" [outlined]="true" (click)="duplicateVersion()"></button>
+                    <button *ngIf="canEditConfiguration" pButton type="button" label="Editar configuración" icon="pi pi-pencil" [disabled]="isBusy" (click)="openEdit(active)"></button>
+                    <button pButton type="button" label="Comparar versiones" icon="pi pi-clone" severity="secondary" [outlined]="true" [disabled]="isBusy" (click)="openComparativo()"></button>
+                    <button *ngIf="canEditConfiguration" pButton type="button" [label]="duplicating ? 'Duplicando...' : 'Duplicar versión'" icon="pi pi-copy" severity="info" [outlined]="true" [disabled]="isBusy" (click)="duplicateVersion()"></button>
                 </div>
 
                 <div class="cies-soft-note" *ngIf="!canEditConfiguration">
@@ -212,7 +213,7 @@ interface CreateMetodologiaForm {
                     </div>
                     <div class="comparativo-btn-wrapper">
                         <button pButton type="button" label="Comparar" icon="pi pi-clone"
-                            [disabled]="!comparativoVersion1 || !comparativoVersion2"
+                            [disabled]="loadingComparativo || !comparativoVersion1 || !comparativoVersion2"
                             (click)="loadComparativo()"></button>
                     </div>
                 </div>
@@ -302,8 +303,9 @@ interface CreateMetodologiaForm {
 
             <ng-template pTemplate="footer">
                 <button pButton type="button" label="Cancelar" severity="secondary" [outlined]="true"
-                    (click)="closeCreateDialog()"></button>
-                <button pButton type="button" label="Crear encuesta" icon="pi pi-check"
+                    [disabled]="creatingSurvey" (click)="closeCreateDialog()"></button>
+                <button pButton type="button" [label]="creatingSurvey ? 'Creando...' : 'Crear encuesta'" icon="pi pi-check"
+                    [disabled]="creatingSurvey"
                     (click)="createSurvey()"></button>
             </ng-template>
         </p-dialog>
@@ -439,8 +441,8 @@ interface CreateMetodologiaForm {
             </div>
 
             <ng-template pTemplate="footer">
-                <button pButton type="button" label="Cancelar" severity="secondary" [outlined]="true" (click)="showEditor = false"></button>
-                <button pButton type="button" label="💾 Guardar cambios" (click)="save()"></button>
+                <button pButton type="button" label="Cancelar" severity="secondary" [outlined]="true" [disabled]="savingEditor" (click)="showEditor = false"></button>
+                <button pButton type="button" [label]="savingEditor ? 'Guardando...' : '💾 Guardar cambios'" [disabled]="savingEditor" (click)="save()"></button>
             </ng-template>
         </p-dialog>
     `,
@@ -873,6 +875,16 @@ export class MetodologiaPage implements OnInit {
     selectedMetodologiaId: number | null = null;
     showCreateDialog = false;
     createForm: CreateMetodologiaForm = this.createEmptyMetodologiaForm();
+    creatingSurvey = false;
+    savingEditor = false;
+    activating = false;
+    deleting = false;
+    duplicating = false;
+    loadingComparativo = false;
+
+    get isBusy(): boolean {
+        return this.creatingSurvey || this.savingEditor || this.activating || this.deleting || this.duplicating;
+    }
 
     get canEditConfiguration(): boolean {
         return this.authService.isAdministrador();
@@ -889,8 +901,8 @@ export class MetodologiaPage implements OnInit {
         this.load();
     }
 
-    load(preferredId?: number | null): void {
-        this.ciesService.listMetodologias().subscribe({
+    load(preferredId?: number | null, forceRefresh = false): void {
+        this.ciesService.listMetodologias(forceRefresh).subscribe({
             next: (response) => {
                 const metodologias = [...response].sort((left, right) =>
                     new Date(right.fechaCreacion).getTime() - new Date(left.fechaCreacion).getTime()
@@ -898,11 +910,12 @@ export class MetodologiaPage implements OnInit {
                 this.metodologias = metodologias;
                 this.activeMetodologiaId = metodologias.find((item) => item.activa)?.id || null;
 
-                const targetId = preferredId
-                    || this.selectedMetodologiaId
-                    || this.activeMetodologiaId
-                    || metodologias[0]?.id
-                    || null;
+                const targetId = [
+                    preferredId,
+                    this.selectedMetodologiaId,
+                    this.activeMetodologiaId,
+                    metodologias[0]?.id
+                ].find((id) => id != null && metodologias.some((item) => item.id === id)) || null;
 
                 this.selectMetodologia(targetId);
                 this.cdr.detectChanges();
@@ -963,12 +976,16 @@ export class MetodologiaPage implements OnInit {
     }
 
     closeCreateDialog(): void {
+        if (this.creatingSurvey) return;
+
         this.showCreateDialog = false;
         this.createForm = this.createEmptyMetodologiaForm();
         this.cdr.detectChanges();
     }
 
     createSurvey(): void {
+        if (this.creatingSurvey) return;
+
         if (!this.canEditConfiguration) {
             this.messageService.add({
                 severity: 'warn',
@@ -996,17 +1013,20 @@ export class MetodologiaPage implements OnInit {
             comentarioCambio: this.createForm.comentarioCambio.trim() || `Nueva encuesta creada desde la plantilla ${template.nombre}`
         });
 
+        this.creatingSurvey = true;
         this.ciesService.createMetodologia(payload).subscribe({
             next: (created) => {
+                this.creatingSurvey = false;
                 this.closeCreateDialog();
                 this.messageService.add({
                     severity: 'success',
                     summary: 'Encuesta creada',
                     detail: `Se creó ${created.nombre} usando ${template.nombre} como plantilla.`
                 });
-                this.load(created.id);
+                this.load(created.id, true);
             },
             error: (error) => {
+                this.creatingSurvey = false;
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
@@ -1017,19 +1037,23 @@ export class MetodologiaPage implements OnInit {
     }
 
     activateSelected(): void {
-        if (!this.active || this.active.activa) return;
+        if (!this.canEditConfiguration || !this.active || this.active.activa || this.activating) return;
 
         const selectedId = this.active.id;
+        const selectedName = this.active.nombre;
+        this.activating = true;
         this.ciesService.activateMetodologia(selectedId).subscribe({
             next: () => {
+                this.activating = false;
                 this.messageService.add({
                     severity: 'success',
                     summary: 'Encuesta activada',
-                    detail: `${this.active?.nombre} ahora es la encuesta activa del sistema.`
+                    detail: `${selectedName} ahora es la encuesta activa del sistema.`
                 });
-                this.load(selectedId);
+                this.load(selectedId, true);
             },
             error: (error) => {
+                this.activating = false;
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
@@ -1040,23 +1064,27 @@ export class MetodologiaPage implements OnInit {
     }
 
     deleteSelected(): void {
-        if (!this.active || this.active.activa) return;
+        if (!this.canEditConfiguration || !this.active || this.active.activa || this.deleting) return;
 
         if (!window.confirm(`Se eliminará la encuesta "${this.active.nombre}". ¿Deseas continuar?`)) {
             return;
         }
 
         const deletedId = this.active.id;
+        const deletedName = this.active.nombre;
+        this.deleting = true;
         this.ciesService.deleteMetodologia(deletedId).subscribe({
             next: () => {
+                this.deleting = false;
                 this.messageService.add({
                     severity: 'success',
                     summary: 'Encuesta eliminada',
-                    detail: 'La encuesta se eliminó correctamente.'
+                    detail: `La encuesta "${deletedName}" se eliminó correctamente.`
                 });
-                this.load(this.activeMetodologiaId);
+                this.load(this.activeMetodologiaId, true);
             },
             error: (error) => {
+                this.deleting = false;
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
@@ -1070,35 +1098,70 @@ export class MetodologiaPage implements OnInit {
         this.showComparativo = true;
         this.comparativoVersion1 = this.active?.id || null;
         this.comparativoVersion2 = null;
+        this.comparativoData = [];
         this.cdr.detectChanges();
     }
 
-    loadComparativo(): void {
-        if (!this.comparativoVersion1 || !this.comparativoVersion2) return;
+    async loadComparativo(): Promise<void> {
+        if (!this.comparativoVersion1 || !this.comparativoVersion2 || this.loadingComparativo) return;
 
-        Promise.all([
-            this.ciesService.getMetodologiaComparativo(this.comparativoVersion1).toPromise(),
-            this.ciesService.getMetodologiaComparativo(this.comparativoVersion2).toPromise()
-        ]).then(([data1, data2]) => {
-            this.comparativoData = [data1!, data2!];
+        this.loadingComparativo = true;
+        try {
+            const [data1, data2] = await Promise.all([
+                firstValueFrom(this.ciesService.getMetodologiaComparativo(this.comparativoVersion1)),
+                firstValueFrom(this.ciesService.getMetodologiaComparativo(this.comparativoVersion2))
+            ]);
+            this.comparativoData = [data1, data2];
             this.cdr.detectChanges();
-        }).catch((err) => {
-            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cargar el comparativo' });
-            console.error('Error loading comparativo:', err);
-        });
+        } catch (error) {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: this.extractErrorMessage(error, 'No se pudo cargar el comparativo')
+            });
+            console.error('Error loading comparativo:', error);
+        } finally {
+            this.loadingComparativo = false;
+        }
     }
 
     duplicateVersion(): void {
-        if (!this.active) return;
+        if (!this.canEditConfiguration) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Sin permisos',
+                detail: 'Solo un administrador puede duplicar versiones'
+            });
+            return;
+        }
 
-        this.ciesService.duplicateMetodologia(this.active.id).subscribe({
+        if (!this.active || this.duplicating) return;
+
+        const sourceId = this.active.id;
+        const sourceName = this.active.nombre;
+        if (!window.confirm(`Se duplicará la versión "${sourceName}" como una nueva encuesta en borrador. ¿Estás seguro de continuar?`)) {
+            return;
+        }
+
+        this.duplicating = true;
+        this.ciesService.duplicateMetodologia(sourceId).subscribe({
             next: (created) => {
-                this.messageService.add({ severity: 'success', summary: 'Versión duplicada', detail: 'Se creó una nueva versión basada en la configuración actual' });
-                this.load(created.id);
+                this.duplicating = false;
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Versión duplicada',
+                    detail: `Se creó "${created.nombre}" como copia de "${sourceName}".`
+                });
+                this.load(created.id, true);
             },
-            error: (err) => {
-                this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo duplicar la versión' });
-                console.error('Error duplicating:', err);
+            error: (error) => {
+                this.duplicating = false;
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: this.extractErrorMessage(error, 'No se pudo duplicar la versión')
+                });
+                console.error('Error duplicating:', error);
             }
         });
     }
@@ -1118,7 +1181,16 @@ export class MetodologiaPage implements OnInit {
     }
 
     save(): void {
-        if (!this.editor) return;
+        if (!this.editor || this.savingEditor) return;
+
+        if (!this.canEditConfiguration) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Sin permisos',
+                detail: 'Solo un administrador puede editar la configuración'
+            });
+            return;
+        }
 
         if (!this.editor.nombre) {
             this.messageService.add({ severity: 'warn', summary: 'Validación', detail: 'El nombre es obligatorio' });
@@ -1138,12 +1210,14 @@ export class MetodologiaPage implements OnInit {
         };
 
         const editedId = this.editor.id;
+        this.savingEditor = true;
         this.ciesService.updateMetodologia(editedId, payload).subscribe({
             next: () => {
+                this.savingEditor = false;
                 this.showEditor = false;
                 this.editor = null;
                 this.cdr.detectChanges();
-                this.load(editedId);
+                this.load(editedId, true);
                 this.messageService.add({
                     severity: 'success',
                     summary: '✅ Configuración actualizada',
@@ -1151,6 +1225,7 @@ export class MetodologiaPage implements OnInit {
                 });
             },
             error: (error) => {
+                this.savingEditor = false;
                 console.error('Error saving methodology:', error);
                 this.messageService.add({
                     severity: 'error',
@@ -1218,13 +1293,18 @@ export class MetodologiaPage implements OnInit {
 
     private extractErrorMessage(error: unknown, fallback: string): string {
         const payload = error as {
-            error?: { message?: string; detail?: string; error?: string };
+            error?: { message?: string; detail?: string; error?: string } | string;
             message?: string;
         } | null;
 
-        return payload?.error?.message
-            || payload?.error?.detail
-            || payload?.error?.error
+        const errorBody = payload?.error;
+        if (typeof errorBody === 'string') {
+            return errorBody;
+        }
+
+        return errorBody?.message
+            || errorBody?.detail
+            || errorBody?.error
             || payload?.message
             || fallback;
     }
