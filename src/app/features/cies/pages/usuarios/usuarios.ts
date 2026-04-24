@@ -71,7 +71,7 @@ import { CiesService, UsuarioAdmin, UsuarioUpsertRequest } from '../../services/
                         <app-cies-info-hint text="Desde este bloque puedes crear usuarios, ajustar su rol y reactivar cuentas cuando sea necesario."></app-cies-info-hint>
                     </div>
                 </div>
-                <div *ngIf="!usuarios.length" class="cies-empty-state">
+                <div *ngIf="!loadingUsuarios && !totalUsuarios" class="cies-empty-state">
                     <div class="cies-empty-state__icon">
                         <i class="pi pi-users"></i>
                     </div>
@@ -82,7 +82,11 @@ import { CiesService, UsuarioAdmin, UsuarioUpsertRequest } from '../../services/
                     </div>
                 </div>
 
-                <p-table *ngIf="usuarios.length" [value]="usuarios" [tableStyle]="{ 'min-width': '64rem' }" responsiveLayout="scroll" class="cies-table">
+                <p-table *ngIf="totalUsuarios" [value]="usuarios" [tableStyle]="{ 'min-width': '64rem' }"
+                    responsiveLayout="scroll" [paginator]="true" [lazy]="true" [rows]="usuariosRows"
+                    [first]="usuariosPage * usuariosRows" [totalRecords]="totalUsuarios"
+                    [rowsPerPageOptions]="[10, 20, 50]" [loading]="loadingUsuarios"
+                    (onLazyLoad)="onUsuariosLazyLoad($any($event))" class="cies-table">
                     <ng-template pTemplate="header">
                         <tr>
                             <th>ID</th>
@@ -188,6 +192,10 @@ export class UsuariosPage implements OnInit {
     private router = inject(Router);
 
     usuarios: UsuarioAdmin[] = [];
+    totalUsuarios = 0;
+    usuariosPage = 0;
+    usuariosRows = 10;
+    loadingUsuarios = false;
     showDialog = false;
     editingId: number | null = null;
 
@@ -210,17 +218,34 @@ export class UsuariosPage implements OnInit {
         this.load();
     }
 
-    load(): void {
-        this.ciesService.listUsuarios().subscribe({
+    load(page = this.usuariosPage, size = this.usuariosRows): void {
+        this.loadingUsuarios = true;
+        this.ciesService.listUsuariosPaginado(page, size).subscribe({
             next: (response) => {
-                this.usuarios = response;
+                if (!response.content.length && response.totalElements > 0 && page > 0) {
+                    this.load(page - 1, size);
+                    return;
+                }
+
+                this.usuarios = response.content;
+                this.totalUsuarios = response.totalElements;
+                this.usuariosPage = response.page;
+                this.usuariosRows = response.size;
+                this.loadingUsuarios = false;
                 this.cdr.detectChanges();
             },
             error: (error) => {
+                this.loadingUsuarios = false;
                 console.error('Error loading users:', error);
                 this.messageService.add({ severity: 'error', summary: 'Error', detail: this.extractErrorMessage(error, 'No se pudieron cargar los usuarios') });
             }
         });
+    }
+
+    onUsuariosLazyLoad(event: { first?: number; rows?: number }): void {
+        const rows = event.rows || this.usuariosRows;
+        const page = Math.floor((event.first || 0) / rows);
+        this.load(page, rows);
     }
 
     openCreate(): void {

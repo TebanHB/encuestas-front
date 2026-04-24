@@ -187,7 +187,7 @@ import { CiesService, EjecucionSeleccion, LoteMedicare } from '../../services/ci
                     </div>
                 </div>
 
-                <div *ngIf="!lotes.length" class="cies-empty-state">
+                <div *ngIf="!hasLotes" class="cies-empty-state">
                     <div class="cies-empty-state__icon">
                         <i class="pi pi-users"></i>
                     </div>
@@ -207,7 +207,10 @@ import { CiesService, EjecucionSeleccion, LoteMedicare } from '../../services/ci
                     </div>
 
                     <p-table [value]="lotesPendientes" [tableStyle]="{ 'min-width': '72rem' }" responsiveLayout="scroll"
-                        [paginator]="true" [rows]="5" [rowsPerPageOptions]="[5, 10, 20]" class="cies-table">
+                        [paginator]="true" [lazy]="true" [rows]="lotesPendientesRows"
+                        [first]="lotesPendientesPage * lotesPendientesRows" [totalRecords]="totalLotesPendientes"
+                        [rowsPerPageOptions]="[5, 10, 20]" [loading]="loadingLotesPendientes"
+                        (onLazyLoad)="onLotesPendientesLazyLoad($any($event))" class="cies-table">
                         <ng-template pTemplate="header">
                             <tr>
                                 <th>ID</th>
@@ -248,7 +251,10 @@ import { CiesService, EjecucionSeleccion, LoteMedicare } from '../../services/ci
                     </div>
 
                     <p-table [value]="lotesProcesados" [tableStyle]="{ 'min-width': '62rem' }" responsiveLayout="scroll"
-                        [paginator]="true" [rows]="5" [rowsPerPageOptions]="[5, 10, 20]" class="cies-table">
+                        [paginator]="true" [lazy]="true" [rows]="lotesProcesadosRows"
+                        [first]="lotesProcesadosPage * lotesProcesadosRows" [totalRecords]="totalLotesProcesados"
+                        [rowsPerPageOptions]="[5, 10, 20]" [loading]="loadingLotesProcesados"
+                        (onLazyLoad)="onLotesProcesadosLazyLoad($any($event))" class="cies-table">
                         <ng-template pTemplate="header">
                             <tr>
                                 <th>ID</th>
@@ -285,7 +291,10 @@ import { CiesService, EjecucionSeleccion, LoteMedicare } from '../../services/ci
                 </div>
 
                 <p-table [value]="ejecuciones" [tableStyle]="{ 'min-width': '58rem' }" responsiveLayout="scroll"
-                    [paginator]="true" [rows]="5" [rowsPerPageOptions]="[5, 10, 20]" class="cies-table">
+                    [paginator]="true" [lazy]="true" [rows]="ejecucionesRows"
+                    [first]="ejecucionesPage * ejecucionesRows" [totalRecords]="totalEjecuciones"
+                    [rowsPerPageOptions]="[5, 10, 20]" [loading]="loadingEjecuciones"
+                    (onLazyLoad)="onEjecucionesLazyLoad($any($event))" class="cies-table">
                     <ng-template pTemplate="header">
                         <tr>
                             <th>Listado</th>
@@ -613,8 +622,21 @@ export class SeleccionPage implements OnInit {
     nombreLote = '';
     cargaMasiva = '';
     cargaError = '';
-    lotes: LoteMedicare[] = [];
+    lotesPendientes: LoteMedicare[] = [];
+    lotesProcesados: LoteMedicare[] = [];
     ejecuciones: EjecucionSeleccion[] = [];
+    totalLotesPendientes = 0;
+    totalLotesProcesados = 0;
+    totalEjecuciones = 0;
+    lotesPendientesPage = 0;
+    lotesProcesadosPage = 0;
+    ejecucionesPage = 0;
+    lotesPendientesRows = 5;
+    lotesProcesadosRows = 5;
+    ejecucionesRows = 5;
+    loadingLotesPendientes = false;
+    loadingLotesProcesados = false;
+    loadingEjecuciones = false;
 
     isDragging = false;
     archivoCargado = false;
@@ -627,34 +649,102 @@ export class SeleccionPage implements OnInit {
         this.load();
     }
 
-    get lotesPendientes(): LoteMedicare[] {
-        return this.lotes.filter((item) => item.estado !== 'PROCESADO');
-    }
-
-    get lotesProcesados(): LoteMedicare[] {
-        return this.lotes.filter((item) => item.estado === 'PROCESADO');
+    get hasLotes(): boolean {
+        return this.totalLotesPendientes + this.totalLotesProcesados > 0;
     }
 
     load(): void {
-        this.ciesService.listLotes().subscribe({
+        this.loadLotesPendientes();
+        this.loadLotesProcesados();
+        this.loadEjecuciones();
+    }
+
+    loadLotesPendientes(page = this.lotesPendientesPage, size = this.lotesPendientesRows): void {
+        this.loadingLotesPendientes = true;
+        this.ciesService.listLotesPaginado(page, size, 'PENDIENTES').subscribe({
             next: (response) => {
-                this.lotes = response;
+                if (!response.content.length && response.totalElements > 0 && page > 0) {
+                    this.loadLotesPendientes(page - 1, size);
+                    return;
+                }
+
+                this.lotesPendientes = response.content;
+                this.totalLotesPendientes = response.totalElements;
+                this.lotesPendientesPage = response.page;
+                this.lotesPendientesRows = response.size;
+                this.loadingLotesPendientes = false;
                 this.cdr.detectChanges();
             },
             error: (error) => {
+                this.loadingLotesPendientes = false;
                 console.error('Error loading lotes:', error);
                 this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los lotes' });
             }
         });
-        this.ciesService.listEjecuciones().subscribe({
+    }
+
+    loadLotesProcesados(page = this.lotesProcesadosPage, size = this.lotesProcesadosRows): void {
+        this.loadingLotesProcesados = true;
+        this.ciesService.listLotesPaginado(page, size, 'PROCESADO').subscribe({
             next: (response) => {
-                this.ejecuciones = response;
+                if (!response.content.length && response.totalElements > 0 && page > 0) {
+                    this.loadLotesProcesados(page - 1, size);
+                    return;
+                }
+
+                this.lotesProcesados = response.content;
+                this.totalLotesProcesados = response.totalElements;
+                this.lotesProcesadosPage = response.page;
+                this.lotesProcesadosRows = response.size;
+                this.loadingLotesProcesados = false;
                 this.cdr.detectChanges();
             },
             error: (error) => {
+                this.loadingLotesProcesados = false;
+                console.error('Error loading lotes procesados:', error);
+            }
+        });
+    }
+
+    loadEjecuciones(page = this.ejecucionesPage, size = this.ejecucionesRows): void {
+        this.loadingEjecuciones = true;
+        this.ciesService.listEjecucionesPaginado(page, size).subscribe({
+            next: (response) => {
+                if (!response.content.length && response.totalElements > 0 && page > 0) {
+                    this.loadEjecuciones(page - 1, size);
+                    return;
+                }
+
+                this.ejecuciones = response.content;
+                this.totalEjecuciones = response.totalElements;
+                this.ejecucionesPage = response.page;
+                this.ejecucionesRows = response.size;
+                this.loadingEjecuciones = false;
+                this.cdr.detectChanges();
+            },
+            error: (error) => {
+                this.loadingEjecuciones = false;
                 console.error('Error loading ejecuciones:', error);
             }
         });
+    }
+
+    onLotesPendientesLazyLoad(event: { first?: number; rows?: number }): void {
+        const rows = event.rows || this.lotesPendientesRows;
+        const page = Math.floor((event.first || 0) / rows);
+        this.loadLotesPendientes(page, rows);
+    }
+
+    onLotesProcesadosLazyLoad(event: { first?: number; rows?: number }): void {
+        const rows = event.rows || this.lotesProcesadosRows;
+        const page = Math.floor((event.first || 0) / rows);
+        this.loadLotesProcesados(page, rows);
+    }
+
+    onEjecucionesLazyLoad(event: { first?: number; rows?: number }): void {
+        const rows = event.rows || this.ejecucionesRows;
+        const page = Math.floor((event.first || 0) / rows);
+        this.loadEjecuciones(page, rows);
     }
 
     downloadTemplate(): void {

@@ -220,6 +220,14 @@ export interface AuditoriaPaginada {
     size: number;
 }
 
+export interface PagedResponse<T> {
+    content: T[];
+    totalElements: number;
+    totalPages: number;
+    page: number;
+    size: number;
+}
+
 export interface UsuariosPaginados {
     content: UsuarioAdmin[];
     totalElements: number;
@@ -353,6 +361,12 @@ export class CiesService {
         return this.lotesRequest$;
     }
 
+    listLotesPaginado(page = 0, size = 10, estado?: string): Observable<PagedResponse<LoteMedicare>> {
+        return this.http.get<PagedResponse<LoteMedicare>>(`${this.apiBase}/seleccion/lotes/paginado`, {
+            params: this.toParams({ page, size, estado })
+        });
+    }
+
     deleteLote(id: number): Observable<void> {
         return this.http.delete<void>(`${this.apiBase}/seleccion/lotes/${id}`).pipe(tap(() => this.resetOperacionCache()));
     }
@@ -383,6 +397,12 @@ export class CiesService {
         }
 
         return this.ejecucionesRequest$;
+    }
+
+    listEjecucionesPaginado(page = 0, size = 10): Observable<PagedResponse<EjecucionSeleccion>> {
+        return this.http.get<PagedResponse<EjecucionSeleccion>>(`${this.apiBase}/seleccion/ejecuciones/paginado`, {
+            params: this.toParams({ page, size })
+        });
     }
 
     getPendientesEntrevista(forceRefresh = false): Observable<PersonaElegible[]> {
@@ -472,6 +492,12 @@ export class CiesService {
 
     getMedicareOutbox(): Observable<MedicareOutboxItem[]> {
         return this.http.get<MedicareOutboxItem[]>(`${this.apiBase}/integraciones/medicare/outbox`);
+    }
+
+    getMedicareOutboxPaginado(page = 0, size = 10): Observable<PagedResponse<MedicareOutboxItem>> {
+        return this.http.get<PagedResponse<MedicareOutboxItem>>(`${this.apiBase}/integraciones/medicare/outbox/paginado`, {
+            params: this.toParams({ page, size })
+        });
     }
 
     listAuditoria(filters?: Record<string, string | number | null | undefined>): Observable<AuditoriaPaginada> {

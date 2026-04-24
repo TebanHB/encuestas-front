@@ -361,7 +361,8 @@ interface CreateMetodologiaForm {
                     @for (section of editorPreguntasPorSeccion(); track section.seccion) {
                         <div class="editor-pregunta-group">
                             <h4>{{ sectionIcon(section.seccion) }} {{ section.seccion }}</h4>
-                            <p-table [value]="section.preguntas" class="cies-table">
+                            <p-table [value]="section.preguntas" [paginator]="section.preguntas.length > 8"
+                                [rows]="8" [rowsPerPageOptions]="[8, 15, 25]" class="cies-table">
                                 <ng-template pTemplate="header">
                                     <tr>
                                         <th style="width: 3rem">#</th>
@@ -407,7 +408,8 @@ interface CreateMetodologiaForm {
                                     <span class="editor-opciones-num">{{ q.numeroVisible }}</span>
                                     <strong>{{ q.etiqueta }}</strong>
                                 </div>
-                                <p-table [value]="q.opciones" class="cies-table">
+                                <p-table [value]="q.opciones" [paginator]="q.opciones.length > 6"
+                                    [rows]="6" [rowsPerPageOptions]="[6, 10, 20]" class="cies-table">
                                     <ng-template pTemplate="header">
                                         <tr>
                                             <th>Opción</th>

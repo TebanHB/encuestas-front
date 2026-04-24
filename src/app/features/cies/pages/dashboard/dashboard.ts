@@ -125,7 +125,8 @@ interface QuickStartCard {
                     </div>
                 </div>
 
-                <p-table [value]="pendientes" [tableStyle]="{ 'min-width': '48rem' }" responsiveLayout="scroll" class="cies-table">
+                <p-table [value]="pendientes" [tableStyle]="{ 'min-width': '48rem' }" responsiveLayout="scroll"
+                    [paginator]="true" [rows]="5" [rowsPerPageOptions]="[5, 10]" class="cies-table">
                     <ng-template pTemplate="header">
                         <tr>
                             <th>Entrevista</th>

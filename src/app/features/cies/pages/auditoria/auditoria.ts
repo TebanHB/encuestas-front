@@ -208,7 +208,7 @@ interface FiltrosAuditoria {
                                     <p>Registros técnicos de salida para soporte y auditoría de integración con Medicare.</p>
                                 </div>
                                 <div style="display: flex; gap: 0.5rem; align-items: center;">
-                                    <p-tag [value]="outbox.length + ' registros'" severity="contrast"></p-tag>
+                                    <p-tag [value]="totalOutbox + ' registros'" severity="contrast"></p-tag>
                                     <button pButton type="button" label="🔄 Actualizar" icon="pi pi-refresh"
                                         size="small" severity="secondary" [outlined]="true"
                                         (click)="cargarOutbox()"></button>
@@ -217,15 +217,17 @@ interface FiltrosAuditoria {
                             <app-cies-info-hint text="Datos técnicos para diagnóstico de fallos en la integración con Medicare."></app-cies-info-hint>
                         </div>
 
-                        <div *ngIf="!outbox.length" class="cies-empty-state">
+                        <div *ngIf="!loadingOutbox && !totalOutbox" class="cies-empty-state">
                             <div class="cies-empty-state__icon"><i class="pi pi-check-circle"></i></div>
                             <h3>No hay registros pendientes en el outbox</h3>
                             <p>Todas las integraciones con Medicare se han sincronizado correctamente.</p>
                         </div>
 
-                        <p-table *ngIf="outbox.length" [value]="outbox" [tableStyle]="{ 'min-width': '52rem' }"
-                            responsiveLayout="scroll" [paginator]="true" [rows]="10"
-                            class="cies-table">
+                        <p-table *ngIf="totalOutbox" [value]="outbox" [tableStyle]="{ 'min-width': '52rem' }"
+                            responsiveLayout="scroll" [paginator]="true" [lazy]="true" [rows]="outboxRows"
+                            [first]="outboxPage * outboxRows" [totalRecords]="totalOutbox"
+                            [rowsPerPageOptions]="[10, 20, 50]" [loading]="loadingOutbox"
+                            (onLazyLoad)="onOutboxLazyLoad($any($event))" class="cies-table">
                             <ng-template pTemplate="header">
                                 <tr>
                                     <th>Tipo</th>
@@ -644,6 +646,10 @@ export class AuditoriaPage implements OnInit {
 
     registros: AuditoriaRegistro[] = [];
     outbox: MedicareOutboxItem[] = [];
+    totalOutbox = 0;
+    outboxPage = 0;
+    outboxRows = 10;
+    loadingOutbox = false;
     metodologias: Metodologia[] = [];
     showDetalle = false;
     showPayloadDialog = false;
@@ -692,16 +698,33 @@ export class AuditoriaPage implements OnInit {
         this.cargarMetodologias();
     }
 
-    cargarOutbox(): void {
-        this.ciesService.getMedicareOutbox().subscribe({
+    cargarOutbox(page = this.outboxPage, size = this.outboxRows): void {
+        this.loadingOutbox = true;
+        this.ciesService.getMedicareOutboxPaginado(page, size).subscribe({
             next: (response) => {
-                this.outbox = response;
+                if (!response.content.length && response.totalElements > 0 && page > 0) {
+                    this.cargarOutbox(page - 1, size);
+                    return;
+                }
+
+                this.outbox = response.content;
+                this.totalOutbox = response.totalElements;
+                this.outboxPage = response.page;
+                this.outboxRows = response.size;
+                this.loadingOutbox = false;
                 this.cdr.detectChanges();
             },
             error: (error) => {
+                this.loadingOutbox = false;
                 console.error('Error cargando outbox:', error);
             }
         });
+    }
+
+    onOutboxLazyLoad(event: { first?: number; rows?: number }): void {
+        const rows = event.rows || this.outboxRows;
+        const page = Math.floor((event.first || 0) / rows);
+        this.cargarOutbox(page, rows);
     }
 
     cargarMetodologias(): void {
