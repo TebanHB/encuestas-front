@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { MessageService } from 'primeng/api';
@@ -16,7 +16,6 @@ import { TooltipModule } from 'primeng/tooltip';
 import { firstValueFrom } from 'rxjs';
 import { CiesInfoHintComponent } from '../../components/cies-info-hint';
 import { CiesService, Entrevista, PersonaElegible, PreguntaInstrumento, RespuestaPayload } from '../../services/cies.service';
-import { OfflineInterviewQueueService } from '../../services/offline-interview-queue.service';
 
 interface AnswerValue {
     codigoOpcion?: string;
@@ -63,9 +62,6 @@ interface ValidationError {
                         severity="secondary" [text]="true" [disabled]="isInterviewActionBusy"
                         pTooltip="Vuelve a consultar las personas pendientes"
                         (click)="loadPendientes(true)"></button>
-                    <p-tag [value]="'📦 Cola offline: ' + offlineQueue.count()"
-                        [severity]="offlineQueue.count() > 0 ? 'warn' : 'contrast'"></p-tag>
-                    <p-tag *ngIf="!navigatorOnLine" value="⚠️ Sin conexión - modo offline" severity="danger"></p-tag>
                 </div>
             </section>
 
@@ -91,7 +87,7 @@ interface ValidationError {
                     <div class="cies-guidance-step">3</div>
                     <div class="cies-stack">
                         <h4>Al finalizar</h4>
-                        <p>Completa todas las obligatorias y pulsa <strong>"Finalizar entrevista"</strong>. Sin internet, se guarda offline.</p>
+                        <p>Completa todas las obligatorias y pulsa <strong>"Finalizar entrevista"</strong>.</p>
                     </div>
                 </article>
             </section>
@@ -271,11 +267,15 @@ interface ValidationError {
 
                         <!-- Número y etiqueta -->
                         <div class="question-header">
-                            <div class="question-number">{{ question.numeroVisible }}</div>
+                            <div class="question-number">
+                                {{ question.numeroVisible }}
+                                <span class="question-number-required" *ngIf="question.obligatoria" title="Pregunta obligatoria" aria-label="obligatoria">*</span>
+                            </div>
                             <div class="question-content">
                                 <label class="question-label">
                                     {{ question.etiqueta }}
                                     <span class="required-marker" *ngIf="question.obligatoria" title="Pregunta obligatoria" aria-label="obligatoria">*</span>
+                                    <span class="required-text" *ngIf="question.obligatoria">Obligatoria</span>
                                 </label>
                                 <span class="question-type-badge">{{ getQuestionTypeLabel(question.tipo) }}</span>
                                 <span class="question-skipped-badge" *ngIf="shouldSkipQuestion(question)">
@@ -364,13 +364,7 @@ interface ValidationError {
 
                 <!-- Acciones finales -->
                 <div class="entrevista-footer">
-                    <div class="footer-left">
-                        <button pButton type="button" label="📦 Guardar offline" severity="secondary"
-                            [outlined]="true" icon="pi pi-download"
-                            [disabled]="submitting"
-                            pTooltip="Guarda localmente y se envía cuando haya conexión"
-                            (click)="saveOffline()"></button>
-                    </div>
+                    <div class="footer-left"></div>
                     <div class="footer-right">
                         <button pButton type="button"
                             [label]="terminatesInterview ? 'Finalizar (terminación temprana)' : '✅ Finalizar entrevista'"
@@ -470,10 +464,9 @@ interface ValidationError {
                 styleClass="cies-dialog">
                 <div class="close-confirm-content">
                     <p>Si cierras ahora, <strong>las respuestas no guardadas se perderán</strong>.</p>
-                    <p>¿Quieres guardarla offline antes de salir?</p>
                     <div class="close-confirm-actions">
-                        <button pButton type="button" label="💾 Guardar offline" icon="pi pi-download"
-                            (click)="saveOfflineAndClose()"></button>
+                        <button pButton type="button" label="Continuar entrevista" icon="pi pi-arrow-left"
+                            (click)="showCloseConfirm = false"></button>
                         <button pButton type="button" label="Cerrar sin guardar" severity="danger"
                             [outlined]="true" (click)="closeInterview()"></button>
                     </div>
@@ -661,6 +654,25 @@ interface ValidationError {
             font-size: 0.8rem;
             font-weight: 700;
             flex-shrink: 0;
+            position: relative;
+        }
+
+        .question-number-required {
+            position: absolute;
+            top: -0.45rem;
+            right: -0.35rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 1rem;
+            height: 1rem;
+            border-radius: 999px;
+            background: #dc2626;
+            color: #ffffff;
+            font-size: 0.9rem;
+            line-height: 1;
+            font-weight: 900;
+            border: 2px solid var(--surface-card);
         }
 
         .question-card.question-answered .question-number {
@@ -693,6 +705,13 @@ interface ValidationError {
             line-height: 1;
             padding: 0 0.15rem;
             display: inline-block;
+        }
+
+        .required-text {
+            color: #dc2626;
+            font-size: 0.68rem;
+            font-weight: 800;
+            text-transform: uppercase;
         }
 
         .question-type-badge {
@@ -1056,11 +1075,10 @@ interface ValidationError {
         }
     `]
 })
-export class EntrevistasPage implements OnInit, OnDestroy {
+export class EntrevistasPage implements OnInit {
     private ciesService = inject(CiesService);
     private cdr = inject(ChangeDetectorRef);
     private messageService = inject(MessageService);
-    readonly offlineQueue = inject(OfflineInterviewQueueService);
 
     pendientes: PersonaElegible[] = [];
     currentStep = 0;
@@ -1078,7 +1096,6 @@ export class EntrevistasPage implements OnInit, OnDestroy {
     selectedClinica = '';
     selectedLote = '';
     filteredPendientesList: PersonaElegible[] = [];
-    navigatorOnLine = navigator.onLine;
 
     readonly tipoConsultaOptions = [
         { label: 'Primera consulta SSR', value: 'PRIMERA_CONSULTA_SSR' },
@@ -1117,15 +1134,6 @@ export class EntrevistasPage implements OnInit, OnDestroy {
     get isInterviewActionBusy(): boolean {
         return this.loadingPendientes || this.startingPersonaId !== null || this.directRegistrationLoading || this.submitting;
     }
-
-    private onlineHandler = () => {
-        this.navigatorOnLine = true;
-        void this.offlineQueue.flush();
-    };
-
-    private offlineHandler = () => {
-        this.navigatorOnLine = false;
-    };
 
     get visibleQuestions(): PreguntaInstrumento[] {
         return this.getFilteredVisibleQuestions();
@@ -1196,14 +1204,6 @@ export class EntrevistasPage implements OnInit, OnDestroy {
 
     ngOnInit(): void {
         this.loadPendientes();
-        void this.offlineQueue.flush();
-        window.addEventListener('online', this.onlineHandler);
-        window.addEventListener('offline', this.offlineHandler);
-    }
-
-    ngOnDestroy(): void {
-        window.removeEventListener('online', this.onlineHandler);
-        window.removeEventListener('offline', this.offlineHandler);
     }
 
     loadPendientes(forceRefresh = false): void {
@@ -1274,14 +1274,6 @@ export class EntrevistasPage implements OnInit, OnDestroy {
         const hasAnswers = this.answeredCount > 0;
         if (hasAnswers && !this.submitting) {
             this.showCloseConfirm = true;
-        } else {
-            this.closeInterview();
-        }
-    }
-
-    saveOfflineAndClose(): void {
-        if (this.validationErrors.length === 0) {
-            this.saveOffline();
         } else {
             this.closeInterview();
         }
@@ -1492,11 +1484,6 @@ export class EntrevistasPage implements OnInit, OnDestroy {
             return;
         }
 
-        if (!navigator.onLine) {
-            this.saveOffline();
-            return;
-        }
-
         this.submitting = true;
         this.ciesService.finalizarEntrevista(this.currentInterview.id, this.buildPayload()).subscribe({
             next: () => {
@@ -1512,57 +1499,13 @@ export class EntrevistasPage implements OnInit, OnDestroy {
             error: (err) => {
                 this.submitting = false;
                 console.error('Error submitting interview:', err);
-                const status = err?.status;
-                if (status === 0 || status >= 500) {
-                    this.messageService.add({
-                        severity: 'warn',
-                        summary: 'Sin conexión al servidor',
-                        detail: 'No se pudo enviar. La entrevista se guardó offline automáticamente.'
-                    });
-                    this.saveOffline();
-                } else {
-                    this.messageService.add({
-                        severity: 'error',
-                        summary: 'No se pudo finalizar',
-                        detail: this.extractErrorMessage(err, 'Ocurrió un error al finalizar la entrevista.')
-                    });
-                }
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'No se pudo finalizar',
+                    detail: this.extractErrorMessage(err, 'Ocurrió un error al finalizar la entrevista.')
+                });
             }
         });
-    }
-
-    saveOffline(): void {
-        if (!this.currentInterview) return;
-
-        this.showValidation = true;
-        if (this.validationErrors.length) {
-            setTimeout(() => {
-                const firstError = document.querySelector('.question-invalid');
-                firstError?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }, 100);
-            this.cdr.detectChanges();
-            this.messageService.add({
-                severity: 'warn',
-                summary: 'Faltan respuestas obligatorias',
-                detail: 'Completa las preguntas marcadas en rojo antes de guardar offline.'
-            });
-            return;
-        }
-
-        this.offlineQueue.enqueue(this.currentInterview.id, this.buildPayload(), {
-            codigo: this.currentInterview.codigo,
-            personaNombre: this.currentInterview.personaNombre
-        });
-
-        const conectado = navigator.onLine;
-        this.messageService.add({
-            severity: conectado ? 'success' : 'info',
-            summary: conectado ? '✅ Guardado y sincronizando' : '📦 Guardado offline',
-            detail: conectado
-                ? `"${this.currentInterview.codigo}" se envió a la cola y se sincronizará automáticamente.`
-                : `"${this.currentInterview.codigo}" quedó en la cola local y se enviará al recuperar conexión.`
-        });
-        this.closeInterview();
     }
 
     openDirectRegistration(): void {

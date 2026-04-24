@@ -240,8 +240,8 @@ export class Dashboard implements OnInit {
                 },
                 {
                     paso: '3',
-                    titulo: 'Si no tienes internet',
-                    descripcion: 'Puedes guardar la entrevista offline y el sistema la enviará cuando vuelva la conexión.',
+                    titulo: 'Al finalizar',
+                    descripcion: 'Revisa que no falten respuestas obligatorias y pulsa Finalizar entrevista para enviar los datos.',
                     actionLabel: 'Ver entrevistas',
                     routerLink: '/pages/entrevistas',
                     severity: 'secondary',
@@ -284,7 +284,7 @@ export class Dashboard implements OnInit {
         }
 
         if (this.isEncuestador) {
-            return 'Primero abre una persona. Luego responde todas las preguntas obligatorias. Al final finaliza o guarda offline.';
+            return 'Primero abre una persona. Luego responde todas las preguntas obligatorias. Al final finaliza la entrevista.';
         }
 
         return 'Primero mira el panorama general. Luego filtra solo lo necesario. Al final exporta el reporte.';

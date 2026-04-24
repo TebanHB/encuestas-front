@@ -760,11 +760,6 @@ export class SeleccionPage implements OnInit {
                 link.click();
                 window.URL.revokeObjectURL(url);
                 this.downloadingTemplate = false;
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Plantilla descargada',
-                    detail: 'Llena el Excel y vuelve a subirlo en esta misma pantalla.'
-                });
             },
             error: (error) => {
                 this.downloadingTemplate = false;

@@ -720,11 +720,6 @@ export class ReporteriaPage implements OnInit {
                 link.download = `reporte-cies.${type === 'excel' ? 'xlsx' : type === 'sps' ? 'sps' : 'csv'}`;
                 link.click();
                 URL.revokeObjectURL(url);
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Descarga exitosa',
-                    detail: `Reporte ${type.toUpperCase()} descargado correctamente`
-                });
             },
             error: (err) => {
                 this.downloading = false;

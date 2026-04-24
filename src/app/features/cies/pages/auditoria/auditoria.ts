@@ -104,7 +104,7 @@ interface FiltrosAuditoria {
                             </div>
                             <div class="cies-field--full" style="display: flex; gap: 0.5rem; align-items: flex-end;">
                                 <button pButton type="button" label="🔍 Buscar" icon="pi pi-search"
-                                    [loading]="loading" (click)="buscar()"></button>
+                                    [loading]="loading" (click)="buscar(true)"></button>
                                 <button pButton type="button" label="Limpiar" icon="pi pi-eraser"
                                     severity="secondary" [outlined]="true" (click)="limpiarFiltros()"></button>
                             </div>
@@ -192,7 +192,7 @@ interface FiltrosAuditoria {
                             <p>Puedes filtrar por tipo de evento, usuario, resultado y rango de fechas.</p>
                             <div class="cies-empty-state__actions">
                                 <button pButton type="button" label="Buscar todos" icon="pi pi-search"
-                                    (click)="buscar()"></button>
+                                    (click)="buscar(true)"></button>
                             </div>
                         </div>
                     </div>
@@ -743,7 +743,11 @@ export class AuditoriaPage implements OnInit {
         });
     }
 
-    buscar(): void {
+    buscar(resetPage = false): void {
+        if (resetPage) {
+            this.pageIndex = 0;
+        }
+
         this.loading = true;
         this.busquedaRealizada = true;
 
@@ -754,8 +758,8 @@ export class AuditoriaPage implements OnInit {
         if (this.filtros.tipo) params['tipo'] = this.filtros.tipo;
         if (this.filtros.usuario) params['usuario'] = this.filtros.usuario;
         if (this.filtros.resultado) params['resultado'] = this.filtros.resultado;
-        if (this.filtros.fechaInicio) params['fechaInicio'] = this.filtros.fechaInicio.toISOString();
-        if (this.filtros.fechaFin) params['fechaFin'] = this.filtros.fechaFin.toISOString();
+        if (this.filtros.fechaInicio) params['fechaInicio'] = this.formatLocalDateTime(this.filtros.fechaInicio, false);
+        if (this.filtros.fechaFin) params['fechaFin'] = this.formatLocalDateTime(this.filtros.fechaFin, true);
 
         this.ciesService.listAuditoria(params).subscribe({
             next: (response) => {
@@ -783,6 +787,30 @@ export class AuditoriaPage implements OnInit {
         this.pageSize = event.rows;
         this.pageIndex = Math.floor(event.first / event.rows);
         this.buscar();
+    }
+
+    private formatLocalDateTime(date: Date, endOfDay: boolean): string {
+        const normalized = new Date(date);
+        if (endOfDay) {
+            normalized.setHours(23, 59, 59, 999);
+        } else {
+            normalized.setHours(0, 0, 0, 0);
+        }
+
+        const pad = (value: number, length = 2) => String(value).padStart(length, '0');
+        return [
+            normalized.getFullYear(),
+            '-',
+            pad(normalized.getMonth() + 1),
+            '-',
+            pad(normalized.getDate()),
+            'T',
+            pad(normalized.getHours()),
+            ':',
+            pad(normalized.getMinutes()),
+            ':',
+            pad(normalized.getSeconds())
+        ].join('');
     }
 
     private extractErrorMessage(error: unknown, fallback: string): string {
