@@ -1,6 +1,7 @@
 ﻿import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { CheckboxModule } from 'primeng/checkbox';
@@ -11,6 +12,7 @@ import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { Toast } from 'primeng/toast';
+import { AuthService } from '../../../../core/auth/auth.service';
 import { NombrePropioPipe } from '../../../../shared/pipes/formato.pipe';
 import { CiesInfoHintComponent } from '../../components/cies-info-hint';
 import { CiesService, UsuarioAdmin, UsuarioUpsertRequest } from '../../services/cies.service';
@@ -179,9 +181,11 @@ import { CiesService, UsuarioAdmin, UsuarioUpsertRequest } from '../../services/
     styles: [``]
 })
 export class UsuariosPage implements OnInit {
+    private authService = inject(AuthService);
     private ciesService = inject(CiesService);
     private cdr = inject(ChangeDetectorRef);
     private messageService = inject(MessageService);
+    private router = inject(Router);
 
     usuarios: UsuarioAdmin[] = [];
     showDialog = false;
@@ -317,12 +321,23 @@ export class UsuariosPage implements OnInit {
     }
 
     remove(user: UsuarioAdmin): void {
-        if (!window.confirm(`Se eliminará la cuenta de ${user.nombre} ${user.apellido}. Esta acción la ocultará del sistema. ¿Deseas continuar?`)) {
+        const isCurrentUser = this.authService.getUser()?.id === user.id;
+        const confirmationMessage = isCurrentUser
+            ? `Se eliminará tu propia cuenta (${user.nombre} ${user.apellido}) y se cerrará la sesión. ¿Deseas continuar?`
+            : `Se eliminará la cuenta de ${user.nombre} ${user.apellido}. Esta acción la ocultará del sistema. ¿Deseas continuar?`;
+
+        if (!window.confirm(confirmationMessage)) {
             return;
         }
 
         this.ciesService.deleteUsuario(user.id).subscribe({
             next: () => {
+                if (isCurrentUser) {
+                    this.authService.clearSession();
+                    void this.router.navigate(['/auth/login']);
+                    return;
+                }
+
                 this.load();
                 this.messageService.add({
                     severity: 'success',
