@@ -121,6 +121,7 @@ export interface RespuestaPayload {
     preguntaId: number;
     codigoOpcion?: string;
     valorTexto?: string;
+    valorOtro?: string;
 }
 
 export interface Entrevista {
@@ -211,6 +212,22 @@ export interface AuditoriaRegistro {
     resultado: string;
 }
 
+export interface AuditoriaPaginada {
+    content: AuditoriaRegistro[];
+    totalElements: number;
+    totalPages: number;
+    page: number;
+    size: number;
+}
+
+export interface UsuariosPaginados {
+    content: UsuarioAdmin[];
+    totalElements: number;
+    totalPages: number;
+    page: number;
+    size: number;
+}
+
 @Injectable({
     providedIn: 'root'
 })
@@ -228,6 +245,12 @@ export class CiesService {
 
     listUsuarios(): Observable<UsuarioAdmin[]> {
         return this.http.get<UsuarioAdmin[]>(`${this.apiBase}/usuarios`);
+    }
+
+    listUsuariosPaginado(page = 0, size = 20, q?: string): Observable<UsuariosPaginados> {
+        const params: Record<string, string | number | null | undefined> = { page, size };
+        if (q) params['q'] = q;
+        return this.http.get<UsuariosPaginados>(`${this.apiBase}/usuarios/paginado`, { params: this.toParams(params) });
     }
 
     createUsuario(payload: UsuarioUpsertRequest): Observable<UsuarioAdmin> {
@@ -441,8 +464,8 @@ export class CiesService {
         return this.http.get<MedicareOutboxItem[]>(`${this.apiBase}/integraciones/medicare/outbox`);
     }
 
-    listAuditoria(filters?: Record<string, string | number | null | undefined>): Observable<AuditoriaRegistro[]> {
-        return this.http.get<AuditoriaRegistro[]>(`${this.apiBase}/auditoria`, { params: this.toParams(filters) });
+    listAuditoria(filters?: Record<string, string | number | null | undefined>): Observable<AuditoriaPaginada> {
+        return this.http.get<AuditoriaPaginada>(`${this.apiBase}/auditoria`, { params: this.toParams(filters) });
     }
 
     getAuditoriaDetalle(id: number): Observable<AuditoriaRegistro> {

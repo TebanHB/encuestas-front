@@ -20,6 +20,7 @@ import { OfflineInterviewQueueService } from '../../services/offline-interview-q
 interface AnswerValue {
     codigoOpcion?: string;
     valorTexto?: string;
+    valorOtro?: string;
 }
 
 interface ValidationError {
@@ -53,8 +54,13 @@ interface ValidationError {
                     </p>
                 </div>
                 <div class="cies-hero__actions">
-                    <button pButton type="button" label="Entrevistar a una persona" icon="pi pi-user-plus"
-                        severity="secondary" [outlined]="true" (click)="openDirectRegistration()"></button>
+                    <button pButton type="button" label="Registrar persona nueva" icon="pi pi-user-plus"
+                        severity="secondary" [outlined]="true" pTooltip="Registra una persona que aún no está en el listado"
+                        (click)="openDirectRegistration()"></button>
+                    <button pButton type="button" label="Actualizar listado" icon="pi pi-refresh"
+                        severity="secondary" [text]="true"
+                        pTooltip="Vuelve a consultar las personas pendientes"
+                        (click)="loadPendientes(true)"></button>
                     <p-tag [value]="'📦 Cola offline: ' + offlineQueue.count()"
                         [severity]="offlineQueue.count() > 0 ? 'warn' : 'contrast'"></p-tag>
                     <p-tag *ngIf="!navigatorOnLine" value="⚠️ Sin conexión - modo offline" severity="danger"></p-tag>
@@ -67,11 +73,7 @@ interface ValidationError {
                     <div class="cies-guidance-step">1</div>
                     <div class="cies-stack">
                         <h4>Persona nueva</h4>
-                        <p>Usa el botón <strong>"Entrevistar a una persona"</strong> arriba. El sistema la registra y abre la entrevista automáticamente.</p>
-                    </div>
-                    <div class="cies-guidance-actions">
-                        <button pButton type="button" label="Registrar ahora" icon="pi pi-plus"
-                            (click)="openDirectRegistration()"></button>
+                        <p>Usa el botón <strong>"Registrar persona nueva"</strong> arriba para registrarla y abrir la entrevista automáticamente.</p>
                     </div>
                 </article>
 
@@ -111,9 +113,9 @@ interface ValidationError {
                 <div *ngIf="!pendientes.length" class="cies-empty-state">
                     <div class="cies-empty-state__icon"><i class="pi pi-face-smile"></i></div>
                     <h3>No hay personas pendientes en este momento</h3>
-                    <p>Si acaba de llegar una persona, usa el registro directo.</p>
+                    <p>Si acaba de llegar una persona, puedes registrarla directamente.</p>
                     <div class="cies-empty-state__actions">
-                        <button pButton type="button" label="Entrevistar a una persona" icon="pi pi-user-plus"
+                        <button pButton type="button" label="Registrar persona nueva" icon="pi pi-user-plus"
                             (click)="openDirectRegistration()"></button>
                     </div>
                 </div>
@@ -213,7 +215,7 @@ interface ValidationError {
                         <div class="progress-container">
                             <p-progressBar [value]="progressPercent" [style]="{ height: '8px' }"
                                 [class]="progressPercent === 100 ? 'progress-complete' : ''"></p-progressBar>
-                            <span class="progress-label">{{ answeredCount }} / {{ visibleQuestions.length }} respondidas</span>
+                            <span class="progress-label">{{ answeredCount }} / {{ answerableQuestions.length }} respondidas</span>
                         </div>
                         <button pButton type="button" label="✕ Cerrar" severity="secondary" [text]="true"
                             (click)="confirmClose()"></button>
@@ -223,7 +225,9 @@ interface ValidationError {
                 <!-- Nota guía -->
                 <div class="entrevista-guide-note">
                     <i class="pi pi-info-circle"></i>
-                    <span>Responde de arriba hacia abajo. Los campos marcados con <strong class="required-marker">*</strong> son obligatorios.</span>
+                    <span>Responde de arriba hacia abajo. Los campos marcados con
+                        <strong class="required-marker" aria-label="obligatoria">*</strong>
+                        (en rojo) son <strong>obligatorios</strong>.</span>
                 </div>
 
                 <!-- Alerta de terminación anticipada -->
@@ -266,23 +270,24 @@ interface ValidationError {
                             <div class="question-content">
                                 <label class="question-label">
                                     {{ question.etiqueta }}
-                                    <span class="required-marker" *ngIf="question.obligatoria">*</span>
+                                    <span class="required-marker" *ngIf="question.obligatoria" title="Pregunta obligatoria" aria-label="obligatoria">*</span>
                                 </label>
                                 <span class="question-type-badge">{{ getQuestionTypeLabel(question.tipo) }}</span>
                                 <span class="question-skipped-badge" *ngIf="shouldSkipQuestion(question)">
-                                    <i class="pi pi-forward"></i> Saltada automáticamente
+                                    <i class="pi pi-forward"></i> Omitida automáticamente
                                 </span>
                             </div>
                         </div>
 
-                        <!-- Respuesta: Opción múltiple -->
-                        <div *ngIf="isOptionQuestion(question) && !shouldSkipQuestion(question)" class="question-answer">
-                            <div class="opciones-grid">
+                        <!-- Respuesta: Opción única / Booleano -->
+                        <div *ngIf="isOptionQuestion(question)" class="question-answer">
+                            <div class="opciones-grid" [class.opciones-disabled]="shouldSkipQuestion(question)">
                                 <div *ngFor="let opcion of question.opciones"
                                     class="opcion-card"
                                     [class.opcion-selected]="answers[question.id]?.codigoOpcion === opcion.codigo"
                                     [class.opcion-invalid]="showValidation && isQuestionInvalid(question) && answers[question.id]?.codigoOpcion === opcion.codigo"
-                                    (click)="selectOpcion(question.id, opcion.codigo)">
+                                    [class.opcion-disabled]="shouldSkipQuestion(question)"
+                                    (click)="!shouldSkipQuestion(question) && selectOpcion(question.id, opcion.codigo)">
                                     <div class="opcion-radio">
                                         <div class="opcion-radio-circle"
                                             [class.checked]="answers[question.id]?.codigoOpcion === opcion.codigo">
@@ -293,38 +298,56 @@ interface ValidationError {
                                         *ngIf="answers[question.id]?.codigoOpcion === opcion.codigo"></i>
                                 </div>
                             </div>
+
+                            <!-- Input cuando se selecciona "Otro" -->
+                            <div *ngIf="isCurrentSelectedOtro(question) && !shouldSkipQuestion(question)" class="otro-input-wrapper">
+                                <label class="otro-label">Especifica la opción seleccionada
+                                    <span class="required-marker" *ngIf="question.obligatoria">*</span>
+                                </label>
+                                <input pInputText [(ngModel)]="answers[question.id].valorOtro"
+                                    class="w-full input-texto"
+                                    [class.input-invalid]="showValidation && isQuestionInvalid(question)"
+                                    (ngModelChange)="onAnswerChange()"
+                                    placeholder="Describe la opción..." />
+                            </div>
                         </div>
 
                         <!-- Respuesta: Texto -->
-                        <div *ngIf="question.tipo === 'TEXTO' && !shouldSkipQuestion(question)" class="question-answer">
+                        <div *ngIf="question.tipo === 'TEXTO'" class="question-answer">
                             <input pInputText [(ngModel)]="answers[question.id].valorTexto"
                                 class="w-full input-texto"
                                 [class.input-invalid]="showValidation && isQuestionInvalid(question)"
+                                [disabled]="shouldSkipQuestion(question)"
                                 (ngModelChange)="onAnswerChange()"
                                 placeholder="Escribe la respuesta..." />
                         </div>
 
                         <!-- Respuesta: Fecha/Hora -->
-                        <div *ngIf="question.tipo === 'FECHA_HORA' && !shouldSkipQuestion(question)" class="question-answer">
+                        <div *ngIf="question.tipo === 'FECHA_HORA'" class="question-answer">
                             <input pInputText [(ngModel)]="answers[question.id].valorTexto"
                                 class="w-full input-texto"
                                 type="datetime-local"
                                 [class.input-invalid]="showValidation && isQuestionInvalid(question)"
+                                [disabled]="shouldSkipQuestion(question)"
                                 (ngModelChange)="onAnswerChange()" />
                         </div>
 
                         <!-- Respuesta: Texto largo -->
-                        <div *ngIf="question.tipo === 'TEXTO_LARGO' && !shouldSkipQuestion(question)" class="question-answer">
+                        <div *ngIf="question.tipo === 'TEXTO_LARGO'" class="question-answer">
                             <textarea pTextarea [(ngModel)]="answers[question.id].valorTexto"
                                 rows="3" class="w-full input-texto-largo"
                                 [class.input-invalid]="showValidation && isQuestionInvalid(question)"
+                                [disabled]="shouldSkipQuestion(question)"
                                 (ngModelChange)="onAnswerChange()"
                                 placeholder="Escribe la respuesta..."></textarea>
                         </div>
 
                         <!-- Lógica condicional -->
-                        <small class="question-logic-hint" *ngIf="question.logicaCondicional">
+                        <small class="question-logic-hint" *ngIf="question.logicaCondicional && !shouldSkipQuestion(question)">
                             <i class="pi pi-info-circle"></i> {{ question.logicaCondicional }}
+                        </small>
+                        <small class="question-logic-hint" *ngIf="shouldSkipQuestion(question)">
+                            <i class="pi pi-info-circle"></i> {{ getSkipLogic(question) || 'Omitida según la respuesta previa.' }}
                         </small>
 
                         <!-- Error inline -->
@@ -631,9 +654,12 @@ interface ValidationError {
         }
 
         .required-marker {
-            color: #ef4444;
-            font-weight: 700;
-            font-size: 1rem;
+            color: #dc2626;
+            font-weight: 900;
+            font-size: 1.25rem;
+            line-height: 1;
+            padding: 0 0.15rem;
+            display: inline-block;
         }
 
         .question-type-badge {
@@ -669,6 +695,33 @@ interface ValidationError {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
             gap: 0.5rem;
+        }
+
+        .opciones-grid.opciones-disabled .opcion-card {
+            cursor: not-allowed;
+            opacity: 0.55;
+            pointer-events: none;
+        }
+
+        .opcion-card.opcion-disabled {
+            cursor: not-allowed;
+            opacity: 0.55;
+        }
+
+        .otro-input-wrapper {
+            margin-top: 0.75rem;
+            padding: 0.75rem;
+            background: rgba(251, 146, 60, 0.08);
+            border: 1px dashed rgba(251, 146, 60, 0.4);
+            border-radius: 0.5rem;
+        }
+
+        .otro-label {
+            display: block;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #c2410c;
+            margin-bottom: 0.35rem;
         }
 
         .opcion-card {
@@ -1019,7 +1072,8 @@ export class EntrevistasPage implements OnInit, OnDestroy {
 
     get validationErrors(): ValidationError[] {
         return this.visibleQuestions
-            .filter((q) => this.isQuestionInvalid(q))
+            .filter((q) => !this.shouldSkipQuestion(q))
+            .filter((q) => q.obligatoria && !this.isQuestionAnswered(q))
             .map((q) => ({
                 preguntaId: q.id,
                 codigoVariable: q.codigoVariable,
@@ -1028,13 +1082,18 @@ export class EntrevistasPage implements OnInit, OnDestroy {
             }));
     }
 
+    get answerableQuestions(): PreguntaInstrumento[] {
+        return this.visibleQuestions.filter((q) => !this.shouldSkipQuestion(q));
+    }
+
     get answeredCount(): number {
-        return this.visibleQuestions.filter((q) => this.isQuestionAnswered(q)).length;
+        return this.answerableQuestions.filter((q) => this.isQuestionAnswered(q)).length;
     }
 
     get progressPercent(): number {
-        if (!this.visibleQuestions.length) return 0;
-        return Math.round((this.answeredCount / this.visibleQuestions.length) * 100);
+        const total = this.answerableQuestions.length;
+        if (!total) return 0;
+        return Math.round((this.answeredCount / total) * 100);
     }
 
     get clinicaOptions(): Array<{ label: string; value: string }> {
@@ -1080,17 +1139,10 @@ export class EntrevistasPage implements OnInit, OnDestroy {
         window.removeEventListener('offline', this.offlineHandler);
     }
 
-    loadPendientes(): void {
-        this.ciesService.getPendientesEntrevista().subscribe({
+    loadPendientes(forceRefresh = false): void {
+        this.ciesService.getPendientesEntrevista(forceRefresh).subscribe({
             next: (response) => {
                 this.pendientes = response;
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Datos cargados',
-                    detail: response.length === 1
-                        ? 'Se encontró 1 persona pendiente para entrevistar.'
-                        : `Se encontraron ${response.length} personas pendientes para entrevistar.`
-                });
                 this.cdr.detectChanges();
             },
             error: (err) => {
@@ -1118,16 +1170,12 @@ export class EntrevistasPage implements OnInit, OnDestroy {
                     .forEach((q) => {
                         const saved = response.respuestas.find((a) => a.preguntaId === q.id);
                         this.answers[q.id] = {
-                            codigoOpcion: saved?.valorCrudo || '',
-                            valorTexto: saved?.valorCrudo || ''
+                            codigoOpcion: this.isOptionQuestion(q) ? (saved?.valorCrudo || '') : '',
+                            valorTexto: this.isOptionQuestion(q) ? '' : (saved?.valorCrudo || ''),
+                            valorOtro: ''
                         };
                     });
 
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Entrevista iniciada',
-                    detail: `Se abrió la entrevista de ${response.personaNombre}.`
-                });
                 this.cdr.detectChanges();
                 setTimeout(() => {
                     document.querySelector('.entrevista-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1136,8 +1184,8 @@ export class EntrevistasPage implements OnInit, OnDestroy {
             error: (err) => {
                 this.messageService.add({
                     severity: 'error',
-                    summary: 'Error',
-                    detail: this.extractErrorMessage(err, 'No se pudo iniciar la entrevista.')
+                    summary: 'No se pudo iniciar la entrevista',
+                    detail: this.extractErrorMessage(err, 'Intenta nuevamente o verifica tu conexión.')
                 });
                 console.error('Error starting interview:', err);
             }
@@ -1172,27 +1220,43 @@ export class EntrevistasPage implements OnInit, OnDestroy {
     }
 
     isOptionQuestion(question: PreguntaInstrumento): boolean {
-        return question.tipo === 'OPCION_UNICA' || question.tipo === 'BOOLEANO';
+        const tipo = (question?.tipo || '').toUpperCase();
+        return tipo === 'OPCION_UNICA' || tipo === 'OPCION_MULTIPLE' || tipo === 'BOOLEANO' || tipo === 'BOOLEANA';
+    }
+
+    isOtroOption(question: PreguntaInstrumento, codigo: string | undefined): boolean {
+        if (!codigo) return false;
+        const opcion = question.opciones?.find((o) => o.codigo === codigo);
+        if (!opcion) return false;
+        const etiqueta = (opcion.etiqueta || '').toLowerCase().trim();
+        return etiqueta === 'otro' || etiqueta === 'otra' || etiqueta.startsWith('otro ') || etiqueta.startsWith('otra ');
+    }
+
+    isCurrentSelectedOtro(question: PreguntaInstrumento): boolean {
+        const answer = this.answers[question.id];
+        return !!answer && this.isOtroOption(question, answer.codigoOpcion);
     }
 
     isQuestionAnswered(question: PreguntaInstrumento): boolean {
         const answer = this.answers[question.id];
         if (!answer) return false;
-        if (this.isOptionQuestion(question)) return !!answer.codigoOpcion;
+        if (this.isOptionQuestion(question)) {
+            if (!answer.codigoOpcion) return false;
+            if (this.isOtroOption(question, answer.codigoOpcion) && !answer.valorOtro?.trim()) {
+                return false;
+            }
+            return true;
+        }
         return !!answer.valorTexto?.trim();
     }
 
     isQuestionInvalid(question: PreguntaInstrumento): boolean {
         if (!question.obligatoria) return false;
+        if (this.shouldSkipQuestion(question)) return false;
         if (this.showValidation) {
             return !this.isQuestionAnswered(question);
         }
-        const answer = this.answers[question.id];
-        if (!answer) return false;
-        if (this.isOptionQuestion(question)) {
-            return !answer.codigoOpcion;
-        }
-        return !answer.valorTexto?.trim();
+        return false;
     }
 
     isTerminationQuestion(question: PreguntaInstrumento): boolean {
@@ -1201,14 +1265,21 @@ export class EntrevistasPage implements OnInit, OnDestroy {
 
     getSkipLogic(question: PreguntaInstrumento): string | null {
         switch (question.codigoVariable) {
-            case 'IDIOMA_HOGAR':
-                const idiomaNinez = this.getAnswerByCode('IDIOMA_NIÑEZ');
-                if (idiomaNinez === '2') return 'Castellano nativo - continuar';
-                break;
-            case 'LUGAR_PARTO':
+            case 'NO_CASTELLANO': {
+                const idiomaHogar = this.getAnswerByCode('IDIOMA_HOGAR');
+                if (idiomaHogar === '1') return 'Se omite: el idioma del hogar es castellano.';
+                return null;
+            }
+            case 'LUGAR_PARTO': {
                 const servicio = this.getAnswerByCode('SERVICIO');
-                if (servicio && servicio !== '2') return 'No aplica a embarazo/parto';
-                break;
+                if (servicio && servicio !== '2') return 'Se omite: solo aplica cuando el servicio es Embarazo/parto.';
+                return null;
+            }
+            case 'METODO_AC': {
+                const consultaPara = this.getAnswerByCode('CONSULTA_PARA');
+                if (consultaPara === '2') return 'Se omite: la consulta es para otra persona.';
+                return null;
+            }
         }
         return null;
     }
@@ -1222,26 +1293,28 @@ export class EntrevistasPage implements OnInit, OnDestroy {
 
     shouldSkipQuestion(question: PreguntaInstrumento): boolean {
         switch (question.codigoVariable) {
-            case 'NO_CASTELLANO':
+            case 'NO_CASTELLANO': {
                 const idiomaHogar = this.getAnswerByCode('IDIOMA_HOGAR');
                 if (idiomaHogar === '1') return true;
                 break;
-            case 'LUGAR_PARTO':
+            }
+            case 'LUGAR_PARTO': {
                 const servicio = this.getAnswerByCode('SERVICIO');
-                if (servicio !== '2') return true;
+                if (servicio && servicio !== '2') return true;
                 break;
-            case 'METODO_AC':
+            }
+            case 'METODO_AC': {
                 const consultaPara = this.getAnswerByCode('CONSULTA_PARA');
                 if (consultaPara === '2') return true;
                 break;
+            }
         }
         return false;
     }
 
     getFilteredVisibleQuestions(): PreguntaInstrumento[] {
         const questions = (this.currentInterview?.preguntas || [])
-            .filter((item) => !item.metadato)
-            .filter((item) => !this.shouldSkipQuestion(item));
+            .filter((item) => !item.metadato);
 
         if (!this.terminatesInterview) {
             return questions;
@@ -1297,6 +1370,10 @@ export class EntrevistasPage implements OnInit, OnDestroy {
             this.answers[preguntaId] = {};
         }
         this.answers[preguntaId].codigoOpcion = codigo;
+        const question = this.currentInterview?.preguntas.find((q) => q.id === preguntaId);
+        if (question && !this.isOtroOption(question, codigo)) {
+            this.answers[preguntaId].valorOtro = '';
+        }
         this.onAnswerChange();
     }
 
@@ -1305,11 +1382,17 @@ export class EntrevistasPage implements OnInit, OnDestroy {
     }
 
     buildPayload(): RespuestaPayload[] {
-        return this.visibleQuestions.map((q) => ({
-            preguntaId: q.id,
-            codigoOpcion: this.answers[q.id]?.codigoOpcion,
-            valorTexto: this.answers[q.id]?.valorTexto
-        }));
+        return this.visibleQuestions
+            .filter((q) => !this.shouldSkipQuestion(q))
+            .map((q) => {
+                const answer = this.answers[q.id] || {};
+                return {
+                    preguntaId: q.id,
+                    codigoOpcion: answer.codigoOpcion,
+                    valorTexto: answer.valorTexto,
+                    valorOtro: this.isOtroOption(q, answer.codigoOpcion) ? answer.valorOtro : undefined
+                };
+            });
     }
 
     submit(): void {
@@ -1322,6 +1405,11 @@ export class EntrevistasPage implements OnInit, OnDestroy {
                 firstError?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }, 100);
             this.cdr.detectChanges();
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Faltan respuestas obligatorias',
+                detail: `Tienes ${this.validationErrors.length} pregunta(s) obligatoria(s) sin responder.`
+            });
             return;
         }
 
@@ -1336,21 +1424,30 @@ export class EntrevistasPage implements OnInit, OnDestroy {
                 this.submitting = false;
                 this.messageService.add({
                     severity: 'success',
-                    summary: '✅ Entrevista finalizada',
+                    summary: 'Entrevista finalizada',
                     detail: 'La entrevista se guardó exitosamente. Los resultados fueron procesados.'
                 });
                 this.closeInterview();
-                this.loadPendientes();
+                this.loadPendientes(true);
             },
             error: (err) => {
                 this.submitting = false;
-                this.messageService.add({
-                    severity: 'warn',
-                    summary: 'Error de red',
-                    detail: 'No se pudo enviar. Se guardó offline automáticamente.'
-                });
                 console.error('Error submitting interview:', err);
-                this.saveOffline();
+                const status = err?.status;
+                if (status === 0 || status >= 500) {
+                    this.messageService.add({
+                        severity: 'warn',
+                        summary: 'Sin conexión al servidor',
+                        detail: 'No se pudo enviar. La entrevista se guardó offline automáticamente.'
+                    });
+                    this.saveOffline();
+                } else {
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'No se pudo finalizar',
+                        detail: this.extractErrorMessage(err, 'Ocurrió un error al finalizar la entrevista.')
+                    });
+                }
             }
         });
     }
@@ -1365,14 +1462,26 @@ export class EntrevistasPage implements OnInit, OnDestroy {
                 firstError?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }, 100);
             this.cdr.detectChanges();
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Faltan respuestas obligatorias',
+                detail: 'Completa las preguntas marcadas en rojo antes de guardar offline.'
+            });
             return;
         }
 
-        this.offlineQueue.enqueue(this.currentInterview.id, this.buildPayload());
+        this.offlineQueue.enqueue(this.currentInterview.id, this.buildPayload(), {
+            codigo: this.currentInterview.codigo,
+            personaNombre: this.currentInterview.personaNombre
+        });
+
+        const conectado = navigator.onLine;
         this.messageService.add({
-            severity: 'info',
-            summary: '📦 Guardado offline',
-            detail: `Se guardó "${this.currentInterview.codigo}" en la cola. Se enviará cuando haya conexión.`
+            severity: conectado ? 'success' : 'info',
+            summary: conectado ? '✅ Guardado y sincronizando' : '📦 Guardado offline',
+            detail: conectado
+                ? `"${this.currentInterview.codigo}" se envió a la cola y se sincronizará automáticamente.`
+                : `"${this.currentInterview.codigo}" quedó en la cola local y se enviará al recuperar conexión.`
         });
         this.closeInterview();
     }
@@ -1413,10 +1522,11 @@ export class EntrevistasPage implements OnInit, OnDestroy {
         }
 
         this.directRegistrationLoading = true;
-        const personaPayload = {
+        const personaPayload: Record<string, unknown> = {
             medicarePersonId: this.directRegistrationForm.medicarePersonId.trim() || `DIRECTO-${Date.now()}`,
             nombre,
             apellido,
+            nombreCompleto: `${nombre} ${apellido}`.trim(),
             ci: this.directRegistrationForm.documento.trim(),
             documento: this.directRegistrationForm.documento.trim(),
             clinica,
@@ -1431,28 +1541,33 @@ export class EntrevistasPage implements OnInit, OnDestroy {
             next: (lote) => {
                 this.ciesService.executeSeleccion(lote.id, `DIRECTO-${Date.now()}`).subscribe({
                     next: (ejecucion) => {
-                        const persona = ejecucion.seleccionadas[0];
+                        const persona = ejecucion.seleccionadas && ejecucion.seleccionadas[0];
                         this.directRegistrationLoading = false;
                         this.closeDirectRegistration();
                         this.messageService.add({
                             severity: 'success',
-                            summary: '✅ Registro exitoso',
+                            summary: 'Registro exitoso',
                             detail: `${nombre} ${apellido} fue registrado/a correctamente.`
                         });
-                        this.loadPendientes();
+                        this.loadPendientes(true);
                         if (persona) {
                             this.start(persona);
                         } else {
+                            this.messageService.add({
+                                severity: 'warn',
+                                summary: 'Selección incompleta',
+                                detail: 'Se creó el registro pero no fue seleccionado automáticamente. Verifica el límite regional.'
+                            });
                             this.cdr.detectChanges();
                         }
                     },
                     error: (err) => {
                         this.directRegistrationLoading = false;
-                        this.directRegistrationError = 'Se creó el registro, pero falló la selección automática.';
+                        this.directRegistrationError = this.extractErrorMessage(err, 'Se creó el registro, pero falló la selección automática.');
                         this.messageService.add({
                             severity: 'warn',
                             summary: 'Selección fallida',
-                            detail: 'El registro se creó pero no se pudo abrir la entrevista automáticamente.'
+                            detail: this.directRegistrationError
                         });
                         console.error('Error executing selection:', err);
                         this.cdr.detectChanges();
@@ -1461,8 +1576,12 @@ export class EntrevistasPage implements OnInit, OnDestroy {
             },
             error: (err) => {
                 this.directRegistrationLoading = false;
-                this.directRegistrationError = 'No se pudo crear el registro individual.';
-                this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo crear el registro.' });
+                this.directRegistrationError = this.extractErrorMessage(err, 'No se pudo crear el registro individual.');
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error al registrar',
+                    detail: this.directRegistrationError
+                });
                 console.error('Error creating direct registration lote:', err);
                 this.cdr.detectChanges();
             }

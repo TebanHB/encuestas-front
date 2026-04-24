@@ -3,6 +3,7 @@ import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
+import { CheckboxModule } from 'primeng/checkbox';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
@@ -17,7 +18,7 @@ import { CiesService, UsuarioAdmin, UsuarioUpsertRequest } from '../../services/
 @Component({
     selector: 'app-usuarios-page',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, DialogModule, InputTextModule, PasswordModule, SelectModule, TableModule, TagModule, Toast, NombrePropioPipe, CiesInfoHintComponent],
+    imports: [CommonModule, FormsModule, ButtonModule, CheckboxModule, DialogModule, InputTextModule, PasswordModule, SelectModule, TableModule, TagModule, Toast, NombrePropioPipe, CiesInfoHintComponent],
     providers: [MessageService],
     template: `
         <div class="cies-page">
@@ -138,24 +139,34 @@ import { CiesService, UsuarioAdmin, UsuarioUpsertRequest } from '../../services/
 
             <div class="cies-form-grid cies-form-grid--two cies-dialog-form">
                 <div>
-                    <label>Nombre</label>
-                    <input pInputText [(ngModel)]="form.nombre" class="w-full" />
+                    <label>Nombre <span style="color:#dc2626;font-weight:700">*</span></label>
+                    <input pInputText [(ngModel)]="form.nombre" class="w-full" placeholder="Ej. María" />
                 </div>
                 <div>
                     <label>Apellido</label>
-                    <input pInputText [(ngModel)]="form.apellido" class="w-full" />
+                    <input pInputText [(ngModel)]="form.apellido" class="w-full" placeholder="Ej. López" />
                 </div>
                 <div>
-                    <label>Correo</label>
-                    <input pInputText [(ngModel)]="form.email" type="email" class="w-full" />
+                    <label>Correo <span style="color:#dc2626;font-weight:700">*</span></label>
+                    <input pInputText [(ngModel)]="form.email" type="email" class="w-full" placeholder="correo@dominio.com" />
                 </div>
                 <div>
-                    <label>Rol</label>
+                    <label>Rol <span style="color:#dc2626;font-weight:700">*</span></label>
                     <p-select [options]="roles" [(ngModel)]="form.rol" optionLabel="label" optionValue="value" appendTo="body" class="w-full"></p-select>
                 </div>
+                <div class="cies-field--full">
+                    <label>
+                        <p-checkbox [(ngModel)]="form.activo" [binary]="true" inputId="usuario-activo"></p-checkbox>
+                        Usuario activo (puede iniciar sesión)
+                    </label>
+                </div>
                 <div *ngIf="!editingId" class="cies-field--full">
-                    <label>Contraseña</label>
-                    <p-password [(ngModel)]="form.password" [feedback]="false" [toggleMask]="true" styleClass="w-full" inputStyleClass="w-full"></p-password>
+                    <label>Contraseña <span style="color:#dc2626;font-weight:700">*</span></label>
+                    <p-password [(ngModel)]="form.password" [feedback]="false" [toggleMask]="true" styleClass="w-full" inputStyleClass="w-full" placeholder="Mínimo 5 caracteres"></p-password>
+                </div>
+                <div *ngIf="editingId" class="cies-field--full">
+                    <label>Nueva contraseña (opcional)</label>
+                    <p-password [(ngModel)]="form.password" [feedback]="false" [toggleMask]="true" styleClass="w-full" inputStyleClass="w-full" placeholder="Dejar vacío para mantener la actual"></p-password>
                 </div>
             </div>
 
@@ -235,12 +246,23 @@ export class UsuariosPage implements OnInit {
         const password = this.form.password?.trim() || '';
 
         if (!nombre || !email) {
-            this.messageService.add({ severity: 'warn', summary: 'Validacion', detail: 'Nombre y correo son obligatorios' });
+            this.messageService.add({ severity: 'warn', summary: 'Validación', detail: 'Nombre y correo son obligatorios' });
+            return;
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            this.messageService.add({ severity: 'warn', summary: 'Correo inválido', detail: 'Ingresa un correo electrónico válido' });
             return;
         }
 
         if (!this.editingId && password.length < 5) {
-            this.messageService.add({ severity: 'warn', summary: 'Validacion', detail: 'La contrasena debe tener al menos 5 caracteres' });
+            this.messageService.add({ severity: 'warn', summary: 'Validación', detail: 'La contraseña debe tener al menos 5 caracteres' });
+            return;
+        }
+
+        if (this.editingId && password && password.length < 5) {
+            this.messageService.add({ severity: 'warn', summary: 'Validación', detail: 'Si cambias la contraseña debe tener al menos 5 caracteres' });
             return;
         }
 
@@ -261,13 +283,17 @@ export class UsuariosPage implements OnInit {
                 this.load();
                 this.messageService.add({
                     severity: 'success',
-                    summary: 'Éxito',
-                    detail: this.editingId ? 'Usuario actualizado correctamente' : 'Usuario creado correctamente'
+                    summary: this.editingId ? 'Usuario actualizado' : 'Usuario creado',
+                    detail: `${payload.nombre} ${payload.apellido}`.trim() + ' guardado correctamente.'
                 });
             },
             error: (error) => {
                 console.error('Error saving user:', error);
-                this.messageService.add({ severity: 'error', summary: 'Error', detail: this.extractErrorMessage(error, 'No se pudo guardar el usuario') });
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error al guardar',
+                    detail: this.extractErrorMessage(error, 'No se pudo guardar el usuario')
+                });
             }
         });
     }
@@ -312,14 +338,23 @@ export class UsuariosPage implements OnInit {
     }
 
     private extractErrorMessage(error: unknown, fallback: string): string {
-        const payload = (error as { error?: { message?: string } | string })?.error;
+        const wrapper = error as {
+            error?: { message?: string; detail?: string; error?: string } | string;
+            message?: string;
+        } | null;
+        const payload = wrapper?.error;
+
         if (typeof payload === 'string' && payload.trim()) {
             return payload;
         }
 
-        if (typeof payload === 'object' && payload && 'message' in payload && typeof payload.message === 'string' && payload.message.trim()) {
-            return payload.message;
+        if (typeof payload === 'object' && payload) {
+            if (typeof payload.message === 'string' && payload.message.trim()) return payload.message;
+            if (typeof payload.detail === 'string' && payload.detail.trim()) return payload.detail;
+            if (typeof payload.error === 'string' && payload.error.trim()) return payload.error;
         }
+
+        if (wrapper?.message && typeof wrapper.message === 'string') return wrapper.message;
 
         return fallback;
     }

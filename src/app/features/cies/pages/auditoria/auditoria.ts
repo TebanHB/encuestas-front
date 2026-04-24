@@ -117,17 +117,19 @@ interface FiltrosAuditoria {
                             <div class="cies-section-head__content">
                                 <div>
                                     <h3>📄 Registros de Auditoría</h3>
-                                    <p>{{ registros.length }} evento(s) encontrado(s)</p>
+                                    <p>{{ totalRegistros }} evento(s) encontrado(s) en total</p>
                                 </div>
                                 <div style="display: flex; gap: 0.5rem; align-items: center;">
-                                    <p-tag [value]="registros.length + ' registros'" severity="info"></p-tag>
+                                    <p-tag [value]="totalRegistros + ' registros'" severity="info"></p-tag>
                                 </div>
                             </div>
                         </div>
 
                         <p-table [value]="registros" [tableStyle]="{ 'min-width': '72rem' }"
-                            responsiveLayout="scroll" [paginator]="true" [rows]="15"
+                            responsiveLayout="scroll" [paginator]="true" [rows]="pageSize"
                             [rowsPerPageOptions]="[10, 15, 25, 50]" [loading]="loading"
+                            [lazy]="true" [totalRecords]="totalRegistros" [first]="pageIndex * pageSize"
+                            (onLazyLoad)="onPageChange($any($event))"
                             class="cies-table">
                             <ng-template pTemplate="header">
                                 <tr>
@@ -649,6 +651,9 @@ export class AuditoriaPage implements OnInit {
     selectedPayloadJson = '';
     busquedaRealizada = false;
     loading = false;
+    pageIndex = 0;
+    pageSize = 15;
+    totalRegistros = 0;
 
     filtros: FiltrosAuditoria = {
         tipo: '',
@@ -719,7 +724,10 @@ export class AuditoriaPage implements OnInit {
         this.loading = true;
         this.busquedaRealizada = true;
 
-        const params: Record<string, string | number | null | undefined> = {};
+        const params: Record<string, string | number | null | undefined> = {
+            page: this.pageIndex,
+            size: this.pageSize
+        };
         if (this.filtros.tipo) params['tipo'] = this.filtros.tipo;
         if (this.filtros.usuario) params['usuario'] = this.filtros.usuario;
         if (this.filtros.resultado) params['resultado'] = this.filtros.resultado;
@@ -728,15 +736,9 @@ export class AuditoriaPage implements OnInit {
 
         this.ciesService.listAuditoria(params).subscribe({
             next: (response) => {
-                this.registros = response;
+                this.registros = response.content || [];
+                this.totalRegistros = response.totalElements || 0;
                 this.loading = false;
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Búsqueda completada',
-                    detail: response.length === 1
-                        ? 'Se encontró 1 registro de auditoría.'
-                        : `Se encontraron ${response.length} registros de auditoría.`
-                });
                 this.cdr.detectChanges();
             },
             error: (err) => {
@@ -745,12 +747,32 @@ export class AuditoriaPage implements OnInit {
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
-                    detail: 'No se pudieron cargar los registros de auditoría.'
+                    detail: this.extractErrorMessage(err, 'No se pudieron cargar los registros de auditoría.')
                 });
                 this.registros = [];
+                this.totalRegistros = 0;
                 this.cdr.detectChanges();
             }
         });
+    }
+
+    onPageChange(event: { first: number; rows: number }): void {
+        this.pageSize = event.rows;
+        this.pageIndex = Math.floor(event.first / event.rows);
+        this.buscar();
+    }
+
+    private extractErrorMessage(error: unknown, fallback: string): string {
+        const payload = error as {
+            error?: { message?: string; detail?: string; error?: string };
+            message?: string;
+        } | null;
+
+        return payload?.error?.message
+            || payload?.error?.detail
+            || payload?.error?.error
+            || payload?.message
+            || fallback;
     }
 
     limpiarFiltros(): void {
