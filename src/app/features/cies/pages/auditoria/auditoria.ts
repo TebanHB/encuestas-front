@@ -129,6 +129,7 @@ interface FiltrosAuditoria {
                             responsiveLayout="scroll" [paginator]="true" [rows]="pageSize"
                             [rowsPerPageOptions]="[10, 15, 25, 50]" [loading]="loading"
                             [lazy]="true" [totalRecords]="totalRegistros" [first]="pageIndex * pageSize"
+                            [sortField]="sortField" [sortOrder]="sortOrder"
                             (onLazyLoad)="onPageChange($any($event))"
                             class="cies-table">
                             <ng-template pTemplate="header">
@@ -660,6 +661,8 @@ export class AuditoriaPage implements OnInit {
     pageIndex = 0;
     pageSize = 15;
     totalRegistros = 0;
+    sortField = 'fechaHora';
+    sortOrder: 1 | -1 = -1;
 
     filtros: FiltrosAuditoria = {
         tipo: '',
@@ -753,7 +756,9 @@ export class AuditoriaPage implements OnInit {
 
         const params: Record<string, string | number | null | undefined> = {
             page: this.pageIndex,
-            size: this.pageSize
+            size: this.pageSize,
+            sortField: this.sortField,
+            sortOrder: this.sortOrder
         };
         if (this.filtros.tipo) params['tipo'] = this.filtros.tipo;
         if (this.filtros.usuario) params['usuario'] = this.filtros.usuario;
@@ -783,10 +788,24 @@ export class AuditoriaPage implements OnInit {
         });
     }
 
-    onPageChange(event: { first: number; rows: number }): void {
-        this.pageSize = event.rows;
-        this.pageIndex = Math.floor(event.first / event.rows);
+    onPageChange(event: { first?: number; rows?: number; sortField?: string | string[] | null; sortOrder?: number | null }): void {
+        const rows = event.rows || this.pageSize;
+        const nextSortField = this.resolveSortField(event.sortField);
+        const nextSortOrder = event.sortOrder === 1 ? 1 : -1;
+        const sortChanged = nextSortField !== this.sortField || nextSortOrder !== this.sortOrder;
+
+        this.pageSize = rows;
+        this.pageIndex = sortChanged ? 0 : Math.floor((event.first || 0) / rows);
+        this.sortField = nextSortField;
+        this.sortOrder = nextSortOrder;
         this.buscar();
+    }
+
+    private resolveSortField(sortField: string | string[] | null | undefined): string {
+        if (Array.isArray(sortField)) {
+            return sortField[0] || 'fechaHora';
+        }
+        return sortField || 'fechaHora';
     }
 
     private formatLocalDateTime(date: Date, endOfDay: boolean): string {
