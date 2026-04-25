@@ -379,22 +379,17 @@ interface FiltrosAuditoria {
                     </div>
 
                     <!-- Datos anteriores -->
-                    <div class="detalle-section" *ngIf="registroSeleccionado.datosAnteriores">
+                    <div class="detalle-section detalle-change-card detalle-change-card--before" *ngIf="registroSeleccionado.datosAnteriores">
                         <h4>📋 Datos Anteriores (antes del cambio)</h4>
-                        <pre class="detalle-json">{{ formatJsonSafe(registroSeleccionado.datosAnteriores) }}</pre>
+                        <pre class="detalle-json">{{ formatAuditData(registroSeleccionado.datosAnteriores) }}</pre>
                     </div>
 
                     <!-- Datos nuevos -->
-                    <div class="detalle-section" *ngIf="registroSeleccionado.datosNuevos">
+                    <div class="detalle-section detalle-change-card detalle-change-card--after" *ngIf="registroSeleccionado.datosNuevos">
                         <h4>📋 Datos Nuevos (después del cambio)</h4>
-                        <pre class="detalle-json">{{ formatJsonSafe(registroSeleccionado.datosNuevos) }}</pre>
+                        <pre class="detalle-json">{{ formatAuditData(registroSeleccionado.datosNuevos) }}</pre>
                     </div>
 
-                    <!-- User Agent -->
-                    <div class="detalle-section" *ngIf="registroSeleccionado.userAgent">
-                        <h4>User Agent</h4>
-                        <span style="font-size: 0.82rem; color: var(--text-color-secondary);">{{ registroSeleccionado.userAgent }}</span>
-                    </div>
                 </div>
 
                 <ng-template pTemplate="footer">
@@ -560,13 +555,18 @@ interface FiltrosAuditoria {
         .detalle-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 0.75rem 1.5rem;
+            gap: 0.75rem;
         }
 
         .detalle-field {
             display: flex;
             flex-direction: column;
-            gap: 0.25rem;
+            gap: 0.35rem;
+            min-width: 0;
+            padding: 0.75rem;
+            border: 1px solid var(--surface-border);
+            border-radius: 8px;
+            background: color-mix(in srgb, var(--surface-card) 86%, var(--surface-ground));
         }
 
         .detalle-field label {
@@ -578,6 +578,7 @@ interface FiltrosAuditoria {
 
         .detalle-field span {
             font-size: 0.88rem;
+            overflow-wrap: anywhere;
         }
 
         .detalle-descripcion {
@@ -585,23 +586,47 @@ interface FiltrosAuditoria {
             line-height: 1.5;
             color: var(--text-color);
             margin: 0;
-            padding: 0.75rem;
-            background: var(--surface-ground);
-            border-radius: 0.5rem;
+            padding: 0.9rem 1rem;
+            background: color-mix(in srgb, var(--primary-color) 7%, var(--surface-card));
+            border: 1px solid color-mix(in srgb, var(--primary-color) 18%, var(--surface-border));
+            border-radius: 8px;
+        }
+
+        .detalle-change-card {
+            overflow: hidden;
+            border: 1px solid var(--surface-border);
+            border-radius: 8px;
+            background: var(--surface-card);
+        }
+
+        .detalle-change-card h4 {
+            display: flex;
+            align-items: center;
+            margin: 0;
+            padding: 0.85rem 1rem;
+            border-bottom: 1px solid var(--surface-border);
+            background: color-mix(in srgb, var(--surface-ground) 70%, transparent);
+        }
+
+        .detalle-change-card--before {
+            border-color: color-mix(in srgb, #f59e0b 30%, var(--surface-border));
+        }
+
+        .detalle-change-card--after {
+            border-color: color-mix(in srgb, #22c55e 30%, var(--surface-border));
         }
 
         .detalle-json {
             font-family: monospace;
             font-size: 0.8rem;
             line-height: 1.5;
-            background: var(--surface-card);
-            border: 1px solid var(--surface-border);
-            border-radius: 0.5rem;
-            padding: 0.75rem;
-            max-height: 15rem;
+            background: color-mix(in srgb, var(--surface-ground) 82%, var(--surface-card));
+            padding: 0.9rem;
+            max-height: 18rem;
             overflow-y: auto;
             white-space: pre-wrap;
-            word-break: break-all;
+            overflow-wrap: anywhere;
+            word-break: normal;
             margin: 0;
         }
 
@@ -911,6 +936,10 @@ export class AuditoriaPage implements OnInit {
     descripcionAuditoria(descripcion?: string): string {
         const texto = descripcion?.trim() || 'Sin descripción';
         return texto.replace(/[A-Za-z0-9+/]{160,}={0,2}/g, 'dato sensible protegido');
+    }
+
+    formatAuditData(jsonStr: string): string {
+        return this.descripcionAuditoria(this.formatJsonSafe(jsonStr));
     }
 
     formatJsonSafe(jsonStr: string): string {
