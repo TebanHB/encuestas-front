@@ -154,8 +154,8 @@ interface FiltrosAuditoria {
                                     </td>
                                     <td style="font-size: 0.85rem;">{{ item.usuario }}</td>
                                     <td style="font-size: 0.85rem; max-width: 20rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
-                                        [pTooltip]="item.descripcion || 'Sin descripción'" tooltipPosition="top">
-                                        {{ item.descripcion || 'Sin descripción' }}
+                                        [pTooltip]="descripcionAuditoria(item.descripcion)" tooltipPosition="top">
+                                        {{ descripcionAuditoria(item.descripcion) }}
                                     </td>
                                     <td style="font-size: 0.82rem;">
                                         <span *ngIf="item.entidadAfectada">{{ item.entidadAfectada }} #{{ item.idEntidad || '—' }}</span>
@@ -375,7 +375,7 @@ interface FiltrosAuditoria {
                     <!-- Descripción -->
                     <div class="detalle-section">
                         <h4>Descripción</h4>
-                        <p class="detalle-descripcion">{{ registroSeleccionado.descripcion || 'Sin descripción' }}</p>
+                        <p class="detalle-descripcion">{{ descripcionAuditoria(registroSeleccionado.descripcion) }}</p>
                     </div>
 
                     <!-- Datos anteriores -->
@@ -906,6 +906,11 @@ export class AuditoriaPage implements OnInit {
         if (tipo.includes('ELIMINACION') || tipo.includes('ERROR') || tipo.includes('FAILED')) return 'danger';
         if (tipo.includes('MODIFICACION') || tipo.includes('CAMBIO')) return 'warn';
         return 'info';
+    }
+
+    descripcionAuditoria(descripcion?: string): string {
+        const texto = descripcion?.trim() || 'Sin descripción';
+        return texto.replace(/[A-Za-z0-9+/]{160,}={0,2}/g, 'dato sensible protegido');
     }
 
     formatJsonSafe(jsonStr: string): string {
