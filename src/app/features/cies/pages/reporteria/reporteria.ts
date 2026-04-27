@@ -187,82 +187,67 @@ interface SelectOption {
 
                 <!-- TAB 1: Resumen General -->
                 <p-tabpanel value="0">
-                    <!-- KPIs -->
-                    <section class="cies-stats-grid">
-                        <article class="card cies-stat-card">
+                    <section class="card cies-summary-panel">
+                        <div class="cies-summary-panel__main">
                             <div class="cies-card-caption">
-                                <span>Total entrevistas</span>
-                                <app-cies-info-hint text="Número de entrevistas incluidas en el análisis actual."></app-cies-info-hint>
+                                <span>Resumen general</span>
+                                <app-cies-info-hint text="El total incluye entrevistas finalizadas con y sin vulnerabilidad."></app-cies-info-hint>
                             </div>
-                            <strong style="font-size: 2rem;">{{ resumen.totalEntrevistas | numeroFormato }}</strong>
-                        </article>
-                        <article class="card cies-stat-card">
-                            <div class="cies-card-caption">
+                            <strong>{{ resumen.totalEntrevistas | numeroFormato }}</strong>
+                            <p>
+                                entrevistas finalizadas. El total no se calcula sumando pobreza, exclusión y subatención;
+                                esas son categorías del subconjunto con vulnerabilidad.
+                            </p>
+                        </div>
+                        <div class="cies-summary-panel__split">
+                            <article>
                                 <span>Con vulnerabilidad</span>
-                                <app-cies-info-hint text="Entrevistas con al menos un factor de vulnerabilidad."></app-cies-info-hint>
-                            </div>
-                            <strong style="font-size: 2rem;">{{ resumen.totalConVulnerabilidad | numeroFormato }}</strong>
-                            <span class="stat-percent">{{ resumen.porcentajeConVulnerabilidad }}%</span>
-                        </article>
-                        <article class="card cies-stat-card">
-                            <div class="cies-card-caption">
+                                <strong>{{ resumen.totalConVulnerabilidad | numeroFormato }}</strong>
+                                <small>{{ resumen.porcentajeConVulnerabilidad }}%</small>
+                            </article>
+                            <article>
                                 <span>Sin vulnerabilidad</span>
-                                <app-cies-info-hint text="Entrevistas terminadas que no alcanzan ningún factor de vulnerabilidad."></app-cies-info-hint>
-                            </div>
-                            <strong style="font-size: 2rem;">{{ resumen.totalSinVulnerabilidad | numeroFormato }}</strong>
-                            <span class="stat-percent">{{ resumen.porcentajeSinVulnerabilidad }}%</span>
-                        </article>
-                        <article class="card cies-stat-card card-stat--pobre">
-                            <div class="cies-card-caption">
-                                <span>Pobreza</span>
-                                <app-cies-info-hint text="Total clasificadas como pobreza."></app-cies-info-hint>
-                            </div>
-                            <strong style="font-size: 2rem; color: #ef4444;">{{ resumen.totalPobres | numeroFormato }}</strong>
-                            <span class="stat-percent">{{ resumen.porcentajePobres }}%</span>
-                        </article>
-                        <article class="card cies-stat-card card-stat--excluido">
-                            <div class="cies-card-caption">
-                                <span>Excluidas</span>
-                                <app-cies-info-hint text="Total clasificadas como exclusión."></app-cies-info-hint>
-                            </div>
-                            <strong style="font-size: 2rem; color: #f59e0b;">{{ resumen.totalExcluidas | numeroFormato }}</strong>
-                            <span class="stat-percent">{{ resumen.porcentajeExcluidas }}%</span>
-                        </article>
-                        <article class="card cies-stat-card card-stat--subatendido">
-                            <div class="cies-card-caption">
-                                <span>Subatendidas</span>
-                                <app-cies-info-hint text="Total clasificadas como subatención."></app-cies-info-hint>
-                            </div>
-                            <strong style="font-size: 2rem; color: #0ea5e9;">{{ resumen.totalSubatendidas | numeroFormato }}</strong>
-                            <span class="stat-percent">{{ resumen.porcentajeSubatendidas }}%</span>
-                        </article>
+                                <strong>{{ resumen.totalSinVulnerabilidad | numeroFormato }}</strong>
+                                <small>{{ resumen.porcentajeSinVulnerabilidad }}%</small>
+                            </article>
+                        </div>
                     </section>
 
-                    <section class="card cies-soft-note cies-summary-note">
-                        <strong>Total entrevistas:</strong>
-                        {{ resumen.totalEntrevistas | numeroFormato }} registros finalizados.
-                        De ellos, {{ resumen.totalConVulnerabilidad | numeroFormato }} tienen al menos un factor de vulnerabilidad
-                        y {{ resumen.totalSinVulnerabilidad | numeroFormato }} no presentan vulnerabilidad.
-                        El total no se calcula sumando pobreza, exclusión y subatención; esas son categorías del subconjunto con vulnerabilidad.
-                    </section>
-
-                    <section class="card cies-factor-control">
-                        <div>
+                    <section class="cies-summary-detail-grid">
+                        <article class="card cies-factor-card">
                             <span>Sin factores</span>
                             <strong>{{ resumen.totalSinVulnerabilidad | numeroFormato }}</strong>
-                        </div>
-                        <div>
+                        </article>
+                        <article class="card cies-factor-card">
                             <span>1 factor</span>
                             <strong>{{ resumen.totalUnFactor | numeroFormato }}</strong>
-                        </div>
-                        <div>
+                        </article>
+                        <article class="card cies-factor-card">
                             <span>2 factores</span>
                             <strong>{{ resumen.totalDosFactores | numeroFormato }}</strong>
-                        </div>
-                        <div>
+                        </article>
+                        <article class="card cies-factor-card">
                             <span>3 factores</span>
                             <strong>{{ resumen.totalTresFactores | numeroFormato }}</strong>
-                        </div>
+                        </article>
+                    </section>
+
+                    <section class="cies-summary-detail-grid cies-summary-detail-grid--three">
+                        <article class="card cies-category-card cies-category-card--pobre">
+                            <span>Pobreza</span>
+                            <strong>{{ resumen.totalPobres | numeroFormato }}</strong>
+                            <small>{{ resumen.porcentajePobres }}%</small>
+                        </article>
+                        <article class="card cies-category-card cies-category-card--excluido">
+                            <span>Excluidas</span>
+                            <strong>{{ resumen.totalExcluidas | numeroFormato }}</strong>
+                            <small>{{ resumen.porcentajeExcluidas }}%</small>
+                        </article>
+                        <article class="card cies-category-card cies-category-card--subatendido">
+                            <span>Subatendidas</span>
+                            <strong>{{ resumen.totalSubatendidas | numeroFormato }}</strong>
+                            <small>{{ resumen.porcentajeSubatendidas }}%</small>
+                        </article>
                     </section>
 
                     <!-- Barras de progreso -->
@@ -714,34 +699,138 @@ interface SelectOption {
             color: var(--text-color-secondary);
         }
 
-        .cies-summary-note {
-            margin-top: 1rem;
-            line-height: 1.6;
+        .cies-summary-panel {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.55fr);
+            gap: 1rem;
+            align-items: stretch;
+            overflow: hidden;
+            position: relative;
+            border-color: var(--layout-accent-soft-strong);
         }
 
-        .cies-factor-control {
+        .cies-summary-panel::before {
+            content: '';
+            position: absolute;
+            inset: 0 auto 0 0;
+            width: 0.35rem;
+            background: var(--primary-color);
+        }
+
+        .cies-summary-panel__main,
+        .cies-summary-panel__split article,
+        .cies-factor-card,
+        .cies-category-card {
+            border-radius: 8px;
+        }
+
+        .cies-summary-panel__main {
+            display: flex;
+            flex-direction: column;
+            gap: 0.7rem;
+            padding-left: 0.35rem;
+        }
+
+        .cies-summary-panel__main > strong {
+            font-size: clamp(3rem, 7vw, 4.75rem);
+            line-height: 0.92;
+            color: var(--layout-accent);
+        }
+
+        .cies-summary-panel__main p {
+            max-width: 52rem;
+            margin: 0;
+            color: var(--text-color-secondary);
+            line-height: 1.55;
+        }
+
+        .cies-summary-panel__split {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+        }
+
+        .cies-summary-panel__split article {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 0.25rem 0.75rem;
+            align-items: end;
+            padding: 1rem;
+            background: var(--layout-panel-muted-background);
+            border: 1px solid var(--layout-border-soft);
+        }
+
+        .cies-summary-panel__split span,
+        .cies-factor-card span,
+        .cies-category-card span {
+            color: var(--text-color-secondary);
+            font-weight: 700;
+        }
+
+        .cies-summary-panel__split strong {
+            grid-row: span 2;
+            font-size: 2rem;
+            color: var(--layout-text-strong);
+        }
+
+        .cies-summary-panel__split small,
+        .cies-category-card small {
+            color: var(--text-color-secondary);
+            font-weight: 700;
+        }
+
+        .cies-summary-detail-grid {
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 0.75rem;
+            gap: 0.85rem;
             margin-top: 1rem;
         }
 
-        .cies-factor-control div {
-            border: 1px solid var(--surface-border);
-            border-radius: 8px;
-            padding: 0.9rem;
-            background: var(--surface-ground);
+        .cies-summary-detail-grid--three {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
         }
 
-        .cies-factor-control span {
-            display: block;
-            color: var(--text-color-secondary);
-            font-size: 0.82rem;
-            margin-bottom: 0.35rem;
+        .cies-factor-card,
+        .cies-category-card {
+            display: grid;
+            gap: 0.35rem;
+            padding: 1rem;
+            min-height: 7rem;
         }
 
-        .cies-factor-control strong {
-            font-size: 1.4rem;
+        .cies-factor-card {
+            background: var(--layout-panel-muted-background);
+        }
+
+        .cies-factor-card strong,
+        .cies-category-card strong {
+            font-size: 2rem;
+            line-height: 1;
+            color: var(--layout-text-strong);
+        }
+
+        .cies-category-card--pobre {
+            border-left: 4px solid #ef4444;
+        }
+
+        .cies-category-card--pobre strong {
+            color: #ef4444;
+        }
+
+        .cies-category-card--excluido {
+            border-left: 4px solid #f59e0b;
+        }
+
+        .cies-category-card--excluido strong {
+            color: #f59e0b;
+        }
+
+        .cies-category-card--subatendido {
+            border-left: 4px solid #0ea5e9;
+        }
+
+        .cies-category-card--subatendido strong {
+            color: #0ea5e9;
         }
 
         .progress-bars-container {
@@ -1118,7 +1207,9 @@ interface SelectOption {
 
             .excel-charts-grid,
             .excel-frequency-grid,
-            .cies-factor-control,
+            .cies-summary-panel,
+            .cies-summary-detail-grid,
+            .cies-summary-detail-grid--three,
             .associated-summary,
             .excel-export-layout,
             .excel-export-grid {

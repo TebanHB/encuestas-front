@@ -504,6 +504,24 @@ body .p-connected-overlay {
         font-weight: 700;
     }
 
+    .p-button:not(.p-button-secondary):not(.p-button-danger):not(.p-button-success):not(.p-button-info):not(.p-button-warn):not(.p-button-help):not(.p-button-contrast):not(.p-button-outlined):not(.p-button-text):not(.p-button-link) {
+        background: var(--primary-color);
+        border-color: var(--primary-color);
+        color: var(--primary-contrast-color);
+    }
+
+    .p-button:not(.p-button-secondary):not(.p-button-danger):not(.p-button-success):not(.p-button-info):not(.p-button-warn):not(.p-button-help):not(.p-button-contrast):not(.p-button-outlined):not(.p-button-text):not(.p-button-link):enabled:hover {
+        background: var(--primary-hover-color);
+        border-color: var(--primary-hover-color);
+        color: var(--primary-contrast-color);
+    }
+
+    .p-button:not(.p-button-secondary):not(.p-button-danger):not(.p-button-success):not(.p-button-info):not(.p-button-warn):not(.p-button-help):not(.p-button-contrast):not(.p-button-outlined):not(.p-button-text):not(.p-button-link):enabled:active {
+        background: var(--primary-active-color);
+        border-color: var(--primary-active-color);
+        color: var(--primary-contrast-color);
+    }
+
     .p-inputtext,
     .p-inputnumber-input,
     .p-password-input,

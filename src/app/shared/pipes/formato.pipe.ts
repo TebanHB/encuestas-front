@@ -8,13 +8,24 @@ export class FechaCortaPipe implements PipeTransform {
     transform(value: string | Date | null | undefined): string {
         if (!value) return '—';
         try {
+            if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+                const [year, month, day] = value.split('-').map(Number);
+                return new Date(year, month - 1, day).toLocaleDateString('es-BO', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                    timeZone: 'America/La_Paz'
+                });
+            }
+
             const date = typeof value === 'string' ? new Date(value) : value;
             return date.toLocaleDateString('es-BO', {
                 day: '2-digit',
                 month: 'short',
                 year: 'numeric',
                 hour: '2-digit',
-                minute: '2-digit'
+                minute: '2-digit',
+                timeZone: 'America/La_Paz'
             });
         } catch {
             return String(value);
@@ -30,15 +41,23 @@ export class FechaLargaPipe implements PipeTransform {
     transform(value: string | Date | null | undefined): string {
         if (!value) return '—';
         try {
-            const date = typeof value === 'string' ? new Date(value) : value;
+            const date = typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
+                ? this.dateOnlyToLocal(value)
+                : typeof value === 'string' ? new Date(value) : value;
             return date.toLocaleDateString('es-BO', {
                 day: 'numeric',
                 month: 'long',
-                year: 'numeric'
+                year: 'numeric',
+                timeZone: 'America/La_Paz'
             });
         } catch {
             return String(value);
         }
+    }
+
+    private dateOnlyToLocal(value: string): Date {
+        const [year, month, day] = value.split('-').map(Number);
+        return new Date(year, month - 1, day);
     }
 }
 

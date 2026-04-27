@@ -1767,9 +1767,17 @@ export class EntrevistasPage implements OnInit {
             medicarePersonId: '',
             clinica: '',
             regional: '',
-            fechaConsulta: new Date().toISOString().slice(0, 10),
+            fechaConsulta: this.todayLocalIsoDate(),
             tipoConsulta: 'PRIMERA_CONSULTA_SSR'
         };
+    }
+
+    private todayLocalIsoDate(): string {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
     }
 
     private normalizeText(value: unknown): string {

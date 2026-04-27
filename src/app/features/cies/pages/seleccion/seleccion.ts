@@ -1056,9 +1056,17 @@ export class SeleccionPage implements OnInit {
             documento: this.readValue(item, ['documento']),
             clinica: this.readValue(item, ['clinica']),
             regional: this.readValue(item, ['regional']),
-            fechaConsulta: this.readValue(item, ['fechaConsulta', 'fechaconsulta']) || new Date().toISOString().slice(0, 10),
+            fechaConsulta: this.readValue(item, ['fechaConsulta', 'fechaconsulta']) || this.todayLocalIsoDate(),
             tipoConsulta: this.readValue(item, ['tipoConsulta', 'tipoconsulta']) || 'PRIMERA_CONSULTA_SSR'
         };
+    }
+
+    private todayLocalIsoDate(): string {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
     }
 
     private readValue(item: Record<string, unknown>, keys: string[]): string {
