@@ -196,9 +196,25 @@ interface SelectOption {
                             </div>
                             <strong style="font-size: 2rem;">{{ resumen.totalEntrevistas | numeroFormato }}</strong>
                         </article>
+                        <article class="card cies-stat-card">
+                            <div class="cies-card-caption">
+                                <span>Con vulnerabilidad</span>
+                                <app-cies-info-hint text="Entrevistas con al menos un factor de vulnerabilidad."></app-cies-info-hint>
+                            </div>
+                            <strong style="font-size: 2rem;">{{ resumen.totalConVulnerabilidad | numeroFormato }}</strong>
+                            <span class="stat-percent">{{ resumen.porcentajeConVulnerabilidad }}%</span>
+                        </article>
+                        <article class="card cies-stat-card">
+                            <div class="cies-card-caption">
+                                <span>Sin vulnerabilidad</span>
+                                <app-cies-info-hint text="Entrevistas terminadas que no alcanzan ningún factor de vulnerabilidad."></app-cies-info-hint>
+                            </div>
+                            <strong style="font-size: 2rem;">{{ resumen.totalSinVulnerabilidad | numeroFormato }}</strong>
+                            <span class="stat-percent">{{ resumen.porcentajeSinVulnerabilidad }}%</span>
+                        </article>
                         <article class="card cies-stat-card card-stat--pobre">
                             <div class="cies-card-caption">
-                                <span>Vulnerables</span>
+                                <span>Pobreza</span>
                                 <app-cies-info-hint text="Total clasificadas como pobreza."></app-cies-info-hint>
                             </div>
                             <strong style="font-size: 2rem; color: #ef4444;">{{ resumen.totalPobres | numeroFormato }}</strong>
@@ -229,7 +245,7 @@ interface SelectOption {
                             <div class="progress-bar-item">
                                 <div class="progress-bar-label">
                                     <span class="dot dot--pobre"></span>
-                                    <span>Vulnerables</span>
+                                    <span>Pobreza</span>
                                     <strong>{{ resumen.porcentajePobres }}%</strong>
                                 </div>
                                 <p-progressBar [value]="resumen.porcentajePobres" [style]="{ height: '12px' }"
@@ -295,7 +311,7 @@ interface SelectOption {
                                 <tr>
                                     <th>Período</th>
                                     <th>Total</th>
-                                    <th>Vulnerables</th>
+                                    <th>Pobreza</th>
                                     <th>Excluidas</th>
                                     <th>Subatendidas</th>
                                 </tr>
@@ -343,7 +359,7 @@ interface SelectOption {
                                 <tr>
                                     <th pSortableColumn="clinica">Clínica <p-sortIcon field="clinica"></p-sortIcon></th>
                                     <th pSortableColumn="total">Total <p-sortIcon field="total"></p-sortIcon></th>
-                                    <th pSortableColumn="porcentajePobres">% Vulnerables <p-sortIcon field="porcentajePobres"></p-sortIcon></th>
+                                    <th pSortableColumn="porcentajePobres">% Pobreza <p-sortIcon field="porcentajePobres"></p-sortIcon></th>
                                     <th pSortableColumn="porcentajeExcluidas">% Excluidas <p-sortIcon field="porcentajeExcluidas"></p-sortIcon></th>
                                     <th pSortableColumn="porcentajeSubatendidas">% Subatendidas <p-sortIcon field="porcentajeSubatendidas"></p-sortIcon></th>
                                 </tr>
@@ -1446,10 +1462,10 @@ export class ReporteriaPage implements OnInit {
     private buildCharts(): void {
         if (this.resumen) {
             this.classificationChartData = {
-                labels: ['Vulnerables', 'Excluidas', 'Subatendidas'],
+                labels: ['Pobreza', 'Exclusión', 'Sub-atención', 'Sin vulnerabilidad'],
                 datasets: [{
-                    data: [this.resumen.totalPobres, this.resumen.totalExcluidas, this.resumen.totalSubatendidas],
-                    backgroundColor: ['#ef4444', '#f59e0b', '#0ea5e9'],
+                    data: [this.resumen.totalPobres, this.resumen.totalExcluidas, this.resumen.totalSubatendidas, this.resumen.totalSinVulnerabilidad],
+                    backgroundColor: ['#ef4444', '#f59e0b', '#0ea5e9', '#64748b'],
                     hoverOffset: 8
                 }]
             };
@@ -1458,7 +1474,7 @@ export class ReporteriaPage implements OnInit {
                 labels: this.resumen.tendencias.map((item) => item.etiqueta),
                 datasets: [
                     { label: 'Total', data: this.resumen.tendencias.map((i) => i.total), backgroundColor: '#6366f1', borderRadius: 4 },
-                    { label: 'Vulnerables', data: this.resumen.tendencias.map((i) => i.pobres), backgroundColor: '#ef4444', borderRadius: 4 },
+                    { label: 'Pobreza', data: this.resumen.tendencias.map((i) => i.pobres), backgroundColor: '#ef4444', borderRadius: 4 },
                     { label: 'Excluidas', data: this.resumen.tendencias.map((i) => i.excluidas), backgroundColor: '#f59e0b', borderRadius: 4 },
                     { label: 'Subatendidas', data: this.resumen.tendencias.map((i) => i.subatendidas), backgroundColor: '#0ea5e9', borderRadius: 4 }
                 ]
@@ -1467,7 +1483,7 @@ export class ReporteriaPage implements OnInit {
             this.clinicasChartData = {
                 labels: this.resumen.comparativoClinicas.map((item) => item.clinica),
                 datasets: [
-                    { label: '% Vulnerables', data: this.resumen.comparativoClinicas.map((i) => i.porcentajePobres), backgroundColor: '#ef4444', borderRadius: 4 },
+                    { label: '% Pobreza', data: this.resumen.comparativoClinicas.map((i) => i.porcentajePobres), backgroundColor: '#ef4444', borderRadius: 4 },
                     { label: '% Excluidas', data: this.resumen.comparativoClinicas.map((i) => i.porcentajeExcluidas), backgroundColor: '#f59e0b', borderRadius: 4 },
                     { label: '% Subatendidas', data: this.resumen.comparativoClinicas.map((i) => i.porcentajeSubatendidas), backgroundColor: '#0ea5e9', borderRadius: 4 }
                 ]

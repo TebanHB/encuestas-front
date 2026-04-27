@@ -161,11 +161,32 @@ export interface ReporteResumen {
     totalPobres: number;
     totalExcluidas: number;
     totalSubatendidas: number;
+    totalConVulnerabilidad: number;
+    totalSinVulnerabilidad: number;
+    totalUnFactor: number;
+    totalDosFactores: number;
+    totalTresFactores: number;
     porcentajePobres: number;
     porcentajeExcluidas: number;
     porcentajeSubatendidas: number;
+    porcentajeConVulnerabilidad: number;
+    porcentajeSinVulnerabilidad: number;
     tendencias: { etiqueta: string; total: number; pobres: number; excluidas: number; subatendidas: number }[];
-    comparativoClinicas: { clinica: string; regional: string; total: number; porcentajePobres: number; porcentajeExcluidas: number; porcentajeSubatendidas: number }[];
+    comparativoClinicas: {
+        clinica: string;
+        regional: string;
+        total: number;
+        totalPobres: number;
+        totalExcluidas: number;
+        totalSubatendidas: number;
+        totalConVulnerabilidad: number;
+        totalSinVulnerabilidad: number;
+        porcentajePobres: number;
+        porcentajeExcluidas: number;
+        porcentajeSubatendidas: number;
+        porcentajeConVulnerabilidad: number;
+        porcentajeSinVulnerabilidad: number;
+    }[];
 }
 
 export interface SerieReporte {
