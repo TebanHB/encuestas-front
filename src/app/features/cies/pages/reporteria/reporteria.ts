@@ -529,7 +529,9 @@ interface SelectOption {
                         <div class="excel-frequency-grid">
                             <article class="excel-mini-chart" *ngFor="let chart of frequencyPreviewCharts">
                                 <h4>{{ chart.title }}</h4>
-                                <p-chart type="bar" [data]="chart.data" [options]="frequencyChartOptions"></p-chart>
+                                <div class="excel-mini-chart__body" [style.height.px]="chart.height">
+                                    <p-chart type="bar" [data]="chart.data" [options]="frequencyChartOptions"></p-chart>
+                                </div>
                             </article>
                         </div>
                     </section>
@@ -561,7 +563,8 @@ interface SelectOption {
         </div>
 
         <p-dialog [(visible)]="excelDialogVisible" [modal]="true" [draggable]="false" [resizable]="false"
-            [style]="{ width: '68rem', 'max-width': '96vw' }" [contentStyle]="{ overflow: 'visible' }"
+            [style]="{ width: '68rem', 'max-width': '96vw', 'max-height': '92vh' }"
+            [contentStyle]="{ overflow: 'auto', 'max-height': 'calc(92vh - 9.5rem)' }"
             header="Exportar Excel CIES" styleClass="cies-dialog cies-export-dialog">
             <div class="excel-export-layout">
                 <section class="excel-export-block">
@@ -785,11 +788,13 @@ interface SelectOption {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 1rem;
+            align-items: start;
         }
 
         .excel-mini-chart {
             min-width: 0;
-            min-height: 24rem;
+            display: flex;
+            flex-direction: column;
             padding: 0.85rem;
             border: 1px solid var(--surface-border);
             border-radius: 8px;
@@ -802,10 +807,24 @@ interface SelectOption {
             line-height: 1.25;
         }
 
+        .excel-mini-chart__body {
+            min-height: 10.5rem;
+            max-height: 20rem;
+        }
+
+        .excel-mini-chart__body p-chart,
+        :host ::ng-deep .excel-mini-chart__body .p-chart,
+        :host ::ng-deep .excel-mini-chart__body canvas {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+        }
+
         .excel-export-layout {
             display: grid;
             grid-template-columns: minmax(15rem, 0.8fr) minmax(0, 1.4fr);
             gap: 1.25rem;
+            align-items: start;
         }
 
         .excel-export-block {
@@ -813,6 +832,7 @@ interface SelectOption {
             display: flex;
             flex-direction: column;
             gap: 0.85rem;
+            overflow: hidden;
         }
 
         .excel-export-block h4 {
@@ -822,16 +842,36 @@ interface SelectOption {
 
         .excel-check {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             gap: 0.65rem;
             min-height: 2rem;
             font-weight: 600;
+            line-height: 1.25;
+            overflow-wrap: anywhere;
         }
 
         .excel-export-grid {
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-columns: repeat(2, minmax(13rem, 1fr));
             gap: 0.85rem;
+        }
+
+        :host ::ng-deep .cies-export-dialog .p-dialog-content {
+            overscroll-behavior: contain;
+        }
+
+        :host ::ng-deep .cies-export-dialog .p-dialog-footer {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            padding-top: 0.85rem;
+            border-top: 1px solid var(--surface-border);
+        }
+
+        :host ::ng-deep .cies-export-dialog .p-dialog-footer button {
+            max-width: 100%;
+            white-space: normal;
         }
 
         ::ng-deep .chart-container canvas {
@@ -938,6 +978,7 @@ interface SelectOption {
         :host ::ng-deep .cies-filter-field .p-datepicker,
         :host ::ng-deep .cies-filter-field .p-inputtext {
             width: 100%;
+            max-width: 100%;
         }
 
         :host ::ng-deep .cies-filter-field .p-select-label {
@@ -1008,6 +1049,18 @@ interface SelectOption {
             .excel-export-layout,
             .excel-export-grid {
                 grid-template-columns: 1fr;
+            }
+
+            :host ::ng-deep .cies-export-dialog .p-dialog-content {
+                max-height: calc(92vh - 11rem) !important;
+            }
+
+            :host ::ng-deep .cies-export-dialog .p-dialog-footer {
+                justify-content: stretch;
+            }
+
+            :host ::ng-deep .cies-export-dialog .p-dialog-footer button {
+                flex: 1 1 100%;
             }
 
             .cies-chart-card {
@@ -1088,7 +1141,7 @@ export class ReporteriaPage implements OnInit {
     excelSubatencionRegionalChartData: any = null;
     excelRegionalChartData: any = null;
     excelCombinacionesChartData: any = null;
-    frequencyPreviewCharts: Array<{ title: string; data: any }> = [];
+    frequencyPreviewCharts: Array<{ title: string; data: any; height: number }> = [];
     associatedSummary: Array<{ label: string; total: number }> = [];
 
     doughnutOptions = {
@@ -1523,6 +1576,7 @@ export class ReporteriaPage implements OnInit {
                 .filter((variable) => variable.items.length)
                 .map((variable, index) => ({
                     title: this.getExcelFrequencyTitle(variable.codigoVariable, variable.etiquetaPregunta),
+                    height: this.getFrequencyChartHeight(variable.items.length),
                     data: {
                         labels: variable.items.map((item) => item.etiqueta),
                         datasets: [{
@@ -1533,6 +1587,10 @@ export class ReporteriaPage implements OnInit {
                     }
                 }));
         }
+    }
+
+    private getFrequencyChartHeight(itemCount: number): number {
+        return Math.max(168, Math.min(320, itemCount * 34 + 72));
     }
 
     private validateFilters(filters: ReportFilters = this.filters): boolean {
