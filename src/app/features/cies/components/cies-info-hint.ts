@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, HostListener, Input, ViewChild, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, HostListener, Input, ViewChild, inject } from '@angular/core';
 
 @Component({
     selector: 'app-cies-info-hint',
@@ -99,6 +99,7 @@ import { Component, ElementRef, HostListener, Input, ViewChild, inject } from '@
 })
 export class CiesInfoHintComponent {
     private elementRef = inject(ElementRef<HTMLElement>);
+    private cdr = inject(ChangeDetectorRef);
 
     @ViewChild('trigger') triggerRef?: ElementRef<HTMLElement>;
     @ViewChild('popover') popoverRef?: ElementRef<HTMLElement>;
@@ -179,6 +180,7 @@ export class CiesInfoHintComponent {
         this.placement = hasSpaceAbove ? 'above' : 'below';
         this.position = { top: Math.max(margin, top), left };
         this.positioned = true;
+        this.cdr.detectChanges();
     }
 
     private resetPosition(): void {
@@ -188,5 +190,6 @@ export class CiesInfoHintComponent {
         }
         this.positioned = false;
         this.position = { top: -10000, left: -10000 };
+        this.cdr.detectChanges();
     }
 }

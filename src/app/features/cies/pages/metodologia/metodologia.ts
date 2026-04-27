@@ -157,7 +157,7 @@ interface CreateMetodologiaForm {
                                             <div class="pregunta-info">
                                                 <span class="pregunta-num">{{ q.numeroVisible }}</span>
                                                 <div>
-                                                    <div class="pregunta-label">{{ q.etiqueta }}</div>
+                                                    <div class="pregunta-label">{{ limpiarTextoInstrumento(q.etiqueta) }}</div>
                                                     <div class="pregunta-sub" *ngIf="q.metadato">No suma puntos · solo registra datos</div>
                                                 </div>
                                             </div>
@@ -374,7 +374,7 @@ interface CreateMetodologiaForm {
                                     <tr [class.muted-row]="q.metadato">
                                         <td>{{ q.numeroVisible }}</td>
                                         <td>
-                                            {{ q.etiqueta }}
+                                            {{ limpiarTextoInstrumento(q.etiqueta) }}
                                             <span *ngIf="q.metadato" class="badge-metadato">No clasifica</span>
                                         </td>
                                         <td>
@@ -406,7 +406,7 @@ interface CreateMetodologiaForm {
                             <div class="editor-opciones-card" *ngIf="q.opciones.length && !q.metadato">
                                 <div class="editor-opciones-head">
                                     <span class="editor-opciones-num">{{ q.numeroVisible }}</span>
-                                    <strong>{{ q.etiqueta }}</strong>
+                                    <strong>{{ limpiarTextoInstrumento(q.etiqueta) }}</strong>
                                 </div>
                                 <p-table [value]="q.opciones" [paginator]="q.opciones.length > 6"
                                     [rows]="6" [rowsPerPageOptions]="[6, 10, 20]" class="cies-table">
@@ -418,7 +418,7 @@ interface CreateMetodologiaForm {
                                     </ng-template>
                                     <ng-template pTemplate="body" let-op>
                                         <tr>
-                                            <td>{{ op.etiqueta }}</td>
+                                            <td>{{ limpiarTextoInstrumento(op.etiqueta) }}</td>
                                             <td>
                                                 <p-inputnumber
                                                     [(ngModel)]="op.valorNumerico"
@@ -998,6 +998,22 @@ export class MetodologiaPage implements OnInit {
         return icons[seccion] || 'pi pi-file';
     }
 
+    limpiarTextoInstrumento(valor: string | null | undefined): string {
+        const original = (valor || '').trim();
+        if (!original) return '';
+
+        return original
+            .replace(/\s+/g, ' ')
+            .replace(/\s+([,.;?!])/g, '$1')
+            .replace(/¿\s*\.\s*o\b/gi, 'usted o')
+            .replace(/¿\s*[,.;:]\s*/g, '')
+            .replace(/\?\s*\./g, '?')
+            .replace(/([,.;:])\s*([,.;:])/g, '$1')
+            .replace(/\s+\?/g, '?')
+            .replace(/¿\s+/g, '¿')
+            .trim();
+    }
+
     openCreateDialog(): void {
         if (!this.canEditConfiguration) {
             this.messageService.add({
@@ -1215,7 +1231,7 @@ export class MetodologiaPage implements OnInit {
             return;
         }
 
-        this.editor = JSON.parse(JSON.stringify(item)) as Metodologia;
+        this.editor = this.limpiarMetodologiaInstrumento(JSON.parse(JSON.stringify(item)) as Metodologia);
         this.showEditor = true;
     }
 
@@ -1245,7 +1261,7 @@ export class MetodologiaPage implements OnInit {
             umbralExcluido: this.editor.umbralExcluido,
             umbralSubatendido: this.editor.umbralSubatendido,
             comentarioCambio: this.editor.comentarioCambio || 'Ajuste desde panel de configuración',
-            preguntas: this.editor.preguntas
+            preguntas: this.limpiarMetodologiaInstrumento(JSON.parse(JSON.stringify(this.editor)) as Metodologia).preguntas
         };
 
         const editedId = this.editor.id;
@@ -1314,7 +1330,7 @@ export class MetodologiaPage implements OnInit {
                 codigoVariable: pregunta.codigoVariable,
                 tipo: pregunta.tipo,
                 seccion: pregunta.seccion,
-                etiqueta: pregunta.etiqueta,
+                etiqueta: this.limpiarTextoInstrumento(pregunta.etiqueta),
                 obligatoria: pregunta.obligatoria,
                 metadato: pregunta.metadato,
                 ponderacion: pregunta.ponderacion,
@@ -1323,11 +1339,23 @@ export class MetodologiaPage implements OnInit {
                 opciones: pregunta.opciones.map((opcion) => ({
                     orden: opcion.orden,
                     codigo: opcion.codigo,
-                    etiqueta: opcion.etiqueta,
+                    etiqueta: this.limpiarTextoInstrumento(opcion.etiqueta),
                     valorNumerico: opcion.valorNumerico
                 }))
             })) as unknown as Metodologia['preguntas']
         } as Partial<Metodologia>;
+    }
+
+    private limpiarMetodologiaInstrumento(metodologia: Metodologia): Metodologia {
+        metodologia.preguntas = (metodologia.preguntas || []).map((pregunta) => ({
+            ...pregunta,
+            etiqueta: this.limpiarTextoInstrumento(pregunta.etiqueta),
+            opciones: (pregunta.opciones || []).map((opcion) => ({
+                ...opcion,
+                etiqueta: this.limpiarTextoInstrumento(opcion.etiqueta)
+            }))
+        }));
+        return metodologia;
     }
 
     private extractErrorMessage(error: unknown, fallback: string): string {
