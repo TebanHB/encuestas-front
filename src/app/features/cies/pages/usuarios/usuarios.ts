@@ -304,7 +304,8 @@ export class UsuariosPage implements OnInit {
 
         const request$ = this.editingId ? this.ciesService.updateUsuario(this.editingId, payload) : this.ciesService.createUsuario(payload);
         request$.subscribe({
-            next: () => {
+            next: (usuarioGuardado) => {
+                this.syncCurrentUser(usuarioGuardado);
                 this.showDialog = false;
                 this.cdr.detectChanges();
                 this.load();
@@ -328,7 +329,8 @@ export class UsuariosPage implements OnInit {
     toggleEstado(user: UsuarioAdmin): void {
         const nuevoEstado = !user.activo;
         this.ciesService.toggleUsuario(user.id, nuevoEstado).subscribe({
-            next: () => {
+            next: (usuarioActualizado) => {
+                this.syncCurrentUser(usuarioActualizado);
                 this.load();
                 this.messageService.add({
                     severity: 'success',
@@ -340,6 +342,22 @@ export class UsuariosPage implements OnInit {
                 console.error('Error toggling user state:', error);
                 this.messageService.add({ severity: 'error', summary: 'Error', detail: this.extractErrorMessage(error, 'No se pudo actualizar el estado del usuario') });
             }
+        });
+    }
+
+    private syncCurrentUser(user: UsuarioAdmin): void {
+        const currentUser = this.authService.getUser();
+        if (!currentUser || currentUser.id !== user.id) {
+            return;
+        }
+
+        this.authService.updateStoredUser({
+            ...currentUser,
+            nombre: user.nombre,
+            apellido: user.apellido,
+            email: user.email,
+            rol: user.rol,
+            activo: user.activo
         });
     }
 
