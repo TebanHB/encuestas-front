@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { ChartModule } from 'primeng/chart';
+import { CheckboxModule } from 'primeng/checkbox';
+import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
@@ -18,7 +20,7 @@ import { OverlayBadgeModule } from 'primeng/overlaybadge';
 import { forkJoin } from 'rxjs';
 import { NumeroFormatoPipe } from '../../../../shared/pipes/formato.pipe';
 import { CiesInfoHintComponent } from '../../components/cies-info-hint';
-import { CiesService, DistribucionVariable, Metodologia, ReporteResumen } from '../../services/cies.service';
+import { CiesService, DistribucionVariable, Metodologia, ReporteExcelGraficos, ReporteResumen } from '../../services/cies.service';
 
 interface ReportFilters {
     anio: string;
@@ -40,7 +42,7 @@ interface SelectOption {
     selector: 'app-reporteria-page',
     standalone: true,
     imports: [
-        CommonModule, FormsModule, ButtonModule, ChartModule, InputTextModule, SelectModule,
+        CommonModule, FormsModule, ButtonModule, ChartModule, CheckboxModule, DialogModule, InputTextModule, SelectModule,
         TableModule, Toast, TabsModule, TagModule, ProgressBarModule, TooltipModule, DatePickerModule,
         BadgeModule, OverlayBadgeModule,
         NumeroFormatoPipe, CiesInfoHintComponent
@@ -62,7 +64,7 @@ interface SelectOption {
                 </div>
                 <div class="cies-hero__actions">
                     <button pButton type="button" label="Excel" icon="pi pi-file-excel"
-                        severity="success" [loading]="downloading" [disabled]="loading || downloading || !resumen" (click)="download('excel')"></button>
+                        severity="success" [loading]="downloading" [disabled]="loading || downloading || !resumen" (click)="openExportDialog()"></button>
                     <button pButton type="button" label="CSV" icon="pi pi-download"
                         severity="secondary" [loading]="downloading" [disabled]="loading || downloading || !resumen" (click)="download('csv')"></button>
                     <button pButton type="button" label="SPSS" icon="pi pi-database"
@@ -171,6 +173,7 @@ interface SelectOption {
                     <p-tab value="1">Tendencias</p-tab>
                     <p-tab value="2">Comparativo por Clínica</p-tab>
                     <p-tab value="3">Distribución por Variable</p-tab>
+                    <p-tab value="4">Gráficos Excel</p-tab>
                 </p-tablist>
                 <p-tabpanels>
 
@@ -413,6 +416,74 @@ interface SelectOption {
                         <p>La variable seleccionada no tiene respuestas dentro de los filtros actuales.</p>
                     </section>
                 </p-tabpanel>
+
+                <!-- TAB 5: Gráficos del Excel de referencia -->
+                <p-tabpanel value="4">
+                    <section class="excel-charts-grid" *ngIf="graficosExcel">
+                        <article class="card cies-chart-card">
+                            <div class="cies-section-head">
+                                <div>
+                                    <h3>% de usuarias según factores</h3>
+                                    <p>Equivalente al gráfico de vulnerabilidad general del libro CIES.</p>
+                                </div>
+                            </div>
+                            <div class="chart-container">
+                                <p-chart type="doughnut" [data]="excelFactoresChartData" [options]="doughnutOptions"></p-chart>
+                            </div>
+                        </article>
+
+                        <article class="card cies-chart-card">
+                            <div class="cies-section-head">
+                                <div>
+                                    <h3>Pobres y no pobres</h3>
+                                    <p>Distribución de vulnerabilidad pobre frente al resto de entrevistas.</p>
+                                </div>
+                            </div>
+                            <div class="chart-container">
+                                <p-chart type="pie" [data]="excelPobreChartData" [options]="pieChartOptions"></p-chart>
+                            </div>
+                        </article>
+
+                        <article class="card cies-chart-card cies-chart-card--wide">
+                            <div class="cies-section-head">
+                                <div>
+                                    <h3>% de vulnerabilidad según factores</h3>
+                                    <p>Pobreza, exclusión y sub-atención por regional.</p>
+                                </div>
+                            </div>
+                            <div class="chart-container">
+                                <p-chart type="bar" [data]="excelRegionalChartData" [options]="barChartOptions"></p-chart>
+                            </div>
+                        </article>
+
+                        <article class="card cies-chart-card cies-chart-card--wide">
+                            <div class="cies-section-head">
+                                <div>
+                                    <h3>% de factores asociados</h3>
+                                    <p>Combinaciones pobreza + exclusión, pobreza + sub-atención y exclusión + sub-atención.</p>
+                                </div>
+                            </div>
+                            <div class="chart-container">
+                                <p-chart type="bar" [data]="excelCombinacionesChartData" [options]="barChartOptions"></p-chart>
+                            </div>
+                        </article>
+                    </section>
+
+                    <section class="card excel-frequency-panel" *ngIf="frequencyPreviewCharts.length">
+                        <div class="cies-section-head">
+                            <div>
+                                <h3>Frecuencias generales</h3>
+                                <p>Vista rápida de los gráficos de categorías que aparecen en la hoja Frecuencias Generales.</p>
+                            </div>
+                        </div>
+                        <div class="excel-frequency-grid">
+                            <article class="excel-mini-chart" *ngFor="let chart of frequencyPreviewCharts">
+                                <h4>{{ chart.title }}</h4>
+                                <p-chart type="bar" [data]="chart.data" [options]="frequencyChartOptions"></p-chart>
+                            </article>
+                        </div>
+                    </section>
+                </p-tabpanel>
             </p-tabpanels>
         </p-tabs>
 
@@ -438,6 +509,96 @@ interface SelectOption {
                 </div>
             </section>
         </div>
+
+        <p-dialog [(visible)]="excelDialogVisible" [modal]="true" [draggable]="false" [resizable]="false"
+            [style]="{ width: '68rem', 'max-width': '96vw' }" [contentStyle]="{ overflow: 'visible' }"
+            header="Exportar Excel CIES" styleClass="cies-dialog cies-export-dialog">
+            <div class="excel-export-layout">
+                <section class="excel-export-block">
+                    <h4>Contenido</h4>
+                    <label class="excel-check">
+                        <p-checkbox [(ngModel)]="excelSections.presentacion" [binary]="true" inputId="excel-presentacion"></p-checkbox>
+                        Presentación y resumen
+                    </label>
+                    <label class="excel-check">
+                        <p-checkbox [(ngModel)]="excelSections.datos" [binary]="true" inputId="excel-datos"></p-checkbox>
+                        Datos estilo base CIES
+                    </label>
+                    <label class="excel-check">
+                        <p-checkbox [(ngModel)]="excelSections.calculos" [binary]="true" inputId="excel-calculos"></p-checkbox>
+                        Hojas de cálculo por factor
+                    </label>
+                    <label class="excel-check">
+                        <p-checkbox [(ngModel)]="excelSections.frecuencias" [binary]="true" inputId="excel-frecuencias"></p-checkbox>
+                        Frecuencias generales con gráficos
+                    </label>
+                    <label class="excel-check">
+                        <p-checkbox [(ngModel)]="excelSections.vulnerabilidad" [binary]="true" inputId="excel-vulnerabilidad"></p-checkbox>
+                        Vulnerabilidad, porcentajes y combinaciones
+                    </label>
+                </section>
+
+                <section class="excel-export-block excel-export-block--filters">
+                    <h4>Filtros de exportación</h4>
+                    <div class="excel-export-grid">
+                        <div class="cies-filter-field cies-filter-field--short">
+                            <label>Año</label>
+                            <input pInputText [(ngModel)]="exportFilters.anio" class="w-full" placeholder="Ej: 2026"
+                                inputmode="numeric" maxlength="4" />
+                        </div>
+                        <div class="cies-filter-field">
+                            <label>Fecha desde</label>
+                            <p-datepicker [(ngModel)]="exportFilters.fechaDesde" dateFormat="yy-mm-dd"
+                                appendTo="body" class="w-full" [showIcon]="true" placeholder="Desde"></p-datepicker>
+                        </div>
+                        <div class="cies-filter-field">
+                            <label>Fecha hasta</label>
+                            <p-datepicker [(ngModel)]="exportFilters.fechaHasta" dateFormat="yy-mm-dd"
+                                appendTo="body" class="w-full" [showIcon]="true" placeholder="Hasta"></p-datepicker>
+                        </div>
+                        <div class="cies-filter-field">
+                            <label>Regional</label>
+                            <p-select [options]="regionalOptions" [(ngModel)]="exportFilters.regional"
+                                optionLabel="label" optionValue="value" appendTo="body" class="w-full"
+                                placeholder="Todas"></p-select>
+                        </div>
+                        <div class="cies-filter-field">
+                            <label>Clínica</label>
+                            <p-select [options]="clinicaOptions" [(ngModel)]="exportFilters.clinica"
+                                optionLabel="label" optionValue="value" appendTo="body" class="w-full"
+                                placeholder="Todas"></p-select>
+                        </div>
+                        <div class="cies-filter-field">
+                            <label>Versión</label>
+                            <p-select [options]="versionOptions" [(ngModel)]="exportFilters.version"
+                                optionLabel="label" optionValue="value" appendTo="body" class="w-full"
+                                placeholder="Todas"></p-select>
+                        </div>
+                        <div class="cies-filter-field">
+                            <label>Clasificación</label>
+                            <p-select [options]="clasificaciones" [(ngModel)]="exportFilters.clasificacion"
+                                optionLabel="label" optionValue="value" appendTo="body" class="w-full"
+                                placeholder="Todas"></p-select>
+                        </div>
+                        <div class="cies-filter-field cies-filter-field--wide">
+                            <label>Variable</label>
+                            <p-select [options]="variableOptions" [(ngModel)]="exportFilters.codigoVariable"
+                                optionLabel="label" optionValue="value" appendTo="body" class="w-full"
+                                placeholder="Selecciona una variable"></p-select>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <ng-template pTemplate="footer">
+                <button pButton type="button" label="Cancelar" severity="secondary" [outlined]="true"
+                    [disabled]="downloading" (click)="excelDialogVisible = false"></button>
+                <button pButton type="button" label="Exportar Excel filtrado" icon="pi pi-file-excel"
+                    [loading]="downloading" [disabled]="downloading" (click)="downloadExcelFromDialog(false)"></button>
+                <button pButton type="button" label="Exportar todos los datos" icon="pi pi-database"
+                    severity="success" [loading]="downloading" [disabled]="downloading" (click)="downloadExcelFromDialog(true)"></button>
+            </ng-template>
+        </p-dialog>
 
         <p-toast></p-toast>
     `,
@@ -508,6 +669,72 @@ interface SelectOption {
             grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
             gap: 1.5rem;
             margin-top: 1rem;
+        }
+
+        .excel-charts-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1rem;
+        }
+
+        .cies-chart-card--wide {
+            grid-column: 1 / -1;
+        }
+
+        .excel-frequency-panel {
+            margin-top: 1rem;
+        }
+
+        .excel-frequency-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 1rem;
+        }
+
+        .excel-mini-chart {
+            min-width: 0;
+            padding: 0.85rem;
+            border: 1px solid var(--surface-border);
+            border-radius: 8px;
+            background: var(--surface-card);
+        }
+
+        .excel-mini-chart h4 {
+            margin: 0 0 0.65rem;
+            font-size: 0.9rem;
+            line-height: 1.25;
+        }
+
+        .excel-export-layout {
+            display: grid;
+            grid-template-columns: minmax(15rem, 0.8fr) minmax(0, 1.4fr);
+            gap: 1.25rem;
+        }
+
+        .excel-export-block {
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+        }
+
+        .excel-export-block h4 {
+            margin: 0;
+            font-size: 0.95rem;
+        }
+
+        .excel-check {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            min-height: 2rem;
+            font-weight: 600;
+        }
+
+        .excel-export-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.85rem;
         }
 
         ::ng-deep .chart-container canvas {
@@ -678,6 +905,13 @@ interface SelectOption {
                 gap: 1rem;
             }
 
+            .excel-charts-grid,
+            .excel-frequency-grid,
+            .excel-export-layout,
+            .excel-export-grid {
+                grid-template-columns: 1fr;
+            }
+
             .cies-chart-card {
                 min-height: auto;
             }
@@ -695,8 +929,29 @@ export class ReporteriaPage implements OnInit {
 
     resumen: ReporteResumen | null = null;
     distribucion: DistribucionVariable | null = null;
+    graficosExcel: ReporteExcelGraficos | null = null;
     loading = false;
     downloading = false;
+    excelDialogVisible = false;
+
+    exportFilters: ReportFilters = {
+        anio: '',
+        fechaDesde: null,
+        fechaHasta: null,
+        regional: '',
+        clinica: '',
+        version: '',
+        clasificacion: '',
+        codigoVariable: 'SERVICIO'
+    };
+
+    excelSections = {
+        presentacion: true,
+        datos: true,
+        calculos: true,
+        frecuencias: true,
+        vulnerabilidad: true
+    };
 
     versionOptions: Array<{ label: string; value: string }> = [{ label: 'Todas', value: '' }];
     regionalOptions: Array<{ label: string; value: string }> = [{ label: 'Todas', value: '' }];
@@ -728,6 +983,11 @@ export class ReporteriaPage implements OnInit {
     tendenciasChartData: any = null;
     clinicasChartData: any = null;
     distributionChartData: any = null;
+    excelFactoresChartData: any = null;
+    excelPobreChartData: any = null;
+    excelRegionalChartData: any = null;
+    excelCombinacionesChartData: any = null;
+    frequencyPreviewCharts: Array<{ title: string; data: any }> = [];
 
     doughnutOptions = {
         cutout: '60%',
@@ -758,6 +1018,16 @@ export class ReporteriaPage implements OnInit {
         maintainAspectRatio: false,
         plugins: { legend: { position: 'bottom', labels: { usePointStyle: true } } },
         scales: { x: { beginAtZero: true, max: 100, grid: { color: 'rgba(0,0,0,0.05)' } }, y: { grid: { display: false } } }
+    };
+
+    frequencyChartOptions = {
+        indexAxis: 'y' as const,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+            x: { beginAtZero: true, max: 100, ticks: { callback: (value: string | number) => `${value}%` } },
+            y: { grid: { display: false } }
+        }
     };
 
     filters: ReportFilters = {
@@ -852,11 +1122,13 @@ export class ReporteriaPage implements OnInit {
 
         forkJoin({
             resumen: this.ciesService.getReporteResumen(filters, true),
-            distribucion: this.ciesService.getDistribucionVariable(filters)
+            distribucion: this.ciesService.getDistribucionVariable(filters),
+            graficosExcel: this.ciesService.getGraficosExcel(filters)
         }).subscribe({
-            next: ({ resumen, distribucion }) => {
+            next: ({ resumen, distribucion, graficosExcel }) => {
                 this.resumen = resumen;
                 this.distribucion = distribucion;
+                this.graficosExcel = graficosExcel;
                 this.buildCharts();
                 this.loadFilterOptions();
                 this.loading = false;
@@ -903,8 +1175,20 @@ export class ReporteriaPage implements OnInit {
         this.load();
     }
 
+    openExportDialog(): void {
+        if (this.loading || this.downloading || !this.resumen) {
+            return;
+        }
+        this.exportFilters = this.cloneFilters(this.filters);
+        this.excelDialogVisible = true;
+    }
+
     download(type: 'excel' | 'csv' | 'sps'): void {
         if (this.loading || this.downloading) {
+            return;
+        }
+        if (type === 'excel') {
+            this.openExportDialog();
             return;
         }
         if (!this.validateFilters()) {
@@ -912,25 +1196,45 @@ export class ReporteriaPage implements OnInit {
         }
         this.downloading = true;
         const filters = this.getFilterPayload();
-        const request$ =
-            type === 'excel' ? this.ciesService.exportExcel(filters)
-                : type === 'csv' ? this.ciesService.exportCsv(filters)
-                : this.ciesService.exportSps(filters);
+        const request$ = type === 'csv' ? this.ciesService.exportCsv(filters) : this.ciesService.exportSps(filters);
 
         request$.subscribe({
             next: (blob) => {
                 this.downloading = false;
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = `reporte-cies.${type === 'excel' ? 'xlsx' : type === 'sps' ? 'sps' : 'csv'}`;
-                link.click();
-                URL.revokeObjectURL(url);
+                this.saveBlob(blob, `reporte-cies.${type === 'sps' ? 'sps' : 'csv'}`);
             },
             error: (err) => {
                 this.downloading = false;
                 console.error('Error downloading report:', err);
                 this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo descargar el reporte' });
+            }
+        });
+    }
+
+    downloadExcelFromDialog(exportAll: boolean): void {
+        if (this.loading || this.downloading) {
+            return;
+        }
+        if (!this.hasSelectedExcelSection()) {
+            this.messageService.add({ severity: 'warn', summary: 'Exportación incompleta', detail: 'Selecciona al menos una sección para el Excel.' });
+            return;
+        }
+        if (!exportAll && !this.validateFilters(this.exportFilters)) {
+            return;
+        }
+
+        this.downloading = true;
+        const payload = this.getExcelExportPayload(exportAll);
+        this.ciesService.exportExcel(payload).subscribe({
+            next: (blob) => {
+                this.downloading = false;
+                this.excelDialogVisible = false;
+                this.saveBlob(blob, exportAll ? 'cies-base-datos-vulnerabilidad-completa.xlsx' : 'cies-base-datos-vulnerabilidad.xlsx');
+            },
+            error: (err) => {
+                this.downloading = false;
+                console.error('Error downloading Excel report:', err);
+                this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo descargar el Excel' });
             }
         });
     }
@@ -983,15 +1287,65 @@ export class ReporteriaPage implements OnInit {
                 }]
             };
         }
+
+        if (this.graficosExcel) {
+            const palette = ['#0f766e', '#2563eb', '#f59e0b', '#ef4444', '#8b5cf6', '#14b8a6'];
+            this.excelFactoresChartData = {
+                labels: this.graficosExcel.cantidadFactores.map((item) => item.etiqueta),
+                datasets: [{
+                    data: this.graficosExcel.cantidadFactores.map((item) => item.total),
+                    backgroundColor: palette,
+                    hoverOffset: 8
+                }]
+            };
+            this.excelPobreChartData = {
+                labels: this.graficosExcel.vulnerabilidadPobre.map((item) => item.etiqueta),
+                datasets: [{
+                    data: this.graficosExcel.vulnerabilidadPobre.map((item) => item.total),
+                    backgroundColor: ['#ef4444', '#10b981'],
+                    hoverOffset: 8
+                }]
+            };
+            this.excelRegionalChartData = {
+                labels: this.graficosExcel.regionales.map((item) => item.regional),
+                datasets: [
+                    { label: 'Pobreza', data: this.graficosExcel.regionales.map((item) => item.porcentajePobres), backgroundColor: '#ef4444', borderRadius: 4 },
+                    { label: 'Exclusión', data: this.graficosExcel.regionales.map((item) => item.porcentajeExcluidas), backgroundColor: '#f59e0b', borderRadius: 4 },
+                    { label: 'Sub-atención', data: this.graficosExcel.regionales.map((item) => item.porcentajeSubatendidas), backgroundColor: '#0ea5e9', borderRadius: 4 }
+                ]
+            };
+            this.excelCombinacionesChartData = {
+                labels: this.graficosExcel.combinaciones.map((item) => item.regional),
+                datasets: [
+                    { label: 'Pobreza + Exclusión', data: this.graficosExcel.combinaciones.map((item) => item.porcentajePobrezaExclusion), backgroundColor: '#7c2d12', borderRadius: 4 },
+                    { label: 'Pobreza + Sub-atención', data: this.graficosExcel.combinaciones.map((item) => item.porcentajePobrezaSubatencion), backgroundColor: '#be123c', borderRadius: 4 },
+                    { label: 'Exclusión + Sub-atención', data: this.graficosExcel.combinaciones.map((item) => item.porcentajeExclusionSubatencion), backgroundColor: '#0369a1', borderRadius: 4 }
+                ]
+            };
+            this.frequencyPreviewCharts = this.graficosExcel.frecuencias
+                .filter((variable) => variable.items.length)
+                .slice(0, 6)
+                .map((variable, index) => ({
+                    title: variable.etiquetaPregunta,
+                    data: {
+                        labels: variable.items.slice(0, 8).map((item) => item.etiqueta),
+                        datasets: [{
+                            data: variable.items.slice(0, 8).map((item) => item.porcentaje),
+                            backgroundColor: palette[index % palette.length],
+                            borderRadius: 4
+                        }]
+                    }
+                }));
+        }
     }
 
-    private validateFilters(): boolean {
-        const anio = this.filters.anio.trim();
+    private validateFilters(filters: ReportFilters = this.filters): boolean {
+        const anio = filters.anio.trim();
         if (anio && !/^\d{4}$/.test(anio)) {
             this.messageService.add({ severity: 'warn', summary: 'Filtro inválido', detail: 'El año debe tener 4 dígitos, por ejemplo 2026.' });
             return false;
         }
-        if (this.filters.fechaDesde && this.filters.fechaHasta && this.filters.fechaDesde > this.filters.fechaHasta) {
+        if (filters.fechaDesde && filters.fechaHasta && filters.fechaDesde > filters.fechaHasta) {
             this.messageService.add({ severity: 'warn', summary: 'Filtro inválido', detail: 'La fecha desde no puede ser posterior a la fecha hasta.' });
             return false;
         }
@@ -1016,6 +1370,37 @@ export class ReporteriaPage implements OnInit {
         ];
     }
 
+    private cloneFilters(filters: ReportFilters): ReportFilters {
+        return {
+            ...filters,
+            fechaDesde: filters.fechaDesde ? new Date(filters.fechaDesde) : null,
+            fechaHasta: filters.fechaHasta ? new Date(filters.fechaHasta) : null
+        };
+    }
+
+    private hasSelectedExcelSection(): boolean {
+        return Object.values(this.excelSections).some(Boolean);
+    }
+
+    private getExcelExportPayload(exportAll: boolean): Record<string, string> {
+        const payload: Record<string, string> = exportAll ? { todos: 'true' } : this.getFilterPayload(this.exportFilters);
+        payload['incluirPresentacion'] = String(this.excelSections.presentacion);
+        payload['incluirDatos'] = String(this.excelSections.datos);
+        payload['incluirCalculos'] = String(this.excelSections.calculos);
+        payload['incluirFrecuencias'] = String(this.excelSections.frecuencias);
+        payload['incluirVulnerabilidad'] = String(this.excelSections.vulnerabilidad);
+        return payload;
+    }
+
+    private saveBlob(blob: Blob, filename: string): void {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        link.click();
+        URL.revokeObjectURL(url);
+    }
+
     private formatDateParam(date: Date): string {
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -1023,16 +1408,16 @@ export class ReporteriaPage implements OnInit {
         return `${year}-${month}-${day}`;
     }
 
-    private getFilterPayload(): Record<string, string> {
+    private getFilterPayload(filters: ReportFilters = this.filters): Record<string, string> {
         return {
-            anio: this.filters.anio.trim(),
-            fechaDesde: this.filters.fechaDesde ? this.formatDateParam(this.filters.fechaDesde) : '',
-            fechaHasta: this.filters.fechaHasta ? this.formatDateParam(this.filters.fechaHasta) : '',
-            regional: this.filters.regional,
-            clinica: this.filters.clinica,
-            version: this.filters.version,
-            clasificacion: this.filters.clasificacion,
-            codigoVariable: this.filters.codigoVariable
+            anio: filters.anio.trim(),
+            fechaDesde: filters.fechaDesde ? this.formatDateParam(filters.fechaDesde) : '',
+            fechaHasta: filters.fechaHasta ? this.formatDateParam(filters.fechaHasta) : '',
+            regional: filters.regional,
+            clinica: filters.clinica,
+            version: filters.version,
+            clasificacion: filters.clasificacion,
+            codigoVariable: filters.codigoVariable
         };
     }
 }

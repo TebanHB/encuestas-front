@@ -190,6 +190,37 @@ export interface DistribucionVariable {
     items: { etiqueta: string; total: number }[];
 }
 
+export interface ReporteExcelGraficos {
+    totalEntrevistas: number;
+    frecuencias: {
+        codigoVariable: string;
+        etiquetaPregunta: string;
+        items: { etiqueta: string; total: number; porcentaje: number }[];
+    }[];
+    cantidadFactores: { etiqueta: string; total: number; porcentaje: number }[];
+    vulnerabilidadPobre: { etiqueta: string; total: number; porcentaje: number }[];
+    regionales: {
+        regional: string;
+        total: number;
+        pobres: number;
+        excluidas: number;
+        subatendidas: number;
+        porcentajePobres: number;
+        porcentajeExcluidas: number;
+        porcentajeSubatendidas: number;
+    }[];
+    combinaciones: {
+        regional: string;
+        total: number;
+        pobrezaExclusion: number;
+        pobrezaSubatencion: number;
+        exclusionSubatencion: number;
+        porcentajePobrezaExclusion: number;
+        porcentajePobrezaSubatencion: number;
+        porcentajeExclusionSubatencion: number;
+    }[];
+}
+
 export interface MedicareOutboxItem {
     id: number;
     tipo: string;
@@ -480,6 +511,10 @@ export class CiesService {
 
     getDistribucionVariable(filters?: Record<string, string | number | null | undefined>): Observable<DistribucionVariable> {
         return this.http.get<DistribucionVariable>(`${this.apiBase}/reportes/distribucion-variable`, { params: this.toParams(filters) });
+    }
+
+    getGraficosExcel(filters?: Record<string, string | number | null | undefined>): Observable<ReporteExcelGraficos> {
+        return this.http.get<ReporteExcelGraficos>(`${this.apiBase}/reportes/graficos-excel`, { params: this.toParams(filters) });
     }
 
     exportExcel(filters?: Record<string, string | number | null | undefined>): Observable<Blob> {
