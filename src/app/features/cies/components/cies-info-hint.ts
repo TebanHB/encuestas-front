@@ -26,6 +26,7 @@ import { Component, ElementRef, HostListener, Input, ViewChild, inject } from '@
                 [class.cies-info-hint-popover--ready]="positioned"
                 [style.top.px]="position.top"
                 [style.left.px]="position.left"
+                [style.visibility]="positioned ? 'visible' : 'hidden'"
                 role="status"
             >
                 {{ text }}
@@ -63,6 +64,7 @@ import { Component, ElementRef, HostListener, Input, ViewChild, inject } from '@
             text-align: left;
             white-space: normal;
             opacity: 0;
+            visibility: hidden;
             pointer-events: none;
             transform: translateY(0.25rem);
             transition:
@@ -72,6 +74,7 @@ import { Component, ElementRef, HostListener, Input, ViewChild, inject } from '@
 
         .cies-info-hint-popover--ready {
             opacity: 1;
+            visibility: visible;
             pointer-events: auto;
             transform: translateY(0);
         }
@@ -105,15 +108,18 @@ export class CiesInfoHintComponent {
 
     open = false;
     placement: 'above' | 'below' = 'above';
-    position = { top: 0, left: 0 };
+    position = { top: -10000, left: -10000 };
     positioned = false;
+    private frameRequest: number | null = null;
 
     toggle(event: MouseEvent): void {
         event.stopPropagation();
         this.open = !this.open;
         if (this.open) {
-            this.positioned = false;
-            setTimeout(() => this.updatePosition());
+            this.resetPosition();
+            this.schedulePositionUpdate();
+        } else {
+            this.resetPosition();
         }
     }
 
@@ -123,16 +129,34 @@ export class CiesInfoHintComponent {
         const target = event.target as Node | null;
         if (target && this.elementRef.nativeElement.contains(target)) return;
         this.open = false;
+        this.resetPosition();
     }
 
     @HostListener('document:keydown.escape')
     closeOnEscape(): void {
         this.open = false;
-        this.positioned = false;
+        this.resetPosition();
     }
 
     @HostListener('window:resize')
     @HostListener('window:scroll')
+    schedulePositionUpdate(): void {
+        if (!this.open) {
+            return;
+        }
+
+        if (this.frameRequest !== null) {
+            cancelAnimationFrame(this.frameRequest);
+        }
+
+        this.frameRequest = requestAnimationFrame(() => {
+            this.frameRequest = requestAnimationFrame(() => {
+                this.frameRequest = null;
+                this.updatePosition();
+            });
+        });
+    }
+
     updatePosition(): void {
         if (!this.open || !this.triggerRef?.nativeElement || !this.popoverRef?.nativeElement) {
             return;
@@ -155,5 +179,14 @@ export class CiesInfoHintComponent {
         this.placement = hasSpaceAbove ? 'above' : 'below';
         this.position = { top: Math.max(margin, top), left };
         this.positioned = true;
+    }
+
+    private resetPosition(): void {
+        if (this.frameRequest !== null) {
+            cancelAnimationFrame(this.frameRequest);
+            this.frameRequest = null;
+        }
+        this.positioned = false;
+        this.position = { top: -10000, left: -10000 };
     }
 }

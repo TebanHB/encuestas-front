@@ -61,7 +61,7 @@ interface CreateMetodologiaForm {
                             <h3>Administrar encuestas</h3>
                             <p>Selecciona la encuesta que quieres revisar, editar, activar o usar como plantilla.</p>
                         </div>
-                        <app-cies-info-hint text="La nueva encuesta toma por defecto la plantilla actualmente activa, pero puedes cambiarla desde el dropdown."></app-cies-info-hint>
+                        <app-cies-info-hint text="La nueva encuesta toma por defecto la plantilla actualmente activa, pero puedes cambiarla desde el selector."></app-cies-info-hint>
                     </div>
                 </div>
 
@@ -91,7 +91,7 @@ interface CreateMetodologiaForm {
                 <div class="cies-section-head">
                     <div class="cies-section-head__content">
                         <div>
-                            <h3>📋 Encuesta seleccionada: {{ active.nombre }}</h3>
+                            <h3>Encuesta seleccionada: {{ active.nombre }}</h3>
                             <p>Estos son los valores y preguntas de la encuesta que tienes abierta en pantalla.</p>
                         </div>
                         <app-cies-info-hint text="Si necesitas ajustar algo, pulsa 'Editar configuración' abajo."></app-cies-info-hint>
@@ -101,7 +101,7 @@ interface CreateMetodologiaForm {
                 <div class="selected-survey-head">
                     <p-tag *ngIf="active.activa" value="Activa en el sistema" severity="success"></p-tag>
                     <p-tag *ngIf="!active.activa" value="Versión en borrador" severity="warn"></p-tag>
-                    <span class="selected-survey-meta">Creada por {{ active.creadoPor || 'sistema' }} · {{ active.fechaCreacion | date:'short' }}</span>
+                    <span class="selected-survey-meta">Creada por {{ active.creadoPor || 'sistema' }} - {{ active.fechaCreacion | date:'short' }}</span>
                 </div>
 
                 <!-- Puntos de corte -->
@@ -145,7 +145,7 @@ interface CreateMetodologiaForm {
                         <p-accordion-panel>
                             <ng-template pTemplate="header">
                                 <div class="accordion-header">
-                                    <span class="accordion-section-icon">{{ sectionIcon(section.seccion) }}</span>
+                                    <i [class]="sectionIcon(section.seccion)" class="accordion-section-icon"></i>
                                     <strong>{{ section.seccion }}</strong>
                                     <span class="accordion-count">{{ section.preguntas.length }} pregunta{{ section.preguntas.length > 1 ? 's' : '' }}</span>
                                 </div>
@@ -203,13 +203,13 @@ interface CreateMetodologiaForm {
                         <label>Versión 1</label>
                         <p-select [options]="metodologias" [(ngModel)]="comparativoVersion1"
                             optionLabel="nombre" optionValue="id" appendTo="body" class="w-full"
-                            placeholder="Selecciona..."></p-select>
+                            placeholder="Selecciona una versión"></p-select>
                     </div>
                     <div>
                         <label>Versión 2</label>
                         <p-select [options]="metodologias" [(ngModel)]="comparativoVersion2"
                             optionLabel="nombre" optionValue="id" appendTo="body" class="w-full"
-                            placeholder="Selecciona..."></p-select>
+                            placeholder="Selecciona una versión"></p-select>
                     </div>
                     <div class="comparativo-btn-wrapper">
                         <button pButton type="button" label="Comparar" icon="pi pi-clone"
@@ -327,8 +327,8 @@ interface CreateMetodologiaForm {
 
                 <!-- Sección 1: Puntos de corte -->
                 <div class="editor-section">
-                    <h3>🎯 Puntos de corte</h3>
-                    <p class="section-desc">Define a partir de qué puntaje una persona se clasifica en cada categoría. Un valor más bajo = más fácil de clasificar en esa categoría.</p>
+                    <h3>Puntos de corte</h3>
+                    <p class="section-desc">Define desde qué puntaje una persona se clasifica en cada categoría. Un valor más bajo hace más fácil clasificarla en esa categoría.</p>
 
                     <div class="config-summary-grid">
                         <div>
@@ -351,7 +351,7 @@ interface CreateMetodologiaForm {
 
                 <!-- Sección 2: Importancia de preguntas -->
                 <div class="editor-section">
-                    <h3>⚖️ Importancia de cada pregunta</h3>
+                    <h3>Importancia de cada pregunta</h3>
                     <p class="section-desc">
                         La <strong>importancia</strong> indica cuánto influye cada pregunta en el resultado final.
                         Si pones <strong>0</strong>, esa pregunta no suma ni resta.
@@ -360,7 +360,7 @@ interface CreateMetodologiaForm {
 
                     @for (section of editorPreguntasPorSeccion(); track section.seccion) {
                         <div class="editor-pregunta-group">
-                            <h4>{{ sectionIcon(section.seccion) }} {{ section.seccion }}</h4>
+                            <h4><i [class]="sectionIcon(section.seccion)" class="accordion-section-icon"></i> {{ section.seccion }}</h4>
                             <p-table [value]="section.preguntas" [paginator]="section.preguntas.length > 8"
                                 [rows]="8" [rowsPerPageOptions]="[8, 15, 25]" class="cies-table">
                                 <ng-template pTemplate="header">
@@ -395,7 +395,7 @@ interface CreateMetodologiaForm {
 
                 <!-- Sección 3: Puntos por respuesta -->
                 <div class="editor-section">
-                    <h3>🔢 Puntos que vale cada respuesta</h3>
+                    <h3>Puntos de cada respuesta</h3>
                     <p class="section-desc">
                         Cuando una persona responde, la opción elegida aporta estos puntos al resultado total.
                         <strong>Más puntos = más contribución al resultado.</strong>
@@ -437,14 +437,14 @@ interface CreateMetodologiaForm {
 
                 <!-- Comentario del cambio -->
                 <div class="editor-section editor-section--comentario">
-                    <label>📝 ¿Por qué haces este cambio? (para la auditoría)</label>
-                    <textarea pTextarea [(ngModel)]="editor.comentarioCambio" rows="2" class="w-full" placeholder="Ejemplo: Se ajustó el umbral de vulnerabilidad según nueva directriz..."></textarea>
+                    <label>¿Por qué haces este cambio? (para la auditoría)</label>
+                    <textarea pTextarea [(ngModel)]="editor.comentarioCambio" rows="2" class="w-full" placeholder="Ejemplo: Se ajustó el umbral de vulnerabilidad según una nueva directriz."></textarea>
                 </div>
             </div>
 
             <ng-template pTemplate="footer">
                 <button pButton type="button" label="Cancelar" severity="secondary" [outlined]="true" [disabled]="savingEditor" (click)="showEditor = false"></button>
-                <button pButton type="button" [label]="savingEditor ? 'Guardando...' : '💾 Guardar cambios'" [disabled]="savingEditor" (click)="save()"></button>
+                <button pButton type="button" [label]="savingEditor ? 'Guardando...' : 'Guardar cambios'" icon="pi pi-save" [disabled]="savingEditor" (click)="save()"></button>
             </ng-template>
         </p-dialog>
     `,
@@ -635,6 +635,7 @@ interface CreateMetodologiaForm {
 
         .accordion-section-icon {
             font-size: 1.1rem;
+            color: var(--primary-color);
         }
 
         .accordion-count {
@@ -989,12 +990,12 @@ export class MetodologiaPage implements OnInit {
 
     sectionIcon(seccion: string): string {
         const icons: Record<string, string> = {
-            'Datos de consulta': '📋',
-            'Condiciones del hogar': '🏠',
-            'Activos y acceso': '📱',
-            'Contexto y cierre': '💬'
+            'Datos de consulta': 'pi pi-clipboard',
+            'Condiciones del hogar': 'pi pi-home',
+            'Activos y acceso': 'pi pi-mobile',
+            'Contexto y cierre': 'pi pi-comments'
         };
-        return icons[seccion] || '📄';
+        return icons[seccion] || 'pi pi-file';
     }
 
     openCreateDialog(): void {
@@ -1258,7 +1259,7 @@ export class MetodologiaPage implements OnInit {
                 this.load(editedId, true);
                 this.messageService.add({
                     severity: 'success',
-                    summary: '✅ Configuración actualizada',
+                    summary: 'Configuración actualizada',
                     detail: 'Los cambios se guardaron y se registraron en la auditoría.'
                 });
             },
