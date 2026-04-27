@@ -646,16 +646,15 @@ export class CiesService {
 
         this.warmupRoles.add(normalizedRole);
         const reportFilters = { codigoVariable: 'SERVICIO' };
-        const requests: Observable<unknown>[] = [
-            this.getInstrumentoActivo(),
-            this.listMetodologias(),
-            this.getReporteResumen(reportFilters),
-            this.getDistribucionVariable(reportFilters),
-            this.getGraficosExcel(reportFilters)
-        ];
+        const requests: Observable<unknown>[] = [];
 
         if (normalizedRole === 'ADMINISTRADOR') {
             requests.push(
+                this.getInstrumentoActivo(),
+                this.listMetodologias(),
+                this.getReporteResumen(reportFilters),
+                this.getDistribucionVariable(reportFilters),
+                this.getGraficosExcel(reportFilters),
                 this.listUsuariosPaginado(0, 10),
                 this.listLotesPaginado(0, 10),
                 this.listEjecucionesPaginado(0, 10),
@@ -664,7 +663,20 @@ export class CiesService {
         }
 
         if (normalizedRole === 'ENCUESTADOR') {
-            requests.push(this.getPendientesResumen(8), this.getPendientesEntrevista());
+            requests.push(this.getInstrumentoActivo(), this.getPendientesResumen(8), this.getPendientesEntrevista());
+        }
+
+        if (normalizedRole === 'ANALISTA') {
+            requests.push(
+                this.listMetodologias(),
+                this.getReporteResumen(reportFilters),
+                this.getDistribucionVariable(reportFilters),
+                this.getGraficosExcel(reportFilters)
+            );
+        }
+
+        if (!requests.length) {
+            return;
         }
 
         forkJoin(requests.map((request) => request.pipe(catchError(() => of(null))))).subscribe();

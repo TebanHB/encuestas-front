@@ -24,32 +24,35 @@ import { CiesService, EjecucionSeleccion, LoteMedicare } from '../../services/ci
                 <div class="cies-hero__content">
                     <div class="cies-chip cies-chip--morado">Registro de personas</div>
                     <h1 class="cies-hero__title">Registrar personas para entrevistar</h1>
-                    <p class="cies-hero__copy">Registra a las personas que serán entrevistadas. Puedes hacerlo de dos formas:</p>
+                    <p class="cies-hero__copy">
+                        Carga un listado completo desde Excel, CSV o JSON. Si solo llego una persona,
+                        puedes registrarla directamente desde entrevistas.
+                    </p>
                 </div>
                 <div class="cies-hero__actions">
-                    <a routerLink="/pages/entrevistas"><button pButton type="button" label="👤 Entrevistar a una persona" icon="pi pi-user-plus"></button></a>
+                    <a routerLink="/pages/entrevistas"><button pButton type="button" label="Registrar una persona" icon="pi pi-user-plus"></button></a>
                 </div>
             </section>
 
             <!-- PASOS VISUALES -->
             <section class="steps-container">
                 <div class="step-card">
-                    <div class="step-icon">👤</div>
+                    <div class="step-icon"><i class="pi pi-user-plus"></i></div>
                     <h3>Una sola persona</h3>
-                    <p>Ve a entrevistas y regístrala directamente.</p>
+                    <p>Abre entrevistas y registrala en el momento.</p>
                     <a routerLink="/pages/entrevistas"><button pButton type="button" label="Ir ahora" icon="pi pi-arrow-right" size="small"></button></a>
                 </div>
                 <div class="step-connector"></div>
                 <div class="step-card step-card--active">
-                    <div class="step-icon">👥</div>
+                    <div class="step-icon"><i class="pi pi-users"></i></div>
                     <h3>Varias personas</h3>
-                    <p>Usa el formulario de abajo para cargar un listado completo.</p>
+                    <p>Descarga la plantilla o pega el listado completo.</p>
                 </div>
                 <div class="step-connector"></div>
                 <div class="step-card">
-                    <div class="step-icon">✅</div>
+                    <div class="step-icon"><i class="pi pi-check-circle"></i></div>
                     <h3>Preparar</h3>
-                    <p>Pulsa "Preparar" para enviarlas a entrevistas.</p>
+                    <p>Guarda el listado y preparalo para entrevistas.</p>
                 </div>
             </section>
 
@@ -58,101 +61,126 @@ import { CiesService, EjecucionSeleccion, LoteMedicare } from '../../services/ci
                 <div class="cies-section-head">
                     <div class="cies-section-head__content">
                         <div>
-                            <h3>{{ editingLoteId ? '✏️ Editando listado' : '📋 Registrar un listado de personas' }}</h3>
-                            <p>{{ editingLoteId ? 'Corrige el nombre o el contenido del listado.' : 'Ponle nombre, pega los datos o sube un archivo Excel, CSV o JSON.' }}</p>
+                            <h3>{{ editingLoteId ? 'Editando listado' : 'Nuevo listado de personas' }}</h3>
+                            <p>{{ editingLoteId ? 'Corrige el nombre o el contenido antes de guardar.' : 'Completa el nombre del listado y carga personas desde archivo o pegando datos.' }}</p>
                         </div>
-                        <button pButton type="button" [label]="downloadingTemplate ? 'Descargando...' : 'Descargar plantilla Excel'" icon="pi pi-file-excel"
+                        <button pButton type="button" [label]="downloadingTemplate ? 'Descargando...' : 'Descargar plantilla'" icon="pi pi-file-excel"
                             severity="success" [outlined]="true" [disabled]="downloadingTemplate" (click)="downloadTemplate()"></button>
                     </div>
                 </div>
 
                 <div *ngIf="editingLoteId" class="cies-soft-note">
-                    ℹ️ Estás editando un listado existente. Si cambias las personas, se reemplazará el contenido actual.
+                    Estas editando un listado existente. Si cambias las personas, se reemplazara el contenido actual.
                 </div>
 
                 <!-- Paso 1: Nombre -->
                 <div class="carga-paso">
                     <div class="carga-paso-header">
                         <span class="carga-paso-num">1</span>
-                        <h4>Ponle nombre al listado</h4>
+                        <div>
+                            <h4>Identifica el listado</h4>
+                            <p>Usa un nombre que ayude a ubicar periodo, clinica o grupo.</p>
+                        </div>
                     </div>
-                    <input pInputText [(ngModel)]="nombreLote" class="w-full" placeholder="Ejemplo: Mujeres marzo - Clínica Central" />
+                    <input pInputText [(ngModel)]="nombreLote" class="w-full" placeholder="Ejemplo: Mujeres marzo - Clinica Central" />
                 </div>
 
                 <!-- Paso 2: Subir archivo o pegar datos -->
                 <div class="carga-paso">
                     <div class="carga-paso-header">
                         <span class="carga-paso-num">2</span>
-                        <h4>Agrega los datos de las personas</h4>
+                        <div>
+                            <h4>Agrega los datos de las personas</h4>
+                            <p>La forma recomendada es usar la plantilla Excel. Tambien puedes pegar CSV o JSON.</p>
+                        </div>
                     </div>
 
-                    <!-- Zona de subida de archivo -->
-                    <div
-                        class="file-drop-zone"
-                        [class.file-drop-zone--dragover]="isDragging"
-                        [class.file-drop-zone--loaded]="archivoCargado"
-                        (dragover)="onDragOver($event)"
-                        (dragleave)="onDragLeave()"
-                        (drop)="onDrop($event)"
-                    >
-                        <input
-                            #fileInput
-                            type="file"
-                            accept=".xlsx,.xls,.csv,.json"
-                            class="file-input-hidden"
-                            (change)="onFileSelected($event)"
-                        />
+                    <div class="carga-input-grid">
+                        <!-- Zona de subida de archivo -->
+                        <div class="carga-method-card">
+                            <div class="carga-method-head">
+                                <i class="pi pi-file-excel"></i>
+                                <div>
+                                    <h5>Subir archivo</h5>
+                                    <span>Excel recomendado</span>
+                                </div>
+                            </div>
 
-                        <div class="file-drop-content" *ngIf="!archivoCargado">
-                            <div class="file-drop-icon">📁</div>
-                            <div class="file-drop-title">Arrastra tu archivo aquí</div>
-                            <div class="file-drop-subtitle">o pulsa el botón para seleccionar</div>
-                            <button pButton type="button" [label]="loadingExcel ? 'Leyendo Excel...' : '📂 Elegir archivo Excel, CSV o JSON'" severity="secondary" outlined [disabled]="loadingExcel" (click)="fileInput.click()"></button>
-                            <div class="file-drop-formats">
-                                <span class="format-badge">.XLSX</span>
-                                <span class="format-badge">.CSV</span>
-                                <span class="format-badge">.JSON</span>
+                            <div
+                                class="file-drop-zone"
+                                [class.file-drop-zone--dragover]="isDragging"
+                                [class.file-drop-zone--loaded]="archivoCargado"
+                                (dragover)="onDragOver($event)"
+                                (dragleave)="onDragLeave()"
+                                (drop)="onDrop($event)"
+                            >
+                                <input
+                                    #fileInput
+                                    type="file"
+                                    accept=".xlsx,.xls,.csv,.json"
+                                    class="file-input-hidden"
+                                    (change)="onFileSelected($event)"
+                                />
+
+                                <div class="file-drop-content" *ngIf="!archivoCargado">
+                                    <div class="file-drop-icon"><i class="pi pi-cloud-upload"></i></div>
+                                    <div class="file-drop-title">Arrastra tu archivo aqui</div>
+                                    <div class="file-drop-subtitle">o seleccionalo desde tu equipo</div>
+                                    <button pButton type="button" [label]="loadingExcel ? 'Leyendo archivo...' : 'Elegir archivo'" severity="secondary" outlined [disabled]="loadingExcel" (click)="fileInput.click()"></button>
+                                    <div class="file-drop-formats">
+                                        <span class="format-badge">.XLSX</span>
+                                        <span class="format-badge">.CSV</span>
+                                        <span class="format-badge">.JSON</span>
+                                    </div>
+                                </div>
+
+                                <div class="file-drop-content file-drop-content--loaded" *ngIf="archivoCargado">
+                                    <div class="file-drop-icon"><i class="pi pi-check-circle"></i></div>
+                                    <div class="file-drop-title">{{ archivoNombre }}</div>
+                                    <button pButton type="button" label="Cambiar archivo" severity="secondary" text size="small" (click)="fileInput.click()"></button>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="file-drop-content file-drop-content--loaded" *ngIf="archivoCargado">
-                            <div class="file-drop-icon">✅</div>
-                            <div class="file-drop-title">{{ archivoNombre }}</div>
-                            <button pButton type="button" label="Cambiar archivo" severity="secondary" text size="small" (click)="fileInput.click()"></button>
-                        </div>
-                    </div>
+                        <!-- Textarea para pegar -->
+                        <div class="carga-method-card">
+                            <div class="carga-method-head">
+                                <i class="pi pi-align-left"></i>
+                                <div>
+                                    <h5>Pegar datos</h5>
+                                    <span>CSV o JSON</span>
+                                </div>
+                            </div>
 
-                    <!-- Separador -->
-                    <div class="carga-separador">
-                        <span>o pega los datos manualmente</span>
-                    </div>
-
-                    <!-- Textarea para pegar -->
-                    <div class="carga-textarea-wrapper">
-                        <textarea
-                            pTextarea
-                            [(ngModel)]="cargaMasiva"
-                            rows="8"
-                            class="w-full carga-textarea"
-                            placeholder="medicarePersonId,nombre,apellido,ci,pasaporte,clinica,regional,fechaConsulta,tipoConsulta&#10;MED-001,María,López,1234567,,Clínica Central,La Paz,2026-03-29,PRIMERA_CONSULTA_SSR"
-                            (focus)="textareaFocused = true"
-                            (blur)="textareaFocused = false"
-                        ></textarea>
-                        <div class="carga-textarea-hint" [class.visible]="textareaFocused || !cargaMasiva">
-                            💡 Pega aquí tu CSV o JSON con los datos de las personas
+                            <div class="carga-textarea-wrapper">
+                                <textarea
+                                    pTextarea
+                                    [(ngModel)]="cargaMasiva"
+                                    rows="12"
+                                    class="w-full carga-textarea"
+                                    placeholder="medicarePersonId,nombre,apellido,ci,pasaporte,clinica,regional,fechaConsulta,tipoConsulta&#10;MED-001,Maria,Lopez,1234567,,Clinica Central,La Paz,2026-03-29,PRIMERA_CONSULTA_SSR"
+                                    (focus)="textareaFocused = true"
+                                    (blur)="textareaFocused = false"
+                                ></textarea>
+                                <div class="carga-textarea-hint" [class.visible]="textareaFocused || !cargaMasiva">
+                                    Pega aqui tu CSV o JSON
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Errores -->
                 <div class="cies-note cies-note--warning" *ngIf="cargaError">
-                    ⚠️ {{ cargaError }}
+                    <i class="pi pi-exclamation-triangle"></i>
+                    <span>{{ cargaError }}</span>
                 </div>
 
                 <!-- Columnas admitidas -->
                 <div class="columnas-info">
-                    <details>
-                        <summary>📖 Ver columnas admitidas</summary>
+                    <details open>
+                        <summary>Columnas admitidas y recomendadas</summary>
+                        <p>Obligatorias: clinica, regional y fechaConsulta. Para el nombre usa nombre + apellido o nombreCompleto.</p>
                         <div class="columnas-grid">
                             <span class="columna-tag">medicarePersonId</span>
                             <span class="columna-tag">nombre</span>
@@ -171,8 +199,8 @@ import { CiesService, EjecucionSeleccion, LoteMedicare } from '../../services/ci
 
                 <!-- Botones de acción -->
                 <div class="cies-actions-row">
-                    <button pButton type="button" [label]="editingLoteId ? '💾 Guardar cambios' : '💾 Guardar listado'" icon="pi pi-upload" (click)="registrarLote()"></button>
-                    <button pButton type="button" [label]="editingLoteId ? 'Cancelar' : '🗑️ Limpiar'" severity="secondary" [outlined]="true" icon="pi pi-eraser" (click)="limpiarCarga()"></button>
+                    <button pButton type="button" [label]="editingLoteId ? 'Guardar cambios' : 'Guardar listado'" icon="pi pi-upload" (click)="registrarLote()"></button>
+                    <button pButton type="button" [label]="editingLoteId ? 'Cancelar' : 'Limpiar'" severity="secondary" [outlined]="true" icon="pi pi-eraser" (click)="limpiarCarga()"></button>
                 </div>
             </section>
 
@@ -322,26 +350,40 @@ import { CiesService, EjecucionSeleccion, LoteMedicare } from '../../services/ci
     styles: [
         `
             .steps-container {
-                display: flex;
-                align-items: flex-start;
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) 2.5rem minmax(0, 1fr) 2.5rem minmax(0, 1fr);
+                align-items: stretch;
                 gap: 0;
-                margin: 1.5rem 0;
-                padding: 0 0.5rem;
             }
 
             .step-card {
-                flex: 1;
-                text-align: center;
-                padding: 1.25rem 1rem;
-                background: var(--surface-card);
-                border: 2px solid var(--primary-color);
-                border-radius: 1rem;
+                min-width: 0;
+                display: flex;
+                flex-direction: column;
+                gap: 0.55rem;
+                padding: 1rem;
+                background: var(--layout-panel-background);
+                border: 1px solid var(--layout-border-soft);
+                border-radius: 0.75rem;
+                box-shadow: var(--layout-shadow-soft);
                 transition: all 0.2s ease;
             }
 
+            .step-card--active {
+                border-color: color-mix(in srgb, var(--primary-color) 55%, var(--layout-border-soft));
+                background: color-mix(in srgb, var(--primary-color) 8%, var(--layout-panel-background));
+            }
+
             .step-icon {
-                font-size: 2rem;
-                margin-bottom: 0.5rem;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 2.4rem;
+                height: 2.4rem;
+                border-radius: 999px;
+                background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+                color: var(--primary-color);
+                font-size: 1.1rem;
             }
 
             .step-card h3 {
@@ -351,17 +393,16 @@ import { CiesService, EjecucionSeleccion, LoteMedicare } from '../../services/ci
             }
 
             .step-card p {
-                margin: 0 0 0.75rem;
+                margin: 0;
                 font-size: 0.82rem;
                 color: var(--text-color-secondary);
                 line-height: 1.4;
             }
 
             .step-connector {
-                flex: 0 0 2rem;
                 height: 2px;
                 background: var(--surface-border);
-                margin-top: 2.5rem;
+                align-self: center;
             }
 
             .carga-section {
@@ -369,13 +410,13 @@ import { CiesService, EjecucionSeleccion, LoteMedicare } from '../../services/ci
             }
 
             .carga-paso {
-                margin-bottom: 1.5rem;
+                margin-bottom: 1.25rem;
             }
 
             .carga-paso-header {
                 display: flex;
-                align-items: center;
-                gap: 0.5rem;
+                align-items: flex-start;
+                gap: 0.75rem;
                 margin-bottom: 0.75rem;
             }
 
@@ -398,10 +439,62 @@ import { CiesService, EjecucionSeleccion, LoteMedicare } from '../../services/ci
                 font-size: 0.95rem;
             }
 
+            .carga-paso-header p {
+                margin: 0.2rem 0 0;
+                color: var(--text-color-secondary);
+                font-size: 0.85rem;
+                line-height: 1.4;
+            }
+
+            .carga-input-grid {
+                display: grid;
+                grid-template-columns: minmax(18rem, 0.9fr) minmax(0, 1.1fr);
+                gap: 1rem;
+                align-items: stretch;
+            }
+
+            .carga-method-card {
+                min-width: 0;
+                display: flex;
+                flex-direction: column;
+                gap: 0.85rem;
+                padding: 1rem;
+                border: 1px solid var(--layout-border-soft);
+                border-radius: 0.75rem;
+                background: color-mix(in srgb, var(--surface-card) 82%, var(--surface-ground));
+            }
+
+            .carga-method-head {
+                display: flex;
+                align-items: center;
+                gap: 0.65rem;
+            }
+
+            .carga-method-head > i {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 2.25rem;
+                height: 2.25rem;
+                border-radius: 999px;
+                color: var(--primary-color);
+                background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+            }
+
+            .carga-method-head h5 {
+                margin: 0;
+                font-size: 0.95rem;
+            }
+
+            .carga-method-head span {
+                color: var(--text-color-secondary);
+                font-size: 0.8rem;
+            }
+
             .file-drop-zone {
                 border: 2px dashed var(--surface-border);
-                border-radius: 1rem;
-                padding: 2rem;
+                border-radius: 0.75rem;
+                padding: 1.5rem;
                 text-align: center;
                 transition: all 0.25s ease;
                 background: var(--surface-ground);
@@ -411,14 +504,12 @@ import { CiesService, EjecucionSeleccion, LoteMedicare } from '../../services/ci
 
             .file-drop-zone:hover {
                 border-color: var(--primary-color);
-                background: var(--primary-color);
-                background-opacity: 0.04;
+                background: color-mix(in srgb, var(--primary-color) 5%, var(--surface-ground));
             }
 
             .file-drop-zone--dragover {
                 border-color: var(--primary-color);
-                background: var(--primary-color);
-                background-opacity: 0.08;
+                background: color-mix(in srgb, var(--primary-color) 8%, var(--surface-ground));
                 transform: scale(1.01);
             }
 
@@ -440,7 +531,8 @@ import { CiesService, EjecucionSeleccion, LoteMedicare } from '../../services/ci
             }
 
             .file-drop-icon {
-                font-size: 3rem;
+                color: var(--primary-color);
+                font-size: 2.5rem;
                 line-height: 1;
             }
 
@@ -492,15 +584,19 @@ import { CiesService, EjecucionSeleccion, LoteMedicare } from '../../services/ci
 
             .carga-textarea-wrapper {
                 position: relative;
+                height: 100%;
             }
 
             .carga-textarea {
+                min-height: 16rem;
+                height: 100%;
                 font-family: 'Courier New', monospace;
                 font-size: 0.85rem;
                 line-height: 1.5;
-                border-radius: 0.75rem;
+                border-radius: 0.65rem;
                 border: 2px solid var(--surface-border);
                 transition: border-color 0.2s ease;
+                resize: vertical;
             }
 
             .carga-textarea:focus {
@@ -544,6 +640,13 @@ import { CiesService, EjecucionSeleccion, LoteMedicare } from '../../services/ci
                 user-select: none;
             }
 
+            .columnas-info p {
+                margin: 0.65rem 0 0;
+                color: var(--text-color-secondary);
+                font-size: 0.85rem;
+                line-height: 1.45;
+            }
+
             .columnas-grid {
                 display: flex;
                 flex-wrap: wrap;
@@ -571,7 +674,7 @@ import { CiesService, EjecucionSeleccion, LoteMedicare } from '../../services/ci
 
             @media (max-width: 768px) {
                 .steps-container {
-                    flex-direction: column;
+                    grid-template-columns: 1fr;
                     gap: 0.5rem;
                 }
 
@@ -581,10 +684,15 @@ import { CiesService, EjecucionSeleccion, LoteMedicare } from '../../services/ci
 
                 .step-card {
                     text-align: left;
-                    display: flex;
+                    display: grid;
+                    grid-template-columns: auto minmax(0, 1fr);
                     align-items: center;
                     gap: 1rem;
                     padding: 1rem;
+                }
+
+                .step-card a {
+                    grid-column: 2;
                 }
 
                 .step-icon {
@@ -604,6 +712,18 @@ import { CiesService, EjecucionSeleccion, LoteMedicare } from '../../services/ci
 
                 .file-drop-zone {
                     padding: 1.5rem 1rem;
+                }
+
+                .carga-input-grid {
+                    grid-template-columns: 1fr;
+                }
+
+                .cies-actions-row {
+                    flex-direction: column;
+                }
+
+                .cies-actions-row button {
+                    width: 100%;
                 }
 
                 .file-drop-icon {

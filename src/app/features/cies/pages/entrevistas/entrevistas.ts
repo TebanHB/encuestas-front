@@ -14,6 +14,7 @@ import { Toast } from 'primeng/toast';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { TooltipModule } from 'primeng/tooltip';
 import { firstValueFrom } from 'rxjs';
+import { FechaCortaPipe } from '../../../../shared/pipes/formato.pipe';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { CiesInfoHintComponent } from '../../components/cies-info-hint';
 import { CiesService, Entrevista, PersonaElegible, PreguntaInstrumento, RespuestaPayload } from '../../services/cies.service';
@@ -37,7 +38,7 @@ interface ValidationError {
     imports: [
         CommonModule, FormsModule, RouterModule, ButtonModule, DialogModule, InputTextModule,
         SelectModule, TableModule, TagModule, TextareaModule, Toast, ProgressBarModule, TooltipModule,
-        CiesInfoHintComponent
+        CiesInfoHintComponent, FechaCortaPipe
     ],
     providers: [MessageService],
     template: `
@@ -98,7 +99,7 @@ interface ValidationError {
                 <div class="cies-section-head">
                     <div class="cies-section-head__content">
                         <div>
-                            <h3>📋 Personas listas para entrevistar</h3>
+                            <h3>Personas listas para entrevistar</h3>
                             <p>Selecciona una persona para iniciar la entrevista. Se mostrarán las preguntas guiadas.</p>
                         </div>
                         <app-cies-info-hint text="Solo se muestran casos pendientes o entrevistas en curso vinculadas al encuestador actual."></app-cies-info-hint>
@@ -124,7 +125,7 @@ interface ValidationError {
                 <!-- Filtros -->
                 <div *ngIf="pendientes.length" class="cies-form-grid cies-form-grid--three">
                     <div class="cies-field--wide">
-                        <label>🔍 Buscar persona</label>
+                        <label>Buscar persona</label>
                         <input pInputText [ngModel]="searchTerm" class="w-full" pTooltip="Busca por nombre, documento, código o clínica"
                             placeholder="Nombre, documento, código o clínica..." (ngModelChange)="onSearchTermChange($event)" />
                     </div>
@@ -191,7 +192,7 @@ interface ValidationError {
                             <td>{{ item.documento || '—' }}</td>
                             <td>{{ item.clinica }}</td>
                             <td>{{ item.regional }}</td>
-                            <td>{{ item.fechaConsulta }}</td>
+                            <td>{{ item.fechaConsulta | fechaCorta }}</td>
                             <td>
                                 <button pButton type="button" [label]="startingPersonaId === item.id ? 'Abriendo...' : 'Iniciar'" icon="pi pi-play"
                                     size="small" [loading]="startingPersonaId === item.id"
