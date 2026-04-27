@@ -23,6 +23,7 @@ import { Component, ElementRef, HostListener, Input, ViewChild, inject } from '@
                 *ngIf="open"
                 class="cies-info-hint-popover"
                 [class.cies-info-hint-popover--below]="placement === 'below'"
+                [class.cies-info-hint-popover--ready]="positioned"
                 [style.top.px]="position.top"
                 [style.left.px]="position.left"
                 role="status"
@@ -61,6 +62,18 @@ import { Component, ElementRef, HostListener, Input, ViewChild, inject } from '@
             line-height: 1.35;
             text-align: left;
             white-space: normal;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(0.25rem);
+            transition:
+                opacity 120ms ease,
+                transform 120ms ease;
+        }
+
+        .cies-info-hint-popover--ready {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
         }
 
         .cies-info-hint-popover::after {
@@ -93,11 +106,13 @@ export class CiesInfoHintComponent {
     open = false;
     placement: 'above' | 'below' = 'above';
     position = { top: 0, left: 0 };
+    positioned = false;
 
     toggle(event: MouseEvent): void {
         event.stopPropagation();
         this.open = !this.open;
         if (this.open) {
+            this.positioned = false;
             setTimeout(() => this.updatePosition());
         }
     }
@@ -113,6 +128,7 @@ export class CiesInfoHintComponent {
     @HostListener('document:keydown.escape')
     closeOnEscape(): void {
         this.open = false;
+        this.positioned = false;
     }
 
     @HostListener('window:resize')
@@ -138,5 +154,6 @@ export class CiesInfoHintComponent {
 
         this.placement = hasSpaceAbove ? 'above' : 'below';
         this.position = { top: Math.max(margin, top), left };
+        this.positioned = true;
     }
 }
