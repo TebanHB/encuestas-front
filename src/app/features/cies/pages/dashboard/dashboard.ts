@@ -333,9 +333,16 @@ export class Dashboard implements OnInit {
                         totalPobres: 0,
                         totalExcluidas: 0,
                         totalSubatendidas: 0,
+                        totalConVulnerabilidad: 0,
+                        totalSinVulnerabilidad: 0,
+                        totalUnFactor: 0,
+                        totalDosFactores: 0,
+                        totalTresFactores: 0,
                         porcentajePobres: 0,
                         porcentajeExcluidas: 0,
                         porcentajeSubatendidas: 0,
+                        porcentajeConVulnerabilidad: 0,
+                        porcentajeSinVulnerabilidad: 0,
                         tendencias: [],
                         comparativoClinicas: []
                     };
