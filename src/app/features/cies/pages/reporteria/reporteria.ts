@@ -431,7 +431,7 @@ interface SelectOption {
                         <article class="card cies-chart-card">
                             <div class="cies-section-head">
                                 <div>
-                                    <h3>% de usuarias según factores</h3>
+                                    <h3>% de usuarias según factores de vulnerabilidad</h3>
                                     <p>Equivalente al gráfico de vulnerabilidad general del libro CIES.</p>
                                 </div>
                             </div>
@@ -443,12 +443,48 @@ interface SelectOption {
                         <article class="card cies-chart-card">
                             <div class="cies-section-head">
                                 <div>
-                                    <h3>Pobres y no pobres</h3>
+                                    <h3>% de usuarias pobres y no pobres</h3>
                                     <p>Distribución de vulnerabilidad pobre frente al resto de entrevistas.</p>
                                 </div>
                             </div>
                             <div class="chart-container">
                                 <p-chart type="pie" [data]="excelPobreChartData" [options]="pieChartOptions"></p-chart>
+                            </div>
+                        </article>
+
+                        <article class="card cies-chart-card cies-chart-card--wide">
+                            <div class="cies-section-head">
+                                <div>
+                                    <h3>% usuarios que presentan pobreza moderada por regional</h3>
+                                    <p>Pobreza moderada por regional.</p>
+                                </div>
+                            </div>
+                            <div class="chart-container">
+                                <p-chart type="bar" [data]="excelPobrezaRegionalChartData" [options]="percentByRegionalChartOptions"></p-chart>
+                            </div>
+                        </article>
+
+                        <article class="card cies-chart-card cies-chart-card--wide">
+                            <div class="cies-section-head">
+                                <div>
+                                    <h3>% de usuarias excluidas</h3>
+                                    <p>Exclusión por regional.</p>
+                                </div>
+                            </div>
+                            <div class="chart-container">
+                                <p-chart type="bar" [data]="excelExclusionRegionalChartData" [options]="percentByRegionalChartOptions"></p-chart>
+                            </div>
+                        </article>
+
+                        <article class="card cies-chart-card cies-chart-card--wide">
+                            <div class="cies-section-head">
+                                <div>
+                                    <h3>% de usuarias sub-atendidas</h3>
+                                    <p>Sub-atención por regional.</p>
+                                </div>
+                            </div>
+                            <div class="chart-container">
+                                <p-chart type="bar" [data]="excelSubatencionRegionalChartData" [options]="percentByRegionalChartOptions"></p-chart>
                             </div>
                         </article>
 
@@ -467,7 +503,7 @@ interface SelectOption {
                         <article class="card cies-chart-card cies-chart-card--wide">
                             <div class="cies-section-head">
                                 <div>
-                                    <h3>% de factores asociados</h3>
+                                    <h3>% de vulnerabilidad según factores asociados</h3>
                                     <p>Combinaciones pobreza + exclusión, pobreza + sub-atención y exclusión + sub-atención.</p>
                                 </div>
                             </div>
@@ -487,7 +523,7 @@ interface SelectOption {
                         <div class="cies-section-head">
                             <div>
                                 <h3>Frecuencias generales</h3>
-                                <p>Vista rápida de los gráficos de categorías que aparecen en la hoja Frecuencias Generales.</p>
+                                <p>Gráficos de categorías que aparecen en la hoja Frecuencias Generales.</p>
                             </div>
                         </div>
                         <div class="excel-frequency-grid">
@@ -697,6 +733,7 @@ interface SelectOption {
 
         .chart-container {
             padding: 1rem 0;
+            min-height: 21rem;
         }
 
         .distribution-layout {
@@ -752,6 +789,7 @@ interface SelectOption {
 
         .excel-mini-chart {
             min-width: 0;
+            min-height: 24rem;
             padding: 0.85rem;
             border: 1px solid var(--surface-border);
             border-radius: 8px;
@@ -1045,6 +1083,9 @@ export class ReporteriaPage implements OnInit {
     distributionChartData: any = null;
     excelFactoresChartData: any = null;
     excelPobreChartData: any = null;
+    excelPobrezaRegionalChartData: any = null;
+    excelExclusionRegionalChartData: any = null;
+    excelSubatencionRegionalChartData: any = null;
     excelRegionalChartData: any = null;
     excelCombinacionesChartData: any = null;
     frequencyPreviewCharts: Array<{ title: string; data: any }> = [];
@@ -1088,6 +1129,15 @@ export class ReporteriaPage implements OnInit {
         scales: {
             x: { beginAtZero: true, max: 100, ticks: { callback: (value: string | number) => `${value}%` } },
             y: { grid: { display: false } }
+        }
+    };
+
+    percentByRegionalChartOptions = {
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+            x: { grid: { display: false } },
+            y: { beginAtZero: true, max: 100, ticks: { callback: (value: string | number) => `${value}%` }, grid: { color: 'rgba(0,0,0,0.05)' } }
         }
     };
 
@@ -1315,6 +1365,31 @@ export class ReporteriaPage implements OnInit {
         return Math.round((total / sum) * 100);
     }
 
+    private getExcelFrequencyTitle(codigoVariable: string, fallback: string): string {
+        const titles: Record<string, string> = {
+            CLINICA: '% Clientes mujeres encuestadas por clínica',
+            MIEMBROS_HOGAR: '% hogares según Nº de personas integrantes',
+            JEFE_TRABAJO: '% Trabajo jefe del hogar',
+            IDIOMA_NINEZ: '% Idioma o lengua que la jefa del hogar aprendió en su niñez',
+            CUARTOS: '% Habitaciones de esta vivienda',
+            MATERIAL_PISO: '% Materiales de construcción de la vivienda',
+            TIPO_BANO: '% Tipo de baño o servicio higiénico en el hogar',
+            COMBUSTIBLE: '% Tipo combustible que se utiliza para cocinar',
+            REFRIGERADOR: '% Tiene o posee refrigerador o freezer',
+            TELEVISOR: '% hogares que cuentan con un Televisor',
+            VEHICULO: '% hogares que tienen una motocicleta o vehículo',
+            IDIOMA_HOGAR: '% hogares según idioma que utilizan normalmente',
+            EDUCACION: '% Último curso aprobado',
+            METODO_AC: '% Uso de método anticonceptivo moderno',
+            COMPUTADORA: '% Tiene o posee una computadora en el hogar',
+            CELULAR: '% Tiene, posee o dispone de un celular',
+            LUGAR_PARTO: '% lugar atención último parto',
+            ZONA_RESIDENCIA: '% Residencia actual',
+            ACCESO_SALUD: '% Últimos 12 meses que acudió a algún hospital'
+        };
+        return titles[codigoVariable?.toUpperCase()] || fallback;
+    }
+
     private buildCharts(): void {
         if (this.resumen) {
             this.classificationChartData = {
@@ -1359,7 +1434,8 @@ export class ReporteriaPage implements OnInit {
         }
 
         if (this.graficosExcel) {
-            const palette = ['#0f766e', '#2563eb', '#f59e0b', '#ef4444', '#8b5cf6', '#14b8a6'];
+            const palette = ['#0f766e', '#2563eb', '#f59e0b', '#ef4444', '#8b5cf6', '#14b8a6', '#db2777', '#64748b'];
+            const regionalLabels = this.graficosExcel.regionales.map((item) => item.regional);
             this.excelFactoresChartData = {
                 labels: this.graficosExcel.cantidadFactores.map((item) => item.etiqueta),
                 datasets: [{
@@ -1376,8 +1452,35 @@ export class ReporteriaPage implements OnInit {
                     hoverOffset: 8
                 }]
             };
+            this.excelPobrezaRegionalChartData = {
+                labels: regionalLabels,
+                datasets: [{
+                    label: '% Pobreza',
+                    data: this.graficosExcel.regionales.map((item) => item.porcentajePobres),
+                    backgroundColor: '#ef4444',
+                    borderRadius: 4
+                }]
+            };
+            this.excelExclusionRegionalChartData = {
+                labels: regionalLabels,
+                datasets: [{
+                    label: '% Exclusión',
+                    data: this.graficosExcel.regionales.map((item) => item.porcentajeExcluidas),
+                    backgroundColor: '#f59e0b',
+                    borderRadius: 4
+                }]
+            };
+            this.excelSubatencionRegionalChartData = {
+                labels: regionalLabels,
+                datasets: [{
+                    label: '% Sub-atención',
+                    data: this.graficosExcel.regionales.map((item) => item.porcentajeSubatendidas),
+                    backgroundColor: '#0ea5e9',
+                    borderRadius: 4
+                }]
+            };
             this.excelRegionalChartData = {
-                labels: this.graficosExcel.regionales.map((item) => item.regional),
+                labels: regionalLabels,
                 datasets: [
                     { label: 'Pobreza', data: this.graficosExcel.regionales.map((item) => item.porcentajePobres), backgroundColor: '#ef4444', borderRadius: 4 },
                     { label: 'Exclusión', data: this.graficosExcel.regionales.map((item) => item.porcentajeExcluidas), backgroundColor: '#f59e0b', borderRadius: 4 },
@@ -1402,13 +1505,12 @@ export class ReporteriaPage implements OnInit {
             ];
             this.frequencyPreviewCharts = this.graficosExcel.frecuencias
                 .filter((variable) => variable.items.length)
-                .slice(0, 6)
                 .map((variable, index) => ({
-                    title: variable.etiquetaPregunta,
+                    title: this.getExcelFrequencyTitle(variable.codigoVariable, variable.etiquetaPregunta),
                     data: {
-                        labels: variable.items.slice(0, 8).map((item) => item.etiqueta),
+                        labels: variable.items.map((item) => item.etiqueta),
                         datasets: [{
-                            data: variable.items.slice(0, 8).map((item) => item.porcentaje),
+                            data: variable.items.map((item) => item.porcentaje),
                             backgroundColor: palette[index % palette.length],
                             borderRadius: 4
                         }]

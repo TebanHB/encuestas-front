@@ -205,6 +205,10 @@ export interface ReporteExcelGraficos {
         pobres: number;
         excluidas: number;
         subatendidas: number;
+        ceroFactores: number;
+        unFactor: number;
+        dosFactores: number;
+        tresFactores: number;
         porcentajePobres: number;
         porcentajeExcluidas: number;
         porcentajeSubatendidas: number;
