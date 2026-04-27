@@ -1489,19 +1489,35 @@ export class ReporteriaPage implements OnInit {
             };
             const combinaciones = this.graficosExcel.combinaciones.length
                 ? this.graficosExcel.combinaciones
-                : [{ regional: 'Sin asociaciones registradas', total: this.graficosExcel.totalEntrevistas, pobrezaExclusion: 0, pobrezaSubatencion: 0, exclusionSubatencion: 0, porcentajePobrezaExclusion: 0, porcentajePobrezaSubatencion: 0, porcentajeExclusionSubatencion: 0 }];
+                : [{
+                    regional: 'Sin asociaciones registradas',
+                    total: this.graficosExcel.totalEntrevistas,
+                    pobrezaExclusion: 0,
+                    pobrezaSubatencion: 0,
+                    exclusionSubatencion: 0,
+                    pobrezaExclusionAsociada: 0,
+                    pobrezaSubatencionAsociada: 0,
+                    exclusionSubatencionAsociada: 0,
+                    porcentajePobrezaExclusion: 0,
+                    porcentajePobrezaSubatencion: 0,
+                    porcentajeExclusionSubatencion: 0,
+                    porcentajePobrezaExclusionAsociada: 0,
+                    porcentajePobrezaSubatencionAsociada: 0,
+                    porcentajeExclusionSubatencionAsociada: 0
+                }];
+            const valorAsociado = (item: any, campoAsociado: string, campoBase: string) => Number.isFinite(item[campoAsociado]) ? item[campoAsociado] : item[campoBase];
             this.excelCombinacionesChartData = {
                 labels: combinaciones.map((item) => item.regional),
                 datasets: [
-                    { label: 'Pobreza + Exclusión', data: combinaciones.map((item) => item.porcentajePobrezaExclusion), backgroundColor: '#7c2d12', borderRadius: 4 },
-                    { label: 'Pobreza + Sub-atención', data: combinaciones.map((item) => item.porcentajePobrezaSubatencion), backgroundColor: '#be123c', borderRadius: 4 },
-                    { label: 'Exclusión + Sub-atención', data: combinaciones.map((item) => item.porcentajeExclusionSubatencion), backgroundColor: '#0369a1', borderRadius: 4 }
+                    { label: 'Pobreza + Exclusión', data: combinaciones.map((item) => valorAsociado(item, 'porcentajePobrezaExclusionAsociada', 'porcentajePobrezaExclusion')), backgroundColor: '#7c2d12', borderRadius: 4 },
+                    { label: 'Pobreza + Sub-atención', data: combinaciones.map((item) => valorAsociado(item, 'porcentajePobrezaSubatencionAsociada', 'porcentajePobrezaSubatencion')), backgroundColor: '#be123c', borderRadius: 4 },
+                    { label: 'Exclusión + Sub-atención', data: combinaciones.map((item) => valorAsociado(item, 'porcentajeExclusionSubatencionAsociada', 'porcentajeExclusionSubatencion')), backgroundColor: '#0369a1', borderRadius: 4 }
                 ]
             };
             this.associatedSummary = [
-                { label: 'Pobreza + exclusión', total: this.graficosExcel.combinaciones.reduce((sum, item) => sum + item.pobrezaExclusion, 0) },
-                { label: 'Pobreza + sub-atención', total: this.graficosExcel.combinaciones.reduce((sum, item) => sum + item.pobrezaSubatencion, 0) },
-                { label: 'Exclusión + sub-atención', total: this.graficosExcel.combinaciones.reduce((sum, item) => sum + item.exclusionSubatencion, 0) }
+                { label: 'Pobreza + exclusión', total: this.graficosExcel.combinaciones.reduce((sum, item) => sum + valorAsociado(item, 'pobrezaExclusionAsociada', 'pobrezaExclusion'), 0) },
+                { label: 'Pobreza + sub-atención', total: this.graficosExcel.combinaciones.reduce((sum, item) => sum + valorAsociado(item, 'pobrezaSubatencionAsociada', 'pobrezaSubatencion'), 0) },
+                { label: 'Exclusión + sub-atención', total: this.graficosExcel.combinaciones.reduce((sum, item) => sum + valorAsociado(item, 'exclusionSubatencionAsociada', 'exclusionSubatencion'), 0) }
             ];
             this.frequencyPreviewCharts = this.graficosExcel.frecuencias
                 .filter((variable) => variable.items.length)

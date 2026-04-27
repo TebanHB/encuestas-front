@@ -219,9 +219,15 @@ export interface ReporteExcelGraficos {
         pobrezaExclusion: number;
         pobrezaSubatencion: number;
         exclusionSubatencion: number;
+        pobrezaExclusionAsociada: number;
+        pobrezaSubatencionAsociada: number;
+        exclusionSubatencionAsociada: number;
         porcentajePobrezaExclusion: number;
         porcentajePobrezaSubatencion: number;
         porcentajeExclusionSubatencion: number;
+        porcentajePobrezaExclusionAsociada: number;
+        porcentajePobrezaSubatencionAsociada: number;
+        porcentajeExclusionSubatencionAsociada: number;
     }[];
 }
 
