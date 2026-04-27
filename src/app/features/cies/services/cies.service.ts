@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, of, shareReplay, tap, throwError } from 'rxjs';
+import { Observable, catchError, forkJoin, of, shareReplay, tap, throwError } from 'rxjs';
 import { environment } from '@/environments/environment';
 
 export interface UsuarioAdmin {
@@ -312,7 +312,13 @@ export class CiesService {
     private pendientesResumenRequests = new Map<number, Observable<PendientesEntrevistaResumen>>();
     private lotesRequest$: Observable<LoteMedicare[]> | null = null;
     private ejecucionesRequest$: Observable<EjecucionSeleccion[]> | null = null;
+    private usuariosPaginadosRequests = new Map<string, Observable<UsuariosPaginados>>();
+    private lotesPaginadosRequests = new Map<string, Observable<PagedResponse<LoteMedicare>>>();
+    private ejecucionesPaginadasRequests = new Map<string, Observable<PagedResponse<EjecucionSeleccion>>>();
     private reporteResumenRequests = new Map<string, Observable<ReporteResumen>>();
+    private distribucionVariableRequests = new Map<string, Observable<DistribucionVariable>>();
+    private graficosExcelRequests = new Map<string, Observable<ReporteExcelGraficos>>();
+    private warmupRoles = new Set<string>();
 
     listUsuarios(): Observable<UsuarioAdmin[]> {
         return this.http.get<UsuarioAdmin[]>(`${this.apiBase}/usuarios`);
@@ -321,7 +327,19 @@ export class CiesService {
     listUsuariosPaginado(page = 0, size = 20, q?: string): Observable<UsuariosPaginados> {
         const params: Record<string, string | number | null | undefined> = { page, size };
         if (q) params['q'] = q;
-        return this.http.get<UsuariosPaginados>(`${this.apiBase}/usuarios/paginado`, { params: this.toParams(params) });
+        const key = this.cacheKey(params);
+        if (!this.usuariosPaginadosRequests.has(key)) {
+            const request$ = this.http.get<UsuariosPaginados>(`${this.apiBase}/usuarios/paginado`, { params: this.toParams(params) }).pipe(
+                catchError((error) => {
+                    this.usuariosPaginadosRequests.delete(key);
+                    return throwError(() => error);
+                }),
+                shareReplay(1)
+            );
+            this.usuariosPaginadosRequests.set(key, request$);
+        }
+
+        return this.usuariosPaginadosRequests.get(key)!;
     }
 
     createUsuario(payload: UsuarioUpsertRequest): Observable<UsuarioAdmin> {
@@ -425,9 +443,22 @@ export class CiesService {
     }
 
     listLotesPaginado(page = 0, size = 10, estado?: string): Observable<PagedResponse<LoteMedicare>> {
-        return this.http.get<PagedResponse<LoteMedicare>>(`${this.apiBase}/seleccion/lotes/paginado`, {
-            params: this.toParams({ page, size, estado })
-        });
+        const params = { page, size, estado };
+        const key = this.cacheKey(params);
+        if (!this.lotesPaginadosRequests.has(key)) {
+            const request$ = this.http.get<PagedResponse<LoteMedicare>>(`${this.apiBase}/seleccion/lotes/paginado`, {
+                params: this.toParams(params)
+            }).pipe(
+                catchError((error) => {
+                    this.lotesPaginadosRequests.delete(key);
+                    return throwError(() => error);
+                }),
+                shareReplay(1)
+            );
+            this.lotesPaginadosRequests.set(key, request$);
+        }
+
+        return this.lotesPaginadosRequests.get(key)!;
     }
 
     deleteLote(id: number): Observable<void> {
@@ -463,9 +494,22 @@ export class CiesService {
     }
 
     listEjecucionesPaginado(page = 0, size = 10): Observable<PagedResponse<EjecucionSeleccion>> {
-        return this.http.get<PagedResponse<EjecucionSeleccion>>(`${this.apiBase}/seleccion/ejecuciones/paginado`, {
-            params: this.toParams({ page, size })
-        });
+        const params = { page, size };
+        const key = this.cacheKey(params);
+        if (!this.ejecucionesPaginadasRequests.has(key)) {
+            const request$ = this.http.get<PagedResponse<EjecucionSeleccion>>(`${this.apiBase}/seleccion/ejecuciones/paginado`, {
+                params: this.toParams(params)
+            }).pipe(
+                catchError((error) => {
+                    this.ejecucionesPaginadasRequests.delete(key);
+                    return throwError(() => error);
+                }),
+                shareReplay(1)
+            );
+            this.ejecucionesPaginadasRequests.set(key, request$);
+        }
+
+        return this.ejecucionesPaginadasRequests.get(key)!;
     }
 
     getPendientesEntrevista(forceRefresh = false): Observable<PersonaElegible[]> {
@@ -541,11 +585,35 @@ export class CiesService {
     }
 
     getDistribucionVariable(filters?: Record<string, string | number | null | undefined>): Observable<DistribucionVariable> {
-        return this.http.get<DistribucionVariable>(`${this.apiBase}/reportes/distribucion-variable`, { params: this.toParams(filters) });
+        const key = this.cacheKey(filters);
+        if (!this.distribucionVariableRequests.has(key)) {
+            const request$ = this.http.get<DistribucionVariable>(`${this.apiBase}/reportes/distribucion-variable`, { params: this.toParams(filters) }).pipe(
+                catchError((error) => {
+                    this.distribucionVariableRequests.delete(key);
+                    return throwError(() => error);
+                }),
+                shareReplay(1)
+            );
+            this.distribucionVariableRequests.set(key, request$);
+        }
+
+        return this.distribucionVariableRequests.get(key)!;
     }
 
     getGraficosExcel(filters?: Record<string, string | number | null | undefined>): Observable<ReporteExcelGraficos> {
-        return this.http.get<ReporteExcelGraficos>(`${this.apiBase}/reportes/graficos-excel`, { params: this.toParams(filters) });
+        const key = this.cacheKey(filters);
+        if (!this.graficosExcelRequests.has(key)) {
+            const request$ = this.http.get<ReporteExcelGraficos>(`${this.apiBase}/reportes/graficos-excel`, { params: this.toParams(filters) }).pipe(
+                catchError((error) => {
+                    this.graficosExcelRequests.delete(key);
+                    return throwError(() => error);
+                }),
+                shareReplay(1)
+            );
+            this.graficosExcelRequests.set(key, request$);
+        }
+
+        return this.graficosExcelRequests.get(key)!;
     }
 
     exportExcel(filters?: Record<string, string | number | null | undefined>): Observable<Blob> {
@@ -568,6 +636,38 @@ export class CiesService {
         return this.http.get<PagedResponse<MedicareOutboxItem>>(`${this.apiBase}/integraciones/medicare/outbox/paginado`, {
             params: this.toParams({ page, size })
         });
+    }
+
+    warmupForRole(role: string | null | undefined): void {
+        const normalizedRole = this.normalizeRole(role);
+        if (!normalizedRole || this.warmupRoles.has(normalizedRole)) {
+            return;
+        }
+
+        this.warmupRoles.add(normalizedRole);
+        const reportFilters = { codigoVariable: 'SERVICIO' };
+        const requests: Observable<unknown>[] = [
+            this.getInstrumentoActivo(),
+            this.listMetodologias(),
+            this.getReporteResumen(reportFilters),
+            this.getDistribucionVariable(reportFilters),
+            this.getGraficosExcel(reportFilters)
+        ];
+
+        if (normalizedRole === 'ADMINISTRADOR') {
+            requests.push(
+                this.listUsuariosPaginado(0, 10),
+                this.listLotesPaginado(0, 10),
+                this.listEjecucionesPaginado(0, 10),
+                this.getPendientesResumen(8)
+            );
+        }
+
+        if (normalizedRole === 'ENCUESTADOR') {
+            requests.push(this.getPendientesResumen(8), this.getPendientesEntrevista());
+        }
+
+        forkJoin(requests.map((request) => request.pipe(catchError(() => of(null))))).subscribe();
     }
 
     listAuditoria(filters?: Record<string, string | number | null | undefined>): Observable<AuditoriaPaginada> {
@@ -597,14 +697,19 @@ export class CiesService {
         this.pendientesRequest$ = null;
         this.pendientesResumenRequests.clear();
         this.lotesRequest$ = null;
+        this.lotesPaginadosRequests.clear();
         this.ejecucionesRequest$ = null;
+        this.ejecucionesPaginadasRequests.clear();
     }
 
     private resetReporteCache(): void {
         this.reporteResumenRequests.clear();
+        this.distribucionVariableRequests.clear();
+        this.graficosExcelRequests.clear();
     }
 
     private resetUsuarioRelatedCaches(): void {
+        this.usuariosPaginadosRequests.clear();
         this.resetOperacionCache();
         this.resetReporteCache();
     }
@@ -631,5 +736,10 @@ export class CiesService {
                 .filter(([, value]) => value !== null && value !== undefined && value !== '')
                 .sort(([left], [right]) => left.localeCompare(right))
         );
+    }
+
+    private normalizeRole(role: string | null | undefined): string {
+        const normalized = (role || '').trim().toUpperCase();
+        return normalized === 'ADMIN' ? 'ADMINISTRADOR' : normalized;
     }
 }

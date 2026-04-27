@@ -1,7 +1,9 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, effect, inject } from '@angular/core';
 import { RouterModule } from '@angular/router';
+import { AuthService } from '@/app/core/auth/auth.service';
 import { LayoutService } from '@/app/layout/service/layout.service';
+import { CiesService } from '@/app/features/cies/services/cies.service';
 import { AppFooter } from './app.footer';
 import { AppSidebar } from './app.sidebar';
 import { AppTopbar } from './app.topbar';
@@ -24,6 +26,8 @@ import { AppTopbar } from './app.topbar';
 })
 export class AppLayout {
     layoutService = inject(LayoutService);
+    private authService = inject(AuthService);
+    private ciesService = inject(CiesService);
 
     constructor() {
         effect(() => {
@@ -35,6 +39,8 @@ export class AppLayout {
                 document.body.classList.remove('blocked-scroll');
             }
         });
+
+        setTimeout(() => this.ciesService.warmupForRole(this.authService.getRole()), 0);
     }
 
     containerClass = computed(() => {

@@ -238,6 +238,33 @@ interface SelectOption {
                         </article>
                     </section>
 
+                    <section class="card cies-soft-note cies-summary-note">
+                        <strong>Total entrevistas:</strong>
+                        {{ resumen.totalEntrevistas | numeroFormato }} registros finalizados.
+                        De ellos, {{ resumen.totalConVulnerabilidad | numeroFormato }} tienen al menos un factor de vulnerabilidad
+                        y {{ resumen.totalSinVulnerabilidad | numeroFormato }} no presentan vulnerabilidad.
+                        El total no se calcula sumando pobreza, exclusión y subatención; esas son categorías del subconjunto con vulnerabilidad.
+                    </section>
+
+                    <section class="card cies-factor-control">
+                        <div>
+                            <span>Sin factores</span>
+                            <strong>{{ resumen.totalSinVulnerabilidad | numeroFormato }}</strong>
+                        </div>
+                        <div>
+                            <span>1 factor</span>
+                            <strong>{{ resumen.totalUnFactor | numeroFormato }}</strong>
+                        </div>
+                        <div>
+                            <span>2 factores</span>
+                            <strong>{{ resumen.totalDosFactores | numeroFormato }}</strong>
+                        </div>
+                        <div>
+                            <span>3 factores</span>
+                            <strong>{{ resumen.totalTresFactores | numeroFormato }}</strong>
+                        </div>
+                    </section>
+
                     <!-- Barras de progreso -->
                     <section class="card" style="margin-top: 1rem;">
                         <h4 style="margin: 0 0 1rem; font-size: 0.95rem;">Distribución porcentual</h4>
@@ -687,6 +714,36 @@ interface SelectOption {
             color: var(--text-color-secondary);
         }
 
+        .cies-summary-note {
+            margin-top: 1rem;
+            line-height: 1.6;
+        }
+
+        .cies-factor-control {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .cies-factor-control div {
+            border: 1px solid var(--surface-border);
+            border-radius: 8px;
+            padding: 0.9rem;
+            background: var(--surface-ground);
+        }
+
+        .cies-factor-control span {
+            display: block;
+            color: var(--text-color-secondary);
+            font-size: 0.82rem;
+            margin-bottom: 0.35rem;
+        }
+
+        .cies-factor-control strong {
+            font-size: 1.4rem;
+        }
+
         .progress-bars-container {
             display: flex;
             flex-direction: column;
@@ -1061,6 +1118,7 @@ interface SelectOption {
 
             .excel-charts-grid,
             .excel-frequency-grid,
+            .cies-factor-control,
             .associated-summary,
             .excel-export-layout,
             .excel-export-grid {
@@ -1310,7 +1368,7 @@ export class ReporteriaPage implements OnInit {
         const filters = this.getFilterPayload();
 
         forkJoin({
-            resumen: this.ciesService.getReporteResumen(filters, true),
+            resumen: this.ciesService.getReporteResumen(filters),
             distribucion: this.ciesService.getDistribucionVariable(filters),
             graficosExcel: this.ciesService.getGraficosExcel(filters)
         }).subscribe({

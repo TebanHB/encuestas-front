@@ -28,7 +28,7 @@ import { CiesService, UsuarioAdmin, UsuarioUpsertRequest } from '../../services/
                 <div class="cies-hero__content">
                     <div class="cies-chip cies-chip--azul">Administración</div>
                     <h1 class="cies-hero__title">Usuarios del sistema</h1>
-                    <p class="cies-hero__copy">Gestiona administradores, encuestadores y analistas con bloqueo, activación y cambio de rol.</p>
+                    <p class="cies-hero__copy">Gestiona administradores, encuestadores y analistas con activación y cambio de rol.</p>
                 </div>
                 <div class="cies-hero__actions">
                     <button pButton type="button" icon="pi pi-plus" label="Crear usuario" (click)="openCreate()"></button>
@@ -66,7 +66,7 @@ import { CiesService, UsuarioAdmin, UsuarioUpsertRequest } from '../../services/
                     <div class="cies-section-head__content">
                         <div>
                             <h3>Control de accesos</h3>
-                            <p>Administra cuentas, roles operativos y bloqueos de ingreso del sistema.</p>
+                            <p>Administra cuentas, roles operativos y estados de acceso del sistema.</p>
                         </div>
                         <app-cies-info-hint text="Desde este bloque puedes crear usuarios, ajustar su rol y reactivar cuentas cuando sea necesario."></app-cies-info-hint>
                     </div>
@@ -82,7 +82,7 @@ import { CiesService, UsuarioAdmin, UsuarioUpsertRequest } from '../../services/
                     </div>
                 </div>
 
-                <p-table *ngIf="totalUsuarios" [value]="usuarios" [tableStyle]="{ 'min-width': '64rem' }"
+                <p-table *ngIf="totalUsuarios" [value]="usuarios" [tableStyle]="{ 'min-width': '56rem' }"
                     responsiveLayout="scroll" [paginator]="true" [lazy]="true" [rows]="usuariosRows"
                     [first]="usuariosPage * usuariosRows" [totalRecords]="totalUsuarios"
                     [rowsPerPageOptions]="[10, 20, 50]" [loading]="loadingUsuarios"
@@ -94,7 +94,6 @@ import { CiesService, UsuarioAdmin, UsuarioUpsertRequest } from '../../services/
                             <th>Correo</th>
                             <th>Rol</th>
                             <th>Estado</th>
-                            <th>Bloqueo</th>
                             <th>Acciones</th>
                         </tr>
                     </ng-template>
@@ -105,14 +104,13 @@ import { CiesService, UsuarioAdmin, UsuarioUpsertRequest } from '../../services/
                             <td>{{ user.email }}</td>
                             <td><p-tag [value]="user.rol" [severity]="user.rol === 'ADMINISTRADOR' ? 'danger' : user.rol === 'ENCUESTADOR' ? 'info' : 'warn'"></p-tag></td>
                             <td><p-tag [value]="user.activo ? 'Activo' : 'Inactivo'" [severity]="user.activo ? 'success' : 'secondary'"></p-tag></td>
-                            <td>{{ user.bloqueadoHasta || 'Sin bloqueo' }}</td>
                             <td>
                                 <div class="cies-inline-actions">
                                     <button pButton type="button" icon="pi pi-pencil" text rounded severity="info" (click)="openEdit(user)"></button>
                                     <button
                                         pButton
                                         type="button"
-                                        [icon]="user.activo ? 'pi pi-lock' : 'pi pi-lock-open'"
+                                        [icon]="user.activo ? 'pi pi-lock-open' : 'pi pi-lock'"
                                         text
                                         rounded
                                         severity="contrast"
