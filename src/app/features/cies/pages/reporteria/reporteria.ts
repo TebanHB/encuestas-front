@@ -166,14 +166,22 @@ interface SelectOption {
                 </div>
             </section>
 
+            <section *ngIf="loading" class="card cies-loading-state">
+                <div>
+                    <strong>Cargando datos</strong>
+                    <span>Estamos preparando indicadores, tablas y gráficos.</span>
+                </div>
+                <p-progressBar mode="indeterminate" [style]="{ height: '6px' }"></p-progressBar>
+            </section>
+
             <!-- TABS DE REPORTERÍA -->
-            <p-tabs value="0" [style]="{ marginTop: '1.5rem' }" *ngIf="resumen && hasResults">
+            <p-tabs value="0" [style]="{ marginTop: '1.5rem' }" *ngIf="resumen && hasResults && !loading">
                 <p-tablist>
                     <p-tab value="0">Resumen General</p-tab>
                     <p-tab value="1">Tendencias</p-tab>
                     <p-tab value="2">Comparativo por Clínica</p-tab>
                     <p-tab value="3">Distribución por Variable</p-tab>
-                    <p-tab value="4">Gráficos Excel</p-tab>
+                    <p-tab value="4">Gráficos</p-tab>
                 </p-tablist>
                 <p-tabpanels>
 
@@ -464,7 +472,13 @@ interface SelectOption {
                                 </div>
                             </div>
                             <div class="chart-container">
-                                <p-chart type="bar" [data]="excelCombinacionesChartData" [options]="barChartOptions"></p-chart>
+                                <p-chart type="bar" [data]="excelCombinacionesChartData" [options]="associatedChartOptions"></p-chart>
+                            </div>
+                            <div class="associated-summary" *ngIf="associatedSummary.length">
+                                <span *ngFor="let item of associatedSummary">
+                                    <strong>{{ item.total | numeroFormato }}</strong>
+                                    {{ item.label }}
+                                </span>
                             </div>
                         </article>
                     </section>
@@ -660,6 +674,27 @@ interface SelectOption {
             min-height: 25rem;
         }
 
+        .cies-loading-state {
+            margin-top: 1rem;
+            display: grid;
+            gap: 0.85rem;
+        }
+
+        .cies-loading-state div {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+
+        .cies-loading-state strong {
+            font-size: 1rem;
+        }
+
+        .cies-loading-state span {
+            color: var(--text-color-secondary);
+            font-size: 0.9rem;
+        }
+
         .chart-container {
             padding: 1rem 0;
         }
@@ -683,6 +718,30 @@ interface SelectOption {
 
         .excel-frequency-panel {
             margin-top: 1rem;
+        }
+
+        .associated-summary {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.75rem;
+            margin-top: 0.25rem;
+        }
+
+        .associated-summary span {
+            min-width: 0;
+            border: 1px solid var(--surface-border);
+            border-radius: 8px;
+            padding: 0.7rem;
+            background: var(--surface-card);
+            color: var(--text-color-secondary);
+            font-size: 0.85rem;
+        }
+
+        .associated-summary strong {
+            display: block;
+            color: var(--text-color);
+            font-size: 1.15rem;
+            line-height: 1.1;
         }
 
         .excel-frequency-grid {
@@ -907,6 +966,7 @@ interface SelectOption {
 
             .excel-charts-grid,
             .excel-frequency-grid,
+            .associated-summary,
             .excel-export-layout,
             .excel-export-grid {
                 grid-template-columns: 1fr;
@@ -988,6 +1048,7 @@ export class ReporteriaPage implements OnInit {
     excelRegionalChartData: any = null;
     excelCombinacionesChartData: any = null;
     frequencyPreviewCharts: Array<{ title: string; data: any }> = [];
+    associatedSummary: Array<{ label: string; total: number }> = [];
 
     doughnutOptions = {
         cutout: '60%',
@@ -1027,6 +1088,15 @@ export class ReporteriaPage implements OnInit {
         scales: {
             x: { beginAtZero: true, max: 100, ticks: { callback: (value: string | number) => `${value}%` } },
             y: { grid: { display: false } }
+        }
+    };
+
+    associatedChartOptions = {
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { usePointStyle: true } } },
+        scales: {
+            x: { stacked: false, grid: { display: false } },
+            y: { beginAtZero: true, suggestedMax: 100, ticks: { callback: (value: string | number) => `${value}%` }, grid: { color: 'rgba(0,0,0,0.05)' } }
         }
     };
 
@@ -1314,14 +1384,22 @@ export class ReporteriaPage implements OnInit {
                     { label: 'Sub-atención', data: this.graficosExcel.regionales.map((item) => item.porcentajeSubatendidas), backgroundColor: '#0ea5e9', borderRadius: 4 }
                 ]
             };
+            const combinaciones = this.graficosExcel.combinaciones.length
+                ? this.graficosExcel.combinaciones
+                : [{ regional: 'Sin asociaciones registradas', total: this.graficosExcel.totalEntrevistas, pobrezaExclusion: 0, pobrezaSubatencion: 0, exclusionSubatencion: 0, porcentajePobrezaExclusion: 0, porcentajePobrezaSubatencion: 0, porcentajeExclusionSubatencion: 0 }];
             this.excelCombinacionesChartData = {
-                labels: this.graficosExcel.combinaciones.map((item) => item.regional),
+                labels: combinaciones.map((item) => item.regional),
                 datasets: [
-                    { label: 'Pobreza + Exclusión', data: this.graficosExcel.combinaciones.map((item) => item.porcentajePobrezaExclusion), backgroundColor: '#7c2d12', borderRadius: 4 },
-                    { label: 'Pobreza + Sub-atención', data: this.graficosExcel.combinaciones.map((item) => item.porcentajePobrezaSubatencion), backgroundColor: '#be123c', borderRadius: 4 },
-                    { label: 'Exclusión + Sub-atención', data: this.graficosExcel.combinaciones.map((item) => item.porcentajeExclusionSubatencion), backgroundColor: '#0369a1', borderRadius: 4 }
+                    { label: 'Pobreza + Exclusión', data: combinaciones.map((item) => item.porcentajePobrezaExclusion), backgroundColor: '#7c2d12', borderRadius: 4 },
+                    { label: 'Pobreza + Sub-atención', data: combinaciones.map((item) => item.porcentajePobrezaSubatencion), backgroundColor: '#be123c', borderRadius: 4 },
+                    { label: 'Exclusión + Sub-atención', data: combinaciones.map((item) => item.porcentajeExclusionSubatencion), backgroundColor: '#0369a1', borderRadius: 4 }
                 ]
             };
+            this.associatedSummary = [
+                { label: 'Pobreza + exclusión', total: this.graficosExcel.combinaciones.reduce((sum, item) => sum + item.pobrezaExclusion, 0) },
+                { label: 'Pobreza + sub-atención', total: this.graficosExcel.combinaciones.reduce((sum, item) => sum + item.pobrezaSubatencion, 0) },
+                { label: 'Exclusión + sub-atención', total: this.graficosExcel.combinaciones.reduce((sum, item) => sum + item.exclusionSubatencion, 0) }
+            ];
             this.frequencyPreviewCharts = this.graficosExcel.frecuencias
                 .filter((variable) => variable.items.length)
                 .slice(0, 6)

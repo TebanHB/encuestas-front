@@ -32,3 +32,74 @@ Watch mode enabled. Watching for file changes...
 NOTE: Raw file sizes do not reflect development server per-request transformations.
 [2m0:26:32[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m Re-optimizing dependencies because vite config has changed
   [32m➜[39m  [1mLocal[22m:   [36mhttp://127.0.0.1:[1m4200[22m/[39m
+[33m>[39m Changes detected. Rebuilding...
+[32m√[39m Changes detected. Rebuilding...
+[1mInitial chunk files[22m[2m | [22m[1mNames[22m      [2m | [22m [1mRaw size[22m
+[32mmain.js[39m            [2m | [22m[2mmain[22m       [2m | [22m [36m95.09 kB[39m[2m | [22m
+
+[1mLazy chunk files[22m   [2m | [22m[1mNames[22m      [2m | [22m [1mRaw size[22m
+[32mchunk-EQOFIYBH.js[39m  [2m | [22m[2mreporteria[22m [2m | [22m[36m131.78 kB[39m[2m | [22m
+[32mchunk-YODJP7SF.js[39m  [2m | [22m[2mcies-routes[22m[2m | [22m  [36m1.37 kB[39m[2m | [22m
+
+Application bundle generation complete. [2.702 seconds] - 2026-04-27T06:02:05.464Z
+
+Component update sent to client(s).
+[33m>[39m Changes detected. Rebuilding...
+[32m√[39m Changes detected. Rebuilding...
+Application bundle generation failed. [1.088 seconds] - 2026-04-27T06:02:11.721Z
+
+[33m>[39m Changes detected. Rebuilding...
+[32m√[39m Changes detected. Rebuilding...
+Application bundle generation failed. [1.002 seconds] - 2026-04-27T06:02:22.487Z
+
+[33m>[39m Changes detected. Rebuilding...
+[32m√[39m Changes detected. Rebuilding...
+[1mInitial chunk files[22m[2m | [22m[1mNames[22m        [2m | [22m [1mRaw size[22m
+[32mmain.js[39m            [2m | [22m[2mmain[22m         [2m | [22m [36m95.09 kB[39m[2m | [22m
+[32mstyles.css[39m         [2m | [22m[2mstyles[22m       [2m | [22m [36m68.64 kB[39m[2m | [22m
+[32mchunk-BHGSBA5M.js[39m  [2m | [22m[2m-[22m            [2m | [22m [36m27.43 kB[39m[2m | [22m
+[32mchunk-6JGQ5IIR.js[39m  [2m | [22m[2m-[22m            [2m | [22m [36m18.66 kB[39m[2m | [22m
+[32mchunk-B7ALZ57I.js[39m  [2m | [22m[2m-[22m            [2m | [22m  [36m4.95 kB[39m[2m | [22m
+[32mchunk-OM6CTUPH.js[39m  [2m | [22m[2m-[22m            [2m | [22m  [36m4.36 kB[39m[2m | [22m
+[32mchunk-OTBOEJQM.js[39m  [2m | [22m[2m-[22m            [2m | [22m  [36m1.23 kB[39m[2m | [22m
+[32mchunk-7OX5URR6.js[39m  [2m | [22m[2m-[22m            [2m | [22m  [36m1.07 kB[39m[2m | [22m
+
+[1m [22m                  [2m | [22m[1mInitial total[22m[2m | [22m[1m221.43 kB[22m
+
+[1mLazy chunk files[22m   [2m | [22m[1mNames[22m        [2m | [22m [1mRaw size[22m
+[32mchunk-4FC3HIY7.js[39m  [2m | [22m[2mentrevistas[22m  [2m | [22m[36m139.65 kB[39m[2m | [22m
+[32mchunk-JTFQXVUY.js[39m  [2m | [22m[2mreporteria[22m   [2m | [22m[36m135.80 kB[39m[2m | [22m
+[32mchunk-O2I7MIKO.js[39m  [2m | [22m[2mmetodologia[22m  [2m | [22m[36m113.63 kB[39m[2m | [22m
+[32mchunk-323JKHFA.js[39m  [2m | [22m[2mauditoria[22m    [2m | [22m [36m89.84 kB[39m[2m | [22m
+[32mchunk-UUWFZZGM.js[39m  [2m | [22m[2mseleccion[22m    [2m | [22m [36m80.78 kB[39m[2m | [22m
+[32mchunk-OSPBEZLK.js[39m  [2m | [22m[2musuarios[22m     [2m | [22m [36m41.66 kB[39m[2m | [22m
+[32mchunk-LGA6U34V.js[39m  [2m | [22m[2mauth-routes[22m  [2m | [22m [36m40.56 kB[39m[2m | [22m
+[32mchunk-YVZNEDFU.js[39m  [2m | [22m[2mcies-routes[22m  [2m | [22m  [36m1.37 kB[39m[2m | [22m
+
+Application bundle generation complete. [0.917 seconds] - 2026-04-27T06:02:30.972Z
+
+Page reload sent to client(s).
+[33m>[39m Changes detected. Rebuilding...
+[32m√[39m Changes detected. Rebuilding...
+[1mInitial chunk files[22m[2m | [22m[1mNames[22m      [2m | [22m [1mRaw size[22m
+[32mmain.js[39m            [2m | [22m[2mmain[22m       [2m | [22m [36m95.09 kB[39m[2m | [22m
+
+[1mLazy chunk files[22m   [2m | [22m[1mNames[22m      [2m | [22m [1mRaw size[22m
+[32mchunk-4WQKETV7.js[39m  [2m | [22m[2mreporteria[22m [2m | [22m[36m136.57 kB[39m[2m | [22m
+[32mchunk-Y4VOU6WP.js[39m  [2m | [22m[2mcies-routes[22m[2m | [22m  [36m1.37 kB[39m[2m | [22m
+
+Application bundle generation complete. [0.720 seconds] - 2026-04-27T06:02:49.083Z
+
+Page reload sent to client(s).
+[33m>[39m Changes detected. Rebuilding...
+[32m√[39m Changes detected. Rebuilding...
+[1mInitial chunk files[22m[2m | [22m[1mNames[22m      [2m | [22m [1mRaw size[22m
+[32mmain.js[39m            [2m | [22m[2mmain[22m       [2m | [22m [36m95.09 kB[39m[2m | [22m
+
+[1mLazy chunk files[22m   [2m | [22m[1mNames[22m      [2m | [22m [1mRaw size[22m
+[32mchunk-4GIVWUDO.js[39m  [2m | [22m[2mreporteria[22m [2m | [22m[36m136.63 kB[39m[2m | [22m
+[32mchunk-KFXSICFP.js[39m  [2m | [22m[2mcies-routes[22m[2m | [22m  [36m1.37 kB[39m[2m | [22m
+
+Application bundle generation complete. [0.854 seconds] - 2026-04-27T06:03:06.089Z
+
+Component update sent to client(s).

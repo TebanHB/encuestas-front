@@ -1,0 +1,42 @@
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'associatedChartOptions' does not exist on type 'ReporteriaPage'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/cies/pages/reporteria/reporteria.ts:475:100:
+[37m      475 │ ...inacionesChartData" [options]="[32massociatedChartOptions[37m"></p-chart>
+          ╵                                   [32m~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'associatedSummary' does not exist on type 'ReporteriaPage'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/cies/pages/reporteria/reporteria.ts:477:67:
+[37m      477 │ ...<div class="associated-summary" *ngIf="[32massociatedSummary[37m.length">
+          ╵                                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'associatedSummary' does not exist on type 'ReporteriaPage'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/cies/pages/reporteria/reporteria.ts:478:58:
+[37m      478 │ ...                    <span *ngFor="let item of [32massociatedSummary[37m">
+          ╵                                                  [32m~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'associatedChartOptions' does not exist on type 'ReporteriaPage'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/cies/pages/reporteria/reporteria.ts:475:100:
+[37m      475 │ ...inacionesChartData" [options]="[32massociatedChartOptions[37m"></p-chart>
+          ╵                                   [32m~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'associatedSummary' does not exist on type 'ReporteriaPage'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/cies/pages/reporteria/reporteria.ts:477:67:
+[37m      477 │ ...<div class="associated-summary" *ngIf="[32massociatedSummary[37m.length">
+          ╵                                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'associatedSummary' does not exist on type 'ReporteriaPage'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/cies/pages/reporteria/reporteria.ts:478:58:
+[37m      478 │ ...                    <span *ngFor="let item of [32massociatedSummary[37m">
+          ╵                                                  [32m~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
