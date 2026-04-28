@@ -215,20 +215,20 @@ interface SelectOption {
                     </section>
 
                     <section class="cies-summary-detail-grid">
-                        <article class="card cies-factor-card">
-                            <span>Sin factores</span>
+                        <article class="card cies-factor-card" title="Entrevistas que no cumplen ninguna de las tres condiciones (Pobre, Excluida, Subatendida)">
+                            <span>Sin condiciones</span>
                             <strong>{{ resumen.totalSinVulnerabilidad | numeroFormato }}</strong>
                         </article>
-                        <article class="card cies-factor-card">
-                            <span>1 factor</span>
+                        <article class="card cies-factor-card" title="Entrevistas que cumplen exactamente una de las tres condiciones de vulnerabilidad">
+                            <span>1 condición</span>
                             <strong>{{ resumen.totalUnFactor | numeroFormato }}</strong>
                         </article>
-                        <article class="card cies-factor-card">
-                            <span>2 factores</span>
+                        <article class="card cies-factor-card" title="Entrevistas que cumplen dos condiciones de vulnerabilidad simultáneamente">
+                            <span>2 condiciones</span>
                             <strong>{{ resumen.totalDosFactores | numeroFormato }}</strong>
                         </article>
-                        <article class="card cies-factor-card">
-                            <span>3 factores</span>
+                        <article class="card cies-factor-card" title="Entrevistas que cumplen las tres condiciones (Pobre + Excluida + Subatendida)">
+                            <span>3 condiciones</span>
                             <strong>{{ resumen.totalTresFactores | numeroFormato }}</strong>
                         </article>
                     </section>
@@ -353,12 +353,24 @@ interface SelectOption {
                         <div class="cies-section-head">
                             <div>
                                 <h3>Comparativo entre clínicas</h3>
-                                <p>Porcentaje de clasificación sobre entrevistas válidas.</p>
+                                <p>
+                                    Porcentaje de entrevistas clasificadas como
+                                    <strong style="color:#ef4444">Pobre</strong>,
+                                    <strong style="color:#f59e0b">Excluida</strong> y
+                                    <strong style="color:#0ea5e9">Subatendida</strong>
+                                    en cada clínica. Las barras se calculan sobre las entrevistas finalizadas de esa clínica;
+                                    una misma entrevista puede aparecer en más de una barra cuando cumple varias condiciones.
+                                </p>
                             </div>
-                            <app-cies-info-hint text="Compara sedes bajo el mismo criterio metodológico y los mismos filtros activos."></app-cies-info-hint>
+                            <app-cies-info-hint text="Las clínicas se ordenan por porcentaje de pobreza descendente. Pasa el mouse por cada barra para ver los valores absolutos y porcentuales."></app-cies-info-hint>
                         </div>
-                        <div class="chart-container">
+                        <div class="chart-container" [style.min-height.px]="comparativoChartHeight">
                             <p-chart type="bar" [data]="clinicasChartData" [options]="horizontalChartOptions"></p-chart>
+                        </div>
+                        <div class="cies-chart-legend">
+                            <span class="legend-pill"><span class="dot dot--pobre"></span>Pobre = puntaje normalizado &ge; umbral de pobreza</span>
+                            <span class="legend-pill"><span class="dot dot--excluido"></span>Excluida = puntaje &ge; umbral de exclusión</span>
+                            <span class="legend-pill"><span class="dot dot--subatendido"></span>Subatendida = puntaje &ge; umbral de subatención</span>
                         </div>
                     </section>
 
@@ -460,8 +472,8 @@ interface SelectOption {
                         <article class="card cies-chart-card">
                             <div class="cies-section-head">
                                 <div>
-                                    <h3>% de usuarias según factores de vulnerabilidad</h3>
-                                    <p>Equivalente al gráfico de vulnerabilidad general del libro CIES.</p>
+                                    <h3>Distribución por número de condiciones de vulnerabilidad</h3>
+                                    <p>Cuántas entrevistas tienen 0, 1, 2 o 3 condiciones (Pobre, Excluida, Subatendida) acumuladas.</p>
                                 </div>
                             </div>
                             <div class="chart-container">
@@ -520,8 +532,8 @@ interface SelectOption {
                         <article class="card cies-chart-card cies-chart-card--wide">
                             <div class="cies-section-head">
                                 <div>
-                                    <h3>% de vulnerabilidad según factores</h3>
-                                    <p>Pobreza, exclusión y sub-atención por regional.</p>
+                                    <h3>% de vulnerabilidad por regional (las 3 condiciones)</h3>
+                                    <p>Para cada regional muestra el porcentaje de entrevistas clasificadas como Pobre, Excluida y Subatendida.</p>
                                 </div>
                             </div>
                             <div class="chart-container">
@@ -532,8 +544,8 @@ interface SelectOption {
                         <article class="card cies-chart-card cies-chart-card--wide">
                             <div class="cies-section-head">
                                 <div>
-                                    <h3>% de vulnerabilidad según factores asociados</h3>
-                                    <p>Combinaciones pobreza + exclusión, pobreza + sub-atención y exclusión + sub-atención.</p>
+                                    <h3>Combinaciones de condiciones por regional</h3>
+                                    <p>Porcentaje de entrevistas que cumplen pares de condiciones simultáneamente: Pobre+Excluida, Pobre+Subatendida y Excluida+Subatendida.</p>
                                 </div>
                             </div>
                             <div class="chart-container">
@@ -609,7 +621,7 @@ interface SelectOption {
                     </label>
                     <label class="excel-check">
                         <p-checkbox [(ngModel)]="excelSections.calculos" [binary]="true" inputId="excel-calculos"></p-checkbox>
-                        Hojas de cálculo por factor
+                        Hojas de cálculo por dimensión (Pobre / Excluida / Subatendida)
                     </label>
                     <label class="excel-check">
                         <p-checkbox [(ngModel)]="excelSections.frecuencias" [binary]="true" inputId="excel-frecuencias"></p-checkbox>
@@ -872,6 +884,26 @@ interface SelectOption {
         ::ng-deep .progress-bar--pobre .p-progressbar-value { background: #ef4444; }
         ::ng-deep .progress-bar--excluido .p-progressbar-value { background: #f59e0b; }
         ::ng-deep .progress-bar--subatendido .p-progressbar-value { background: #0ea5e9; }
+
+        .cies-chart-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem 0.85rem;
+            padding: 0.75rem 0 0;
+            font-size: 0.78rem;
+            color: var(--text-color-secondary);
+            border-top: 1px dashed rgba(0,0,0,0.08);
+            margin-top: 0.85rem;
+        }
+
+        .legend-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: rgba(0,0,0,0.025);
+            border-radius: 999px;
+            padding: 0.18rem 0.65rem;
+        }
 
         .cies-chart-card {
             min-height: 25rem;
@@ -1336,12 +1368,53 @@ export class ReporteriaPage implements OnInit {
         }
     };
 
-    horizontalChartOptions = {
+    horizontalChartOptions: any = {
         indexAxis: 'y' as const,
         maintainAspectRatio: false,
-        plugins: { legend: { position: 'bottom', labels: { usePointStyle: true } } },
-        scales: { x: { beginAtZero: true, max: 100, grid: { color: 'rgba(0,0,0,0.05)' } }, y: { grid: { display: false } } }
+        plugins: {
+            legend: { position: 'bottom', labels: { usePointStyle: true, padding: 14 } },
+            tooltip: {
+                callbacks: {
+                    title: (items: any[]) => items?.[0]?.label || '',
+                    label: (ctx: any) => {
+                        const dsLabel = ctx.dataset?.label || '';
+                        const pct = ctx.parsed?.x ?? ctx.raw ?? 0;
+                        const comp = (this as any).resumen?.comparativoClinicas?.[ctx.dataIndex];
+                        const conteo = comp ? this.absolutoSegunDataset(dsLabel, comp) : null;
+                        const total = comp?.total ?? null;
+                        return conteo != null && total != null
+                            ? `${dsLabel}: ${pct}% (${conteo}/${total} entrevistas)`
+                            : `${dsLabel}: ${pct}%`;
+                    }
+                }
+            }
+        },
+        scales: {
+            x: {
+                beginAtZero: true,
+                max: 100,
+                ticks: { callback: (v: string | number) => `${v}%` },
+                grid: { color: 'rgba(0,0,0,0.05)' },
+                title: { display: true, text: '% de entrevistas finalizadas' }
+            },
+            y: { grid: { display: false }, ticks: { autoSkip: false } }
+        }
     };
+
+    get comparativoChartHeight(): number {
+        const n = this.resumen?.comparativoClinicas?.length || 0;
+        // ~38px por clínica + 80px padding, mínimo 280, máximo 720
+        return Math.min(720, Math.max(280, n * 38 + 80));
+    }
+
+    private absolutoSegunDataset(dsLabel: string, comp: any): number | null {
+        if (!comp) return null;
+        const lbl = (dsLabel || '').toLowerCase();
+        if (lbl.includes('pobre'))      return comp.totalPobres ?? null;
+        if (lbl.includes('exclu'))      return comp.totalExcluidas ?? null;
+        if (lbl.includes('subaten'))    return comp.totalSubatendidas ?? null;
+        return null;
+    }
 
     frequencyChartOptions = {
         indexAxis: 'y' as const,
@@ -1355,7 +1428,14 @@ export class ReporteriaPage implements OnInit {
 
     percentByRegionalChartOptions = {
         maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                callbacks: {
+                    label: (ctx: any) => `${ctx.dataset?.label || ''}: ${ctx.parsed?.y ?? ctx.raw ?? 0}%`
+                }
+            }
+        },
         scales: {
             x: { grid: { display: false } },
             y: { beginAtZero: true, max: 100, ticks: { callback: (value: string | number) => `${value}%` }, grid: { color: 'rgba(0,0,0,0.05)' } }
@@ -1364,7 +1444,14 @@ export class ReporteriaPage implements OnInit {
 
     associatedChartOptions = {
         maintainAspectRatio: false,
-        plugins: { legend: { position: 'bottom', labels: { usePointStyle: true } } },
+        plugins: {
+            legend: { position: 'bottom', labels: { usePointStyle: true } },
+            tooltip: {
+                callbacks: {
+                    label: (ctx: any) => `${ctx.dataset?.label || ''}: ${ctx.parsed?.y ?? ctx.raw ?? 0}%`
+                }
+            }
+        },
         scales: {
             x: { stacked: false, grid: { display: false } },
             y: { beginAtZero: true, suggestedMax: 100, ticks: { callback: (value: string | number) => `${value}%` }, grid: { color: 'rgba(0,0,0,0.05)' } }
@@ -1632,12 +1719,18 @@ export class ReporteriaPage implements OnInit {
                 ]
             };
 
+            // Ordenar clinicas por % de pobreza descendente para que el grafico sea facil de leer.
+            // Mantenemos el orden original en this.resumen.comparativoClinicas (la tabla puede usar su propio sort).
+            const clinicasOrdenadas = [...this.resumen.comparativoClinicas]
+                .sort((a, b) => (b.porcentajePobres ?? 0) - (a.porcentajePobres ?? 0));
+            // Re-asignamos el array ordenado al resumen para que los tooltips usen los mismos indices.
+            this.resumen.comparativoClinicas = clinicasOrdenadas;
             this.clinicasChartData = {
-                labels: this.resumen.comparativoClinicas.map((item) => item.clinica),
+                labels: clinicasOrdenadas.map((item) => item.clinica),
                 datasets: [
-                    { label: '% Pobreza', data: this.resumen.comparativoClinicas.map((i) => i.porcentajePobres), backgroundColor: '#ef4444', borderRadius: 4 },
-                    { label: '% Excluidas', data: this.resumen.comparativoClinicas.map((i) => i.porcentajeExcluidas), backgroundColor: '#f59e0b', borderRadius: 4 },
-                    { label: '% Subatendidas', data: this.resumen.comparativoClinicas.map((i) => i.porcentajeSubatendidas), backgroundColor: '#0ea5e9', borderRadius: 4 }
+                    { label: '% Pobre', data: clinicasOrdenadas.map((i) => i.porcentajePobres), backgroundColor: '#ef4444', borderRadius: 4, borderSkipped: false },
+                    { label: '% Excluida', data: clinicasOrdenadas.map((i) => i.porcentajeExcluidas), backgroundColor: '#f59e0b', borderRadius: 4, borderSkipped: false },
+                    { label: '% Subatendida', data: clinicasOrdenadas.map((i) => i.porcentajeSubatendidas), backgroundColor: '#0ea5e9', borderRadius: 4, borderSkipped: false }
                 ]
             };
         }

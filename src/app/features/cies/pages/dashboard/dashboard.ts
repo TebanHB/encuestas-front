@@ -88,7 +88,7 @@ interface QuickStartCard {
                 <article class="card cies-stat-card">
                     <div class="cies-card-caption">
                         <span>Con vulnerabilidad</span>
-                        <app-cies-info-hint text="Entrevistas finalizadas con al menos un factor de vulnerabilidad."></app-cies-info-hint>
+                        <app-cies-info-hint text="Entrevistas finalizadas que cumplen al menos una de las tres condiciones evaluadas: ser pobre, excluida o subatendida."></app-cies-info-hint>
                     </div>
                     <strong>{{ resumen.totalConVulnerabilidad }}</strong>
                     <span class="text-muted">{{ resumen.porcentajeConVulnerabilidad }}%</span>
@@ -96,26 +96,26 @@ interface QuickStartCard {
                 <article class="card cies-stat-card">
                     <div class="cies-card-caption">
                         <span>Sin vulnerabilidad</span>
-                        <app-cies-info-hint text="Entrevistas finalizadas que no presentan factores de vulnerabilidad."></app-cies-info-hint>
+                        <app-cies-info-hint text="Entrevistas finalizadas que no cumplen ninguna de las tres condiciones (Pobre, Excluida, Subatendida)."></app-cies-info-hint>
                     </div>
                     <strong>{{ resumen.totalSinVulnerabilidad }}</strong>
                     <span class="text-muted">{{ resumen.porcentajeSinVulnerabilidad }}%</span>
                 </article>
                 <article class="card cies-stat-card">
                     <div class="cies-card-caption">
-                        <span>Factores</span>
-                        <app-cies-info-hint text="Distribución de entrevistas por cantidad de factores encontrados."></app-cies-info-hint>
+                        <span>Condiciones por entrevista</span>
+                        <app-cies-info-hint text="Cuántas condiciones de vulnerabilidad acumula cada entrevista. Una entrevista puede ser Pobre, Excluida y/o Subatendida al mismo tiempo (mínimo 0, máximo 3)."></app-cies-info-hint>
                     </div>
-                    <strong>{{ resumen.totalUnFactor }}/{{ resumen.totalDosFactores }}/{{ resumen.totalTresFactores }}</strong>
-                    <span class="text-muted">1, 2 y 3 factores</span>
+                    <strong>{{ resumen.totalUnFactor }} / {{ resumen.totalDosFactores }} / {{ resumen.totalTresFactores }}</strong>
+                    <span class="text-muted">con 1, 2 o 3 condiciones</span>
                 </article>
             </section>
 
             <section *ngIf="resumen" class="card cies-soft-note">
-                <strong>Nota:</strong>
-                El total de entrevistas incluye los registros sin vulnerabilidad.
-                Por eso {{ resumen.totalEntrevistas }} equivale a {{ resumen.totalConVulnerabilidad }} con vulnerabilidad
-                más {{ resumen.totalSinVulnerabilidad }} sin vulnerabilidad; pobreza, exclusión y subatención no se suman como total general.
+                <strong>Cómo se cuenta:</strong>
+                Cada entrevista pasa por tres clasificaciones independientes (Pobre, Excluida, Subatendida) según el puntaje normalizado y los umbrales vigentes.
+                El total {{ resumen.totalEntrevistas }} = {{ resumen.totalConVulnerabilidad }} con vulnerabilidad + {{ resumen.totalSinVulnerabilidad }} sin vulnerabilidad.
+                Pobreza, exclusión y subatención <strong>no se suman</strong> entre sí porque una misma entrevista puede aparecer en varias clasificaciones a la vez.
             </section>
 
             <section *ngIf="pendientes.length" class="card">
