@@ -297,6 +297,12 @@ interface SelectOption {
                         <div class="chart-container">
                             <p-chart type="doughnut" [data]="classificationChartData" [options]="doughnutOptions"></p-chart>
                         </div>
+                        <div class="associated-summary">
+                            <span><strong>{{ resumen.porcentajePobres }}%</strong>{{ resumen.totalPobres | numeroFormato }} - Pobreza</span>
+                            <span><strong>{{ resumen.porcentajeExcluidas }}%</strong>{{ resumen.totalExcluidas | numeroFormato }} - Excluidas</span>
+                            <span><strong>{{ resumen.porcentajeSubatendidas }}%</strong>{{ resumen.totalSubatendidas | numeroFormato }} - Subatendidas</span>
+                            <span><strong>{{ resumen.porcentajeSinVulnerabilidad }}%</strong>{{ resumen.totalSinVulnerabilidad | numeroFormato }} - Sin vulnerabilidad</span>
+                        </div>
                     </section>
                 </p-tabpanel>
 
@@ -365,13 +371,30 @@ interface SelectOption {
                             </div>
                             <app-cies-info-hint text="Las clínicas se ordenan por porcentaje de pobreza descendente. Pasa el mouse por cada barra para ver los valores absolutos y porcentuales."></app-cies-info-hint>
                         </div>
-                        <div class="chart-container chart-container--dynamic" [style.height.px]="comparativoChartHeight">
-                            <p-chart type="bar" [data]="clinicasChartData" [options]="horizontalChartOptions"></p-chart>
-                        </div>
-                        <div class="cies-chart-legend">
-                            <span class="legend-pill"><span class="dot dot--pobre"></span>Pobre = puntaje normalizado &ge; umbral de pobreza</span>
-                            <span class="legend-pill"><span class="dot dot--excluido"></span>Excluida = puntaje &ge; umbral de exclusión</span>
-                            <span class="legend-pill"><span class="dot dot--subatendido"></span>Subatendida = puntaje &ge; umbral de subatención</span>
+                        <div class="clinic-compare-chart">
+                            <article class="clinic-compare-row" *ngFor="let item of resumen.comparativoClinicas">
+                                <div class="clinic-compare-row__head">
+                                    <strong>{{ item.clinica }}</strong>
+                                    <span>{{ item.total | numeroFormato }} entrevistas</span>
+                                </div>
+                                <div class="clinic-compare-bars">
+                                    <div class="clinic-bar clinic-bar--pobre">
+                                        <span>Pobreza</span>
+                                        <div><i [style.width.%]="item.porcentajePobres"></i></div>
+                                        <strong>{{ item.porcentajePobres }}% · {{ item.totalPobres | numeroFormato }}</strong>
+                                    </div>
+                                    <div class="clinic-bar clinic-bar--excluido">
+                                        <span>Excluidas</span>
+                                        <div><i [style.width.%]="item.porcentajeExcluidas"></i></div>
+                                        <strong>{{ item.porcentajeExcluidas }}% · {{ item.totalExcluidas | numeroFormato }}</strong>
+                                    </div>
+                                    <div class="clinic-bar clinic-bar--subatendido">
+                                        <span>Subatendidas</span>
+                                        <div><i [style.width.%]="item.porcentajeSubatendidas"></i></div>
+                                        <strong>{{ item.porcentajeSubatendidas }}% · {{ item.totalSubatendidas | numeroFormato }}</strong>
+                                    </div>
+                                </div>
+                            </article>
                         </div>
                     </section>
 
@@ -385,9 +408,9 @@ interface SelectOption {
                                 <tr>
                                     <th pSortableColumn="clinica">Clínica <p-sortIcon field="clinica"></p-sortIcon></th>
                                     <th pSortableColumn="total">Total <p-sortIcon field="total"></p-sortIcon></th>
-                                    <th pSortableColumn="porcentajePobres">% Pobreza <p-sortIcon field="porcentajePobres"></p-sortIcon></th>
-                                    <th pSortableColumn="porcentajeExcluidas">% Excluidas <p-sortIcon field="porcentajeExcluidas"></p-sortIcon></th>
-                                    <th pSortableColumn="porcentajeSubatendidas">% Subatendidas <p-sortIcon field="porcentajeSubatendidas"></p-sortIcon></th>
+                                    <th pSortableColumn="porcentajePobres">Pobreza <p-sortIcon field="porcentajePobres"></p-sortIcon></th>
+                                    <th pSortableColumn="porcentajeExcluidas">Excluidas <p-sortIcon field="porcentajeExcluidas"></p-sortIcon></th>
+                                    <th pSortableColumn="porcentajeSubatendidas">Subatendidas <p-sortIcon field="porcentajeSubatendidas"></p-sortIcon></th>
                                 </tr>
                             </ng-template>
                             <ng-template pTemplate="body" let-item>
@@ -396,19 +419,19 @@ interface SelectOption {
                                     <td>{{ item.total | numeroFormato }}</td>
                                     <td>
                                         <div class="cell-with-bar">
-                                            <span style="color: #ef4444; font-weight: 600;">{{ item.porcentajePobres }}%</span>
+                                            <span style="color: #ef4444; font-weight: 600;">{{ item.porcentajePobres }}% · {{ item.totalPobres | numeroFormato }}</span>
                                             <div class="mini-bar"><div class="mini-bar-fill mini-bar--pobre" [style.width.%]="item.porcentajePobres"></div></div>
                                         </div>
                                     </td>
                                     <td>
                                         <div class="cell-with-bar">
-                                            <span style="color: #f59e0b; font-weight: 600;">{{ item.porcentajeExcluidas }}%</span>
+                                            <span style="color: #f59e0b; font-weight: 600;">{{ item.porcentajeExcluidas }}% · {{ item.totalExcluidas | numeroFormato }}</span>
                                             <div class="mini-bar"><div class="mini-bar-fill mini-bar--excluido" [style.width.%]="item.porcentajeExcluidas"></div></div>
                                         </div>
                                     </td>
                                     <td>
                                         <div class="cell-with-bar">
-                                            <span style="color: #0ea5e9; font-weight: 600;">{{ item.porcentajeSubatendidas }}%</span>
+                                            <span style="color: #0ea5e9; font-weight: 600;">{{ item.porcentajeSubatendidas }}% · {{ item.totalSubatendidas | numeroFormato }}</span>
                                             <div class="mini-bar"><div class="mini-bar-fill mini-bar--subatendido" [style.width.%]="item.porcentajeSubatendidas"></div></div>
                                         </div>
                                     </td>
@@ -458,6 +481,12 @@ interface SelectOption {
                                     </ng-template>
                                 </p-table>
                             </div>
+                        </div>
+                        <div class="associated-summary">
+                            <span *ngFor="let item of distribucion.items">
+                                <strong>{{ getPorcentaje(item.total, distribucion) }}%</strong>
+                                {{ item.total | numeroFormato }} - {{ item.etiqueta }}
+                            </span>
                         </div>
                     </section>
                     <section class="card cies-empty-state" *ngIf="distribucion && !distribucion.items.length">
@@ -898,47 +927,16 @@ interface SelectOption {
         ::ng-deep .progress-bar--excluido .p-progressbar-value { background: #f59e0b; }
         ::ng-deep .progress-bar--subatendido .p-progressbar-value { background: #0ea5e9; }
 
-        .cies-chart-legend {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem 0.85rem;
-            padding: 0.75rem 0 0;
-            font-size: 0.78rem;
-            color: var(--text-color-secondary);
-            border-top: 1px dashed rgba(0,0,0,0.08);
-            margin-top: 0.85rem;
-        }
-
-        .legend-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-            background: rgba(0,0,0,0.025);
-            border-radius: 999px;
-            padding: 0.18rem 0.65rem;
-        }
-
         .cies-chart-card {
             display: flex;
             flex-direction: column;
         }
 
-        .cies-chart-card--compact {
-            min-height: auto;
-        }
-
         .chart-container--compact {
             height: 20rem;
-            padding: 0.5rem 0 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .chart-container--dynamic {
-            padding: 0.25rem 0 0;
-            min-height: 0;
+            min-height: 20rem;
             max-height: none;
+            padding: 0.5rem 0 0;
         }
 
         .cies-loading-state {
@@ -998,11 +996,9 @@ interface SelectOption {
         }
 
         .associated-summary span {
-            min-width: 0;
             border: 1px solid var(--surface-border);
             border-radius: 8px;
             padding: 0.7rem;
-            background: var(--surface-card);
             color: var(--text-color-secondary);
             font-size: 0.85rem;
         }
@@ -1010,9 +1006,47 @@ interface SelectOption {
         .associated-summary strong {
             display: block;
             color: var(--text-color);
-            font-size: 1.15rem;
-            line-height: 1.1;
         }
+
+        .clinic-compare-chart {
+            display: grid;
+            gap: 0.85rem;
+            margin-top: .9rem;
+        }
+
+        .clinic-compare-row {
+            padding: 0.85rem;
+            border: 1px solid var(--surface-border);
+            border-radius: 8px;
+        }
+
+        .clinic-compare-row__head {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 0.65rem;
+        }
+
+        .clinic-bar {
+            display: grid;
+            grid-template-columns: 6rem minmax(0, 1fr) 6.5rem;
+            gap: 0.65rem;
+            align-items: center;
+            margin-top: 0.5rem;
+        }
+
+        .clinic-bar div {
+            height: 0.75rem;
+            background: var(--surface-ground);
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .clinic-bar i { display: block; height: 100%; }
+
+        .clinic-bar--pobre i { background: #ef4444; }
+        .clinic-bar--excluido i { background: #f59e0b; }
+        .clinic-bar--subatendido i { background: #0ea5e9; }
 
         .excel-frequency-grid {
             display: grid;
@@ -1055,22 +1089,6 @@ interface SelectOption {
             display: grid;
             gap: 0.45rem;
             margin-top: 0.75rem;
-        }
-        
-        .excel-mini-chart__values span {
-            border: 1px solid var(--surface-border);
-            border-radius: 8px;
-            background: var(--layout-panel-muted-background);
-            color: var(--text-color-secondary);
-            font-size: 0.82rem;
-        }
-        
-        .excel-mini-chart__values strong {
-            color: var(--text-color);
-            font-weight: 800;
-        }
-
-        .excel-mini-chart__values {
             max-height: 10rem;
             overflow: auto;
         }
@@ -1081,7 +1099,13 @@ interface SelectOption {
             gap: 0.55rem;
             align-items: center;
             padding: 0.48rem 0.55rem;
+            border: 1px solid var(--surface-border);
+            border-radius: 8px;
+            color: var(--text-color-secondary);
+            font-size: 0.82rem;
         }
+
+        .excel-mini-chart__values strong { color: var(--text-color); }
 
         .excel-mini-chart__values em {
             font-style: normal;
@@ -1094,7 +1118,6 @@ interface SelectOption {
         .excel-mini-chart__values small {
             text-align: right;
             color: var(--text-color-secondary);
-            font-weight: 700;
         }
 
         .excel-export-layout {
@@ -1151,18 +1174,13 @@ interface SelectOption {
             white-space: normal;
         }
 
-        :host ::ng-deep .chart-container canvas {
-            max-height: 24rem;
-        }
-
+        :host ::ng-deep .chart-container--compact p-chart,
+        :host ::ng-deep .chart-container--compact .p-chart,
         :host ::ng-deep .chart-container--compact canvas {
-            max-height: none !important;
+            display: block;
+            width: 100% !important;
             height: 100% !important;
-        }
-
-        :host ::ng-deep .chart-container--dynamic canvas {
             max-height: none !important;
-            height: 100% !important;
         }
 
         .cell-with-bar {
@@ -1329,6 +1347,14 @@ interface SelectOption {
                 height: 18rem;
             }
 
+            .clinic-bar {
+                grid-template-columns: 1fr;
+            }
+
+            .clinic-bar strong {
+                text-align: left;
+            }
+
             .distribution-layout {
                 grid-template-columns: 1fr;
                 gap: 1rem;
@@ -1484,6 +1510,15 @@ export class ReporteriaPage implements OnInit {
                     label: (ctx: any) => {
                         const ds = ctx.dataset?.label || '';
                         const v = Number(ctx.parsed?.y ?? ctx.raw ?? 0);
+                        const meta = ctx.dataset?._items?.[ctx.dataIndex];
+                        if (meta) {
+                            const total = Number(meta.total ?? 0);
+                            const pct = Number(meta.porcentaje ?? v);
+                            const base = Number(meta.base ?? 0);
+                            return base > 0
+                                ? `${ds}: ${this.formatPct(pct)} (${total.toLocaleString('es-BO')}/${base.toLocaleString('es-BO')})`
+                                : `${ds}: ${total.toLocaleString('es-BO')} (${this.formatPct(pct)})`;
+                        }
                         return `${ds}: ${v.toLocaleString('es-BO')} entrevistas`;
                     }
                 }
@@ -1902,10 +1937,10 @@ export class ReporteriaPage implements OnInit {
             this.tendenciasChartData = {
                 labels: this.resumen.tendencias.map((item) => item.etiqueta),
                 datasets: [
-                    { label: 'Total', data: this.resumen.tendencias.map((i) => i.total), backgroundColor: '#6366f1', borderRadius: 4 },
-                    { label: 'Pobreza', data: this.resumen.tendencias.map((i) => i.pobres), backgroundColor: '#ef4444', borderRadius: 4 },
-                    { label: 'Excluidas', data: this.resumen.tendencias.map((i) => i.excluidas), backgroundColor: '#f59e0b', borderRadius: 4 },
-                    { label: 'Subatendidas', data: this.resumen.tendencias.map((i) => i.subatendidas), backgroundColor: '#0ea5e9', borderRadius: 4 }
+                    { label: 'Total', data: this.resumen.tendencias.map((i) => i.total), backgroundColor: '#6366f1', borderRadius: 4, _items: this.resumen.tendencias.map((i) => ({ total: i.total, porcentaje: i.total ? 100 : 0, base: i.total })) },
+                    { label: 'Pobreza', data: this.resumen.tendencias.map((i) => i.pobres), backgroundColor: '#ef4444', borderRadius: 4, _items: this.resumen.tendencias.map((i) => ({ total: i.pobres, porcentaje: i.total ? (i.pobres * 100) / i.total : 0, base: i.total })) },
+                    { label: 'Excluidas', data: this.resumen.tendencias.map((i) => i.excluidas), backgroundColor: '#f59e0b', borderRadius: 4, _items: this.resumen.tendencias.map((i) => ({ total: i.excluidas, porcentaje: i.total ? (i.excluidas * 100) / i.total : 0, base: i.total })) },
+                    { label: 'Subatendidas', data: this.resumen.tendencias.map((i) => i.subatendidas), backgroundColor: '#0ea5e9', borderRadius: 4, _items: this.resumen.tendencias.map((i) => ({ total: i.subatendidas, porcentaje: i.total ? (i.subatendidas * 100) / i.total : 0, base: i.total })) }
                 ]
             };
 
@@ -1986,9 +2021,9 @@ export class ReporteriaPage implements OnInit {
             this.excelRegionalChartData = {
                 labels: regionalLabels,
                 datasets: [
-                    { label: 'Pobreza', data: this.graficosExcel.regionales.map((item) => item.porcentajePobres), backgroundColor: '#ef4444', borderRadius: 4 },
-                    { label: 'Exclusión', data: this.graficosExcel.regionales.map((item) => item.porcentajeExcluidas), backgroundColor: '#f59e0b', borderRadius: 4 },
-                    { label: 'Sub-atención', data: this.graficosExcel.regionales.map((item) => item.porcentajeSubatendidas), backgroundColor: '#0ea5e9', borderRadius: 4 }
+                    { label: 'Pobreza', data: this.graficosExcel.regionales.map((item) => item.porcentajePobres), backgroundColor: '#ef4444', borderRadius: 4, _items: this.graficosExcel.regionales.map((item) => ({ total: item.pobres, porcentaje: item.porcentajePobres, base: item.total })) },
+                    { label: 'Exclusión', data: this.graficosExcel.regionales.map((item) => item.porcentajeExcluidas), backgroundColor: '#f59e0b', borderRadius: 4, _items: this.graficosExcel.regionales.map((item) => ({ total: item.excluidas, porcentaje: item.porcentajeExcluidas, base: item.total })) },
+                    { label: 'Sub-atención', data: this.graficosExcel.regionales.map((item) => item.porcentajeSubatendidas), backgroundColor: '#0ea5e9', borderRadius: 4, _items: this.graficosExcel.regionales.map((item) => ({ total: item.subatendidas, porcentaje: item.porcentajeSubatendidas, base: item.total })) }
                 ]
             };
             const combinaciones = this.graficosExcel.combinaciones.length
