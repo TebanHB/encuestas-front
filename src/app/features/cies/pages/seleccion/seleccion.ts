@@ -158,7 +158,7 @@ import { CiesService, EjecucionSeleccion, LoteMedicare } from '../../services/ci
                                     [(ngModel)]="cargaMasiva"
                                     rows="12"
                                     class="w-full carga-textarea"
-                                    placeholder="medicarePersonId,nombre,apellido,ci,pasaporte,clinica,regional,fechaConsulta,tipoConsulta&#10;MED-001,Maria,Lopez,1234567,,Clinica Central,La Paz,2026-03-29,PRIMERA_CONSULTA_SSR"
+                                    placeholder="medicarePersonId,nombre,apellido,ci,pasaporte,clinica,regional,fechaConsulta,tipoConsulta&#10;MED-001,Maria,Lopez,1234567,,CIES La Paz,La Paz,2026-04-29,PRIMERA_CONSULTA_SSR"
                                     (focus)="textareaFocused = true"
                                     (blur)="textareaFocused = false"
                                 ></textarea>
@@ -180,20 +180,28 @@ import { CiesService, EjecucionSeleccion, LoteMedicare } from '../../services/ci
                 <div class="columnas-info">
                     <details open>
                         <summary>Columnas admitidas y recomendadas</summary>
-                        <p>Obligatorias: clinica, regional y fechaConsulta. Para el nombre usa nombre + apellido o nombreCompleto.</p>
+                        <p><strong>Obligatorias</strong>: <span class="columna-tag columna-tag--req">nombre</span>, <span class="columna-tag columna-tag--req">apellido</span>, <span class="columna-tag columna-tag--req">clinica</span>, <span class="columna-tag columna-tag--req">regional</span> y <span class="columna-tag columna-tag--req">fechaConsulta</span>.
+                        El nombre completo se arma automáticamente como <em>nombre + apellido</em>.</p>
+                        <p style="margin-top:0.4rem;font-size:0.78rem;color:var(--text-color-secondary);">
+                            <i class="pi pi-info-circle"></i>
+                            Regionales válidas: Santa Cruz, La Paz, Cochabamba, El Alto, Oruro, Potosí, Sucre, Tarija, Pando, Riberalta. Si tu archivo trae aliases (por ej. "Santa Cruz de la Sierra" o "Cobija"), el sistema los normaliza.
+                        </p>
                         <div class="columnas-grid">
                             <span class="columna-tag">medicarePersonId</span>
-                            <span class="columna-tag">nombre</span>
-                            <span class="columna-tag">apellido</span>
-                            <span class="columna-tag">nombreCompleto</span>
+                            <span class="columna-tag columna-tag--req">nombre</span>
+                            <span class="columna-tag columna-tag--req">apellido</span>
                             <span class="columna-tag">ci</span>
                             <span class="columna-tag">pasaporte</span>
                             <span class="columna-tag">documento</span>
-                            <span class="columna-tag">clinica</span>
-                            <span class="columna-tag">regional</span>
-                            <span class="columna-tag">fechaConsulta</span>
+                            <span class="columna-tag columna-tag--req">clinica</span>
+                            <span class="columna-tag columna-tag--req">regional</span>
+                            <span class="columna-tag columna-tag--req">fechaConsulta</span>
                             <span class="columna-tag">tipoConsulta</span>
                         </div>
+                        <p style="margin-top:0.5rem;font-size:0.74rem;color:var(--text-color-secondary);">
+                            <i class="pi pi-history"></i>
+                            Por compatibilidad también se acepta una columna opcional <code>nombreCompleto</code> de plantillas anteriores. Si está vacía, se calcula desde nombre + apellido.
+                        </p>
                     </details>
                 </div>
 
@@ -665,6 +673,13 @@ import { CiesService, EjecucionSeleccion, LoteMedicare } from '../../services/ci
                 color: var(--text-color);
             }
 
+            .columna-tag--req {
+                background: rgba(239, 68, 68, 0.08);
+                border-color: rgba(239, 68, 68, 0.35);
+                color: #b91c1c;
+                font-weight: 600;
+            }
+
             .cies-actions-row {
                 display: flex;
                 gap: 0.5rem;
@@ -1088,12 +1103,27 @@ export class SeleccionPage implements OnInit {
         }
 
         const parsed = raw.startsWith('[') || raw.startsWith('{') ? this.parseJson(raw) : this.parseCsv(raw);
-        const personas = parsed
-            .map((item) => this.normalizePersona(item))
-            .filter((item) => item['clinica'] && item['regional'] && item['fechaConsulta']);
+        const filasNormalizadas = parsed.map((item) => this.normalizePersona(item));
+        const incompletas: string[] = [];
+        const personas = filasNormalizadas.filter((item, idx) => {
+            const tieneNombre = !!(item['nombreCompleto'] || (item['nombre'] && item['apellido']));
+            const valido = tieneNombre && !!item['clinica'] && !!item['regional'] && !!item['fechaConsulta'];
+            if (!valido) {
+                incompletas.push(`Fila ${idx + 1}`);
+            }
+            return valido;
+        });
 
         if (!personas.length) {
-            throw new Error('No se encontraron registros válidos. Revisa columnas y formato del archivo.');
+            throw new Error('No se encontraron registros válidos. Cada fila necesita nombre, apellido, clinica, regional y fechaConsulta.');
+        }
+
+        if (incompletas.length) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Filas omitidas',
+                detail: `${incompletas.length} fila(s) sin todos los campos obligatorios fueron descartadas.`
+            });
         }
 
         return personas;

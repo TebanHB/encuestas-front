@@ -1160,27 +1160,27 @@ export class EntrevistasPage implements OnInit {
     ];
 
     readonly ciesRegionalOptions = [
-        { label: 'Cobija', value: 'Cobija' },
         { label: 'Cochabamba', value: 'Cochabamba' },
         { label: 'El Alto', value: 'El Alto' },
         { label: 'La Paz', value: 'La Paz' },
         { label: 'Oruro', value: 'Oruro' },
+        { label: 'Pando', value: 'Pando' },
         { label: 'Potosí', value: 'Potosí' },
         { label: 'Riberalta', value: 'Riberalta' },
-        { label: 'Santa Cruz de la Sierra', value: 'Santa Cruz de la Sierra' },
+        { label: 'Santa Cruz', value: 'Santa Cruz' },
         { label: 'Sucre', value: 'Sucre' },
         { label: 'Tarija', value: 'Tarija' }
     ];
 
     readonly ciesClinicOptions = [
-        { label: 'CIES Cobija', value: 'CIES Cobija', regional: 'Cobija' },
         { label: 'CIES Cochabamba', value: 'CIES Cochabamba', regional: 'Cochabamba' },
         { label: 'CIES El Alto', value: 'CIES El Alto', regional: 'El Alto' },
         { label: 'CIES La Paz', value: 'CIES La Paz', regional: 'La Paz' },
         { label: 'CIES Oruro', value: 'CIES Oruro', regional: 'Oruro' },
+        { label: 'CIES Pando', value: 'CIES Pando', regional: 'Pando' },
         { label: 'CIES Potosí', value: 'CIES Potosí', regional: 'Potosí' },
         { label: 'CIES Riberalta', value: 'CIES Riberalta', regional: 'Riberalta' },
-        { label: 'CIES Santa Cruz', value: 'CIES Santa Cruz', regional: 'Santa Cruz de la Sierra' },
+        { label: 'CIES Santa Cruz', value: 'CIES Santa Cruz', regional: 'Santa Cruz' },
         { label: 'CIES Sucre', value: 'CIES Sucre', regional: 'Sucre' },
         { label: 'CIES Tarija', value: 'CIES Tarija', regional: 'Tarija' }
     ];

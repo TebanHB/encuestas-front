@@ -290,8 +290,9 @@ interface SelectOption {
                         <div class="cies-section-head">
                             <div>
                                 <h3>Clasificación consolidada</h3>
-                                <p>Distribución global según filtros vigentes.</p>
+                                <p>Distribución global según filtros vigentes (Pobreza, Exclusión, Sub-atención y Sin vulnerabilidad).</p>
                             </div>
+                            <app-cies-info-hint text="Las categorías Pobreza/Exclusión/Sub-atención NO son excluyentes: una misma entrevista puede aparecer en varias. 'Sin vulnerabilidad' agrupa entrevistas que no cumplen ninguno de los tres umbrales."></app-cies-info-hint>
                         </div>
                         <div class="chart-container">
                             <p-chart type="doughnut" [data]="classificationChartData" [options]="doughnutOptions"></p-chart>
@@ -475,6 +476,7 @@ interface SelectOption {
                                     <h3>Distribución por número de condiciones de vulnerabilidad</h3>
                                     <p>Cuántas entrevistas tienen 0, 1, 2 o 3 condiciones (Pobre, Excluida, Subatendida) acumuladas.</p>
                                 </div>
+                                <app-cies-info-hint text="Cada entrevista puede sumar de 0 a 3 condiciones. Pasa el mouse para ver la cantidad y el porcentaje sobre el total de entrevistas finalizadas."></app-cies-info-hint>
                             </div>
                             <div class="chart-container">
                                 <p-chart type="doughnut" [data]="excelFactoresChartData" [options]="doughnutOptions"></p-chart>
@@ -485,8 +487,9 @@ interface SelectOption {
                             <div class="cies-section-head">
                                 <div>
                                     <h3>% de usuarias pobres y no pobres</h3>
-                                    <p>Distribución de vulnerabilidad pobre frente al resto de entrevistas.</p>
+                                    <p>Comparación entre entrevistadas que cumplen el umbral de pobreza y el resto.</p>
                                 </div>
+                                <app-cies-info-hint text="Una entrevistada se cuenta como 'pobre' si su puntaje normalizado es mayor o igual al umbral de pobreza definido en la metodología activa."></app-cies-info-hint>
                             </div>
                             <div class="chart-container">
                                 <p-chart type="pie" [data]="excelPobreChartData" [options]="pieChartOptions"></p-chart>
@@ -496,9 +499,10 @@ interface SelectOption {
                         <article class="card cies-chart-card cies-chart-card--wide">
                             <div class="cies-section-head">
                                 <div>
-                                    <h3>% usuarios que presentan pobreza moderada por regional</h3>
-                                    <p>Pobreza moderada por regional.</p>
+                                    <h3>% de usuarias clasificadas como pobres por regional</h3>
+                                    <p>Porcentaje de entrevistas finalizadas en cada regional que cumplen el umbral de pobreza.</p>
                                 </div>
+                                <app-cies-info-hint text="Tooltip muestra: % y cantidad absoluta (pobres/total entrevistas en esa regional)."></app-cies-info-hint>
                             </div>
                             <div class="chart-container">
                                 <p-chart type="bar" [data]="excelPobrezaRegionalChartData" [options]="percentByRegionalChartOptions"></p-chart>
@@ -508,9 +512,10 @@ interface SelectOption {
                         <article class="card cies-chart-card cies-chart-card--wide">
                             <div class="cies-section-head">
                                 <div>
-                                    <h3>% de usuarias excluidas</h3>
-                                    <p>Exclusión por regional.</p>
+                                    <h3>% de usuarias clasificadas como excluidas por regional</h3>
+                                    <p>Porcentaje de entrevistas finalizadas en cada regional que cumplen el umbral de exclusión.</p>
                                 </div>
+                                <app-cies-info-hint text="Exclusión = puntaje normalizado >= umbral de exclusión definido en la metodología activa."></app-cies-info-hint>
                             </div>
                             <div class="chart-container">
                                 <p-chart type="bar" [data]="excelExclusionRegionalChartData" [options]="percentByRegionalChartOptions"></p-chart>
@@ -520,9 +525,10 @@ interface SelectOption {
                         <article class="card cies-chart-card cies-chart-card--wide">
                             <div class="cies-section-head">
                                 <div>
-                                    <h3>% de usuarias sub-atendidas</h3>
-                                    <p>Sub-atención por regional.</p>
+                                    <h3>% de usuarias sub-atendidas por regional</h3>
+                                    <p>Porcentaje de entrevistas finalizadas en cada regional que cumplen el umbral de subatención.</p>
                                 </div>
+                                <app-cies-info-hint text="Subatención = puntaje normalizado >= umbral de subatención. Una misma entrevista puede aparecer en varias clasificaciones."></app-cies-info-hint>
                             </div>
                             <div class="chart-container">
                                 <p-chart type="bar" [data]="excelSubatencionRegionalChartData" [options]="percentByRegionalChartOptions"></p-chart>
@@ -535,6 +541,7 @@ interface SelectOption {
                                     <h3>% de vulnerabilidad por regional (las 3 condiciones)</h3>
                                     <p>Para cada regional muestra el porcentaje de entrevistas clasificadas como Pobre, Excluida y Subatendida.</p>
                                 </div>
+                                <app-cies-info-hint text="Las tres barras son INDEPENDIENTES — no suman 100%. Una misma entrevista puede contar en varias categorías si supera más de un umbral."></app-cies-info-hint>
                             </div>
                             <div class="chart-container">
                                 <p-chart type="bar" [data]="excelRegionalChartData" [options]="barChartOptions"></p-chart>
@@ -547,6 +554,7 @@ interface SelectOption {
                                     <h3>Combinaciones de condiciones por regional</h3>
                                     <p>Porcentaje de entrevistas que cumplen pares de condiciones simultáneamente: Pobre+Excluida, Pobre+Subatendida y Excluida+Subatendida.</p>
                                 </div>
+                                <app-cies-info-hint text="Mide superposición. Si una regional tiene mucho 'Pobreza + Exclusión', allí coexisten ambas vulnerabilidades en la misma persona."></app-cies-info-hint>
                             </div>
                             <div class="chart-container">
                                 <p-chart type="bar" [data]="excelCombinacionesChartData" [options]="associatedChartOptions"></p-chart>
@@ -564,8 +572,9 @@ interface SelectOption {
                         <div class="cies-section-head">
                             <div>
                                 <h3>Frecuencias generales</h3>
-                                <p>Gráficos de categorías que aparecen en la hoja Frecuencias Generales.</p>
+                                <p>Gráficos de categorías de las preguntas del instrumento — los mismos que se incluyen en la hoja Excel "Frecuencias Generales".</p>
                             </div>
+                            <app-cies-info-hint text="Cada barra muestra el porcentaje de entrevistas que respondió esa opción. El tooltip incluye además el número absoluto de respuestas."></app-cies-info-hint>
                         </div>
                         <div class="excel-frequency-grid">
                             <article class="excel-mini-chart" *ngFor="let chart of frequencyPreviewCharts">
@@ -1344,27 +1353,51 @@ export class ReporteriaPage implements OnInit {
     frequencyPreviewCharts: Array<{ title: string; data: any; height: number }> = [];
     associatedSummary: Array<{ label: string; total: number }> = [];
 
-    doughnutOptions = {
+    private formatPct = (n: number) => `${(Math.round(n * 10) / 10).toLocaleString('es-BO')}%`;
+
+    private tooltipNumeroPorcentaje = (ctx: any): string => {
+        const dsLabel = ctx.dataset?.label || ctx.label || '';
+        const valor = Number(ctx.parsed?.y ?? ctx.parsed ?? ctx.raw ?? 0);
+        const dataset = ctx.dataset?.data || [];
+        const total = dataset.reduce((acc: number, v: any) => acc + (Number(v) || 0), 0);
+        const pct = total > 0 ? (valor * 100) / total : 0;
+        return `${dsLabel}: ${valor.toLocaleString('es-BO')} (${this.formatPct(pct)})`;
+    };
+
+    doughnutOptions: any = {
         cutout: '60%',
-        plugins: {
-            legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true } }
-        },
-        maintainAspectRatio: false
-    };
-
-    pieChartOptions = {
-        plugins: {
-            legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true, font: { size: 11 } } }
-        },
-        maintainAspectRatio: false
-    };
-
-    barChartOptions = {
         maintainAspectRatio: false,
-        plugins: { legend: { position: 'bottom', labels: { usePointStyle: true } } },
+        plugins: {
+            legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true } },
+            tooltip: { callbacks: { label: (ctx: any) => this.tooltipNumeroPorcentaje(ctx) } }
+        }
+    };
+
+    pieChartOptions: any = {
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true, font: { size: 11 } } },
+            tooltip: { callbacks: { label: (ctx: any) => this.tooltipNumeroPorcentaje(ctx) } }
+        }
+    };
+
+    barChartOptions: any = {
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { position: 'bottom', labels: { usePointStyle: true } },
+            tooltip: {
+                callbacks: {
+                    label: (ctx: any) => {
+                        const ds = ctx.dataset?.label || '';
+                        const v = Number(ctx.parsed?.y ?? ctx.raw ?? 0);
+                        return `${ds}: ${v.toLocaleString('es-BO')} entrevistas`;
+                    }
+                }
+            }
+        },
         scales: {
             x: { stacked: false, grid: { display: false } },
-            y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } }
+            y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { precision: 0 } }
         }
     };
 
@@ -1416,23 +1449,54 @@ export class ReporteriaPage implements OnInit {
         return null;
     }
 
-    frequencyChartOptions = {
+    frequencyChartOptions: any = {
         indexAxis: 'y' as const,
         maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                callbacks: {
+                    label: (ctx: any) => {
+                        const pct = ctx.parsed?.x ?? ctx.raw ?? 0;
+                        const meta = ctx.dataset?._items?.[ctx.dataIndex];
+                        return meta && Number.isFinite(meta.total)
+                            ? `${this.formatPct(pct)} (${meta.total} respuestas)`
+                            : `${this.formatPct(pct)}`;
+                    }
+                }
+            }
+        },
         scales: {
             x: { beginAtZero: true, max: 100, ticks: { callback: (value: string | number) => `${value}%` } },
             y: { grid: { display: false } }
         }
     };
 
-    percentByRegionalChartOptions = {
+    private absolutoRegionalSegunDataset(dsLabel: string, regional: any): number | null {
+        if (!regional) return null;
+        const lbl = (dsLabel || '').toLowerCase();
+        if (lbl.includes('pobre'))   return regional.pobres ?? null;
+        if (lbl.includes('exclu'))   return regional.excluidas ?? null;
+        if (lbl.includes('subaten')) return regional.subatendidas ?? null;
+        return null;
+    }
+
+    percentByRegionalChartOptions: any = {
         maintainAspectRatio: false,
         plugins: {
             legend: { display: false },
             tooltip: {
                 callbacks: {
-                    label: (ctx: any) => `${ctx.dataset?.label || ''}: ${ctx.parsed?.y ?? ctx.raw ?? 0}%`
+                    label: (ctx: any) => {
+                        const ds = ctx.dataset?.label || '';
+                        const pct = ctx.parsed?.y ?? ctx.raw ?? 0;
+                        const reg = (this as any).graficosExcel?.regionales?.[ctx.dataIndex];
+                        const conteo = reg ? this.absolutoRegionalSegunDataset(ds, reg) : null;
+                        const total = reg?.total ?? null;
+                        return conteo != null && total != null
+                            ? `${ds}: ${this.formatPct(pct)} (${conteo}/${total} entrevistas)`
+                            : `${ds}: ${this.formatPct(pct)}`;
+                    }
                 }
             }
         },
@@ -1442,13 +1506,32 @@ export class ReporteriaPage implements OnInit {
         }
     };
 
-    associatedChartOptions = {
+    private absolutoCombinacionSegunDataset(dsLabel: string, comb: any): number | null {
+        if (!comb) return null;
+        const lbl = (dsLabel || '').toLowerCase();
+        const valor = (a: number | undefined, b: number | undefined) => Number.isFinite(a) ? a as number : (b as number ?? 0);
+        if (lbl.includes('pobreza + exclu'))   return valor(comb.pobrezaExclusionAsociada, comb.pobrezaExclusion);
+        if (lbl.includes('pobreza + sub'))     return valor(comb.pobrezaSubatencionAsociada, comb.pobrezaSubatencion);
+        if (lbl.includes('exclu') && lbl.includes('sub')) return valor(comb.exclusionSubatencionAsociada, comb.exclusionSubatencion);
+        return null;
+    }
+
+    associatedChartOptions: any = {
         maintainAspectRatio: false,
         plugins: {
             legend: { position: 'bottom', labels: { usePointStyle: true } },
             tooltip: {
                 callbacks: {
-                    label: (ctx: any) => `${ctx.dataset?.label || ''}: ${ctx.parsed?.y ?? ctx.raw ?? 0}%`
+                    label: (ctx: any) => {
+                        const ds = ctx.dataset?.label || '';
+                        const pct = ctx.parsed?.y ?? ctx.raw ?? 0;
+                        const comb = (this as any).graficosExcel?.combinaciones?.[ctx.dataIndex];
+                        const conteo = comb ? this.absolutoCombinacionSegunDataset(ds, comb) : null;
+                        const total = comb?.total ?? null;
+                        return conteo != null && total != null
+                            ? `${ds}: ${this.formatPct(pct)} (${conteo}/${total} entrevistas)`
+                            : `${ds}: ${this.formatPct(pct)}`;
+                    }
                 }
             }
         },
@@ -1843,7 +1926,8 @@ export class ReporteriaPage implements OnInit {
                         datasets: [{
                             data: variable.items.map((item) => item.porcentaje),
                             backgroundColor: palette[index % palette.length],
-                            borderRadius: 4
+                            borderRadius: 4,
+                            _items: variable.items.map((item) => ({ total: item.total }))
                         }]
                     }
                 }));
