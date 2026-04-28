@@ -175,7 +175,7 @@ interface SelectOption {
             </section>
 
             <!-- TABS DE REPORTERÍA -->
-            <p-tabs value="0" [style]="{ marginTop: '1.5rem' }" *ngIf="resumen && hasResults && !loading">
+            <p-tabs [(value)]="activeTab" [style]="{ marginTop: '1.5rem' }" [hidden]="!resumen || !hasResults || loading">
                 <p-tablist>
                     <p-tab value="0">Resumen General</p-tab>
                     <p-tab value="1">Tendencias</p-tab>
@@ -1249,6 +1249,7 @@ export class ReporteriaPage implements OnInit {
     loading = false;
     downloading = false;
     excelDialogVisible = false;
+    activeTab = '0';
 
     exportFilters: ReportFilters = {
         anio: '',

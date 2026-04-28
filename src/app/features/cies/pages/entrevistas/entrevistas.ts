@@ -277,13 +277,10 @@ interface ValidationError {
                         <div class="question-header">
                             <div class="question-number">
                                 {{ question.numeroVisible }}
-                                <span class="question-number-required" *ngIf="question.obligatoria" title="Pregunta obligatoria" aria-label="obligatoria">*</span>
                             </div>
                             <div class="question-content">
                                 <label class="question-label">
                                     {{ question.etiqueta }}
-                                    <span class="required-marker" *ngIf="question.obligatoria" title="Pregunta obligatoria" aria-label="obligatoria">*</span>
-                                    <span class="required-text" *ngIf="question.obligatoria">Obligatoria</span>
                                 </label>
                                 <span class="question-type-badge">{{ getQuestionTypeLabel(question.tipo) }}</span>
                                 <span class="question-skipped-badge" *ngIf="shouldSkipQuestion(question)">
@@ -316,9 +313,7 @@ interface ValidationError {
 
                             <!-- Input cuando se selecciona "Otro" -->
                             <div *ngIf="isCurrentSelectedOtro(question) && !shouldSkipQuestion(question)" class="otro-input-wrapper">
-                                <label class="otro-label">{{ getOtroLabel(question) }}
-                                    <span class="required-marker" *ngIf="question.obligatoria">*</span>
-                                </label>
+                                <label class="otro-label">{{ getOtroLabel(question) }}</label>
                                 <input pInputText [ngModel]="answers[question.id].valorOtro || ''"
                                     class="w-full input-texto"
                                     [maxlength]="OTRO_MAX_LENGTH"
