@@ -961,9 +961,8 @@ interface SelectOption {
         }
 
         .chart-container {
+            height: 24rem;
             padding: 1rem 0;
-            min-height: 18rem;
-            max-height: 24rem;
             position: relative;
         }
 
@@ -1174,9 +1173,9 @@ interface SelectOption {
             white-space: normal;
         }
 
-        :host ::ng-deep .chart-container--compact p-chart,
-        :host ::ng-deep .chart-container--compact .p-chart,
-        :host ::ng-deep .chart-container--compact canvas {
+        :host ::ng-deep .chart-container p-chart,
+        :host ::ng-deep .chart-container .p-chart,
+        :host ::ng-deep .chart-container canvas {
             display: block;
             width: 100% !important;
             height: 100% !important;
@@ -1340,7 +1339,7 @@ interface SelectOption {
             }
 
             .chart-container {
-                min-height: 18rem;
+                height: 18rem;
             }
 
             .chart-container--compact {
@@ -1349,10 +1348,6 @@ interface SelectOption {
 
             .clinic-bar {
                 grid-template-columns: 1fr;
-            }
-
-            .clinic-bar strong {
-                text-align: left;
             }
 
             .distribution-layout {
@@ -1385,10 +1380,6 @@ interface SelectOption {
 
             .cies-chart-card {
                 min-height: auto;
-            }
-
-            .chart-container:not(.chart-container--compact) p-chart canvas {
-                max-height: 18rem !important;
             }
 
             .excel-mini-chart__values span {
