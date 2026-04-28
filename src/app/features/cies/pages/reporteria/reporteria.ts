@@ -1436,7 +1436,6 @@ export class ReporteriaPage implements OnInit {
         { label: 'Televisor', value: 'TELEVISOR' },
         { label: 'Vehículo', value: 'VEHICULO' },
         { label: 'Idioma hogar', value: 'IDIOMA_HOGAR' },
-        { label: 'No castellano', value: 'NO_CASTELLANO' },
         { label: 'Educación', value: 'EDUCACION' },
         { label: 'Método anticonceptivo', value: 'METODO_AC' },
         { label: 'Computadora', value: 'COMPUTADORA' },
@@ -1709,6 +1708,7 @@ export class ReporteriaPage implements OnInit {
         'FECHA_INICIO',
         'FECHA_FIN',
         'CONSULTA_PARA',
+        'NO_CASTELLANO',
         'SUGERENCIAS'
     ]);
 
