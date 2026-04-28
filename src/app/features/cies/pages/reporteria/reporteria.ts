@@ -481,6 +481,12 @@ interface SelectOption {
                             <div class="chart-container chart-container--compact">
                                 <p-chart type="doughnut" [data]="excelFactoresChartData" [options]="doughnutOptions"></p-chart>
                             </div>
+                            <div class="associated-summary" *ngIf="graficosExcel.cantidadFactores.length">
+                                <span *ngFor="let item of graficosExcel.cantidadFactores">
+                                    <strong>{{ item.porcentaje }}%</strong>
+                                    {{ item.total | numeroFormato }} - {{ item.etiqueta }}
+                                </span>
+                            </div>
                         </article>
 
                         <article class="card cies-chart-card cies-chart-card--compact">
@@ -493,6 +499,12 @@ interface SelectOption {
                             </div>
                             <div class="chart-container chart-container--compact">
                                 <p-chart type="pie" [data]="excelPobreChartData" [options]="pieChartOptions"></p-chart>
+                            </div>
+                            <div class="associated-summary" *ngIf="graficosExcel.vulnerabilidadPobre.length">
+                                <span *ngFor="let item of graficosExcel.vulnerabilidadPobre">
+                                    <strong>{{ item.porcentaje }}%</strong>
+                                    {{ item.total | numeroFormato }} - {{ item.etiqueta }}
+                                </span>
                             </div>
                         </article>
 
@@ -579,8 +591,15 @@ interface SelectOption {
                         <div class="excel-frequency-grid">
                             <article class="excel-mini-chart" *ngFor="let chart of frequencyPreviewCharts">
                                 <h4>{{ chart.title }}</h4>
-                                <div class="excel-mini-chart__body" [style.height.px]="chart.height">
+                                <div class="excel-mini-chart__body">
                                     <p-chart type="bar" [data]="chart.data" [options]="frequencyChartOptions"></p-chart>
+                                </div>
+                                <div class="excel-mini-chart__values">
+                                    <span *ngFor="let item of chart.items">
+                                        <em>{{ item.etiqueta }}</em>
+                                        <strong>{{ item.porcentaje }}%</strong>
+                                        <small>{{ item.total | numeroFormato }}</small>
+                                    </span>
                                 </div>
                             </article>
                         </div>
@@ -707,21 +726,6 @@ interface SelectOption {
         <p-toast></p-toast>
     `,
     styles: [`
-        .card-stat--pobre {
-            border-left: 4px solid #ef4444;
-        }
-        .card-stat--excluido {
-            border-left: 4px solid #f59e0b;
-        }
-        .card-stat--subatendido {
-            border-left: 4px solid #0ea5e9;
-        }
-
-        .stat-percent {
-            font-size: 0.8rem;
-            color: var(--text-color-secondary);
-        }
-
         .cies-summary-panel {
             display: grid;
             grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.55fr);
@@ -924,9 +928,8 @@ interface SelectOption {
         }
 
         .chart-container--compact {
-            padding: 0.5rem 0;
-            min-height: 15rem;
-            max-height: 17rem;
+            height: 20rem;
+            padding: 0.5rem 0 0;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1013,15 +1016,16 @@ interface SelectOption {
 
         .excel-frequency-grid {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 1rem;
-            align-items: start;
+            align-items: stretch;
         }
 
         .excel-mini-chart {
             min-width: 0;
             display: flex;
             flex-direction: column;
+            height: 100%;
             padding: 0.85rem;
             border: 1px solid var(--surface-border);
             border-radius: 8px;
@@ -1035,8 +1039,8 @@ interface SelectOption {
         }
 
         .excel-mini-chart__body {
-            min-height: 10.5rem;
-            max-height: 20rem;
+            height: 16rem;
+            min-height: 16rem;
         }
 
         .excel-mini-chart__body p-chart,
@@ -1045,6 +1049,52 @@ interface SelectOption {
             display: block;
             width: 100% !important;
             height: 100% !important;
+        }
+
+        .excel-mini-chart__values {
+            display: grid;
+            gap: 0.45rem;
+            margin-top: 0.75rem;
+        }
+        
+        .excel-mini-chart__values span {
+            border: 1px solid var(--surface-border);
+            border-radius: 8px;
+            background: var(--layout-panel-muted-background);
+            color: var(--text-color-secondary);
+            font-size: 0.82rem;
+        }
+        
+        .excel-mini-chart__values strong {
+            color: var(--text-color);
+            font-weight: 800;
+        }
+
+        .excel-mini-chart__values {
+            max-height: 10rem;
+            overflow: auto;
+        }
+
+        .excel-mini-chart__values span {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto auto;
+            gap: 0.55rem;
+            align-items: center;
+            padding: 0.48rem 0.55rem;
+        }
+
+        .excel-mini-chart__values em {
+            font-style: normal;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: var(--text-color);
+        }
+
+        .excel-mini-chart__values small {
+            text-align: right;
+            color: var(--text-color-secondary);
+            font-weight: 700;
         }
 
         .excel-export-layout {
@@ -1106,7 +1156,8 @@ interface SelectOption {
         }
 
         :host ::ng-deep .chart-container--compact canvas {
-            max-height: 17rem !important;
+            max-height: none !important;
+            height: 100% !important;
         }
 
         :host ::ng-deep .chart-container--dynamic canvas {
@@ -1274,6 +1325,10 @@ interface SelectOption {
                 min-height: 18rem;
             }
 
+            .chart-container--compact {
+                height: 18rem;
+            }
+
             .distribution-layout {
                 grid-template-columns: 1fr;
                 gap: 1rem;
@@ -1306,8 +1361,12 @@ interface SelectOption {
                 min-height: auto;
             }
 
-            p-chart canvas {
+            .chart-container:not(.chart-container--compact) p-chart canvas {
                 max-height: 18rem !important;
+            }
+
+            .excel-mini-chart__values span {
+                grid-template-columns: 1fr;
             }
         }
     `]
@@ -1381,7 +1440,7 @@ export class ReporteriaPage implements OnInit {
     excelSubatencionRegionalChartData: any = null;
     excelRegionalChartData: any = null;
     excelCombinacionesChartData: any = null;
-    frequencyPreviewCharts: Array<{ title: string; data: any; height: number }> = [];
+    frequencyPreviewCharts: Array<{ title: string; data: any; items: Array<{ etiqueta: string; total: number; porcentaje: number }> }> = [];
     associatedSummary: Array<{ label: string; total: number }> = [];
 
     private formatPct = (n: number) => `${(Math.round(n * 10) / 10).toLocaleString('es-BO')}%`;
@@ -1623,7 +1682,8 @@ export class ReporteriaPage implements OnInit {
         'COD_ENTREVISTA',
         'FECHA_INICIO',
         'FECHA_FIN',
-        'CONSULTA_PARA'
+        'CONSULTA_PARA',
+        'SUGERENCIAS'
     ]);
 
     private syncVariableOptions(metodologias: Metodologia[]): boolean {
@@ -1967,7 +2027,7 @@ export class ReporteriaPage implements OnInit {
                 .filter((variable) => variable.items.length)
                 .map((variable, index) => ({
                     title: this.getExcelFrequencyTitle(variable.codigoVariable, variable.etiquetaPregunta),
-                    height: this.getFrequencyChartHeight(variable.items.length),
+                    items: variable.items,
                     data: {
                         labels: variable.items.map((item) => item.etiqueta),
                         datasets: [{
@@ -1979,10 +2039,6 @@ export class ReporteriaPage implements OnInit {
                     }
                 }));
         }
-    }
-
-    private getFrequencyChartHeight(itemCount: number): number {
-        return Math.max(168, Math.min(320, itemCount * 34 + 72));
     }
 
     private validateFilters(filters: ReportFilters = this.filters): boolean {
