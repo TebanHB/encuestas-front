@@ -183,6 +183,7 @@ interface SelectOption {
                     <p-tab value="3">Distribución por Variable</p-tab>
                     <p-tab value="4">Gráficos</p-tab>
                 </p-tablist>
+                <ng-container *ngIf="resumen">
                 <p-tabpanels>
 
                 <!-- TAB 1: Resumen General -->
@@ -565,6 +566,7 @@ interface SelectOption {
                     </section>
                 </p-tabpanel>
             </p-tabpanels>
+                </ng-container>
         </p-tabs>
 
             <!-- EMPTY STATE: Sin resultados -->
