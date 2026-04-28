@@ -365,7 +365,7 @@ interface SelectOption {
                             </div>
                             <app-cies-info-hint text="Las clínicas se ordenan por porcentaje de pobreza descendente. Pasa el mouse por cada barra para ver los valores absolutos y porcentuales."></app-cies-info-hint>
                         </div>
-                        <div class="chart-container" [style.min-height.px]="comparativoChartHeight">
+                        <div class="chart-container chart-container--dynamic" [style.height.px]="comparativoChartHeight">
                             <p-chart type="bar" [data]="clinicasChartData" [options]="horizontalChartOptions"></p-chart>
                         </div>
                         <div class="cies-chart-legend">
@@ -470,7 +470,7 @@ interface SelectOption {
                 <!-- TAB 5: Gráficos del Excel de referencia -->
                 <p-tabpanel value="4">
                     <section class="excel-charts-grid" *ngIf="graficosExcel">
-                        <article class="card cies-chart-card">
+                        <article class="card cies-chart-card cies-chart-card--compact">
                             <div class="cies-section-head">
                                 <div>
                                     <h3>Distribución por número de condiciones de vulnerabilidad</h3>
@@ -478,12 +478,12 @@ interface SelectOption {
                                 </div>
                                 <app-cies-info-hint text="Cada entrevista puede sumar de 0 a 3 condiciones. Pasa el mouse para ver la cantidad y el porcentaje sobre el total de entrevistas finalizadas."></app-cies-info-hint>
                             </div>
-                            <div class="chart-container">
+                            <div class="chart-container chart-container--compact">
                                 <p-chart type="doughnut" [data]="excelFactoresChartData" [options]="doughnutOptions"></p-chart>
                             </div>
                         </article>
 
-                        <article class="card cies-chart-card">
+                        <article class="card cies-chart-card cies-chart-card--compact">
                             <div class="cies-section-head">
                                 <div>
                                     <h3>% de usuarias pobres y no pobres</h3>
@@ -491,7 +491,7 @@ interface SelectOption {
                                 </div>
                                 <app-cies-info-hint text="Una entrevistada se cuenta como 'pobre' si su puntaje normalizado es mayor o igual al umbral de pobreza definido en la metodología activa."></app-cies-info-hint>
                             </div>
-                            <div class="chart-container">
+                            <div class="chart-container chart-container--compact">
                                 <p-chart type="pie" [data]="excelPobreChartData" [options]="pieChartOptions"></p-chart>
                             </div>
                         </article>
@@ -915,7 +915,27 @@ interface SelectOption {
         }
 
         .cies-chart-card {
-            min-height: 25rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .cies-chart-card--compact {
+            min-height: auto;
+        }
+
+        .chart-container--compact {
+            padding: 0.5rem 0;
+            min-height: 15rem;
+            max-height: 17rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chart-container--dynamic {
+            padding: 0.25rem 0 0;
+            min-height: 0;
+            max-height: none;
         }
 
         .cies-loading-state {
@@ -941,7 +961,9 @@ interface SelectOption {
 
         .chart-container {
             padding: 1rem 0;
-            min-height: 21rem;
+            min-height: 18rem;
+            max-height: 24rem;
+            position: relative;
         }
 
         .distribution-layout {
@@ -1079,8 +1101,17 @@ interface SelectOption {
             white-space: normal;
         }
 
-        ::ng-deep .chart-container canvas {
-            max-height: 22rem;
+        :host ::ng-deep .chart-container canvas {
+            max-height: 24rem;
+        }
+
+        :host ::ng-deep .chart-container--compact canvas {
+            max-height: 17rem !important;
+        }
+
+        :host ::ng-deep .chart-container--dynamic canvas {
+            max-height: none !important;
+            height: 100% !important;
         }
 
         .cell-with-bar {
@@ -1355,6 +1386,8 @@ export class ReporteriaPage implements OnInit {
 
     private formatPct = (n: number) => `${(Math.round(n * 10) / 10).toLocaleString('es-BO')}%`;
 
+    // Mantener aspect ratio razonable para doughnut/pie evita que la legend ocupe demasiado y la dona quede minúscula.
+
     private tooltipNumeroPorcentaje = (ctx: any): string => {
         const dsLabel = ctx.dataset?.label || ctx.label || '';
         const valor = Number(ctx.parsed?.y ?? ctx.parsed ?? ctx.raw ?? 0);
@@ -1365,18 +1398,20 @@ export class ReporteriaPage implements OnInit {
     };
 
     doughnutOptions: any = {
-        cutout: '60%',
+        cutout: '58%',
         maintainAspectRatio: false,
+        responsive: true,
         plugins: {
-            legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true } },
+            legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true, boxWidth: 10, font: { size: 11 } } },
             tooltip: { callbacks: { label: (ctx: any) => this.tooltipNumeroPorcentaje(ctx) } }
         }
     };
 
     pieChartOptions: any = {
         maintainAspectRatio: false,
+        responsive: true,
         plugins: {
-            legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true, font: { size: 11 } } },
+            legend: { position: 'bottom', labels: { padding: 10, usePointStyle: true, boxWidth: 10, font: { size: 11 } } },
             tooltip: { callbacks: { label: (ctx: any) => this.tooltipNumeroPorcentaje(ctx) } }
         }
     };
@@ -1404,8 +1439,11 @@ export class ReporteriaPage implements OnInit {
     horizontalChartOptions: any = {
         indexAxis: 'y' as const,
         maintainAspectRatio: false,
+        responsive: true,
+        layout: { padding: { top: 4, right: 12, bottom: 0, left: 4 } },
+        datasets: { bar: { categoryPercentage: 0.78, barPercentage: 0.92 } } as any,
         plugins: {
-            legend: { position: 'bottom', labels: { usePointStyle: true, padding: 14 } },
+            legend: { position: 'top', align: 'end', labels: { usePointStyle: true, padding: 10, boxWidth: 10, font: { size: 11 } } },
             tooltip: {
                 callbacks: {
                     title: (items: any[]) => items?.[0]?.label || '',
@@ -1436,8 +1474,8 @@ export class ReporteriaPage implements OnInit {
 
     get comparativoChartHeight(): number {
         const n = this.resumen?.comparativoClinicas?.length || 0;
-        // ~38px por clínica + 80px padding, mínimo 280, máximo 720
-        return Math.min(720, Math.max(280, n * 38 + 80));
+        // 3 datasets por clínica * (~14px barra + 4px gap) + 60px ejes/leyenda. Min 240, max 640.
+        return Math.min(640, Math.max(240, n * 56 + 60));
     }
 
     private absolutoSegunDataset(dsLabel: string, comp: any): number | null {
@@ -1580,6 +1618,14 @@ export class ReporteriaPage implements OnInit {
         });
     }
 
+    private static readonly VARIABLES_EXCLUIDAS = new Set([
+        'CLINICA',
+        'COD_ENTREVISTA',
+        'FECHA_INICIO',
+        'FECHA_FIN',
+        'CONSULTA_PARA'
+    ]);
+
     private syncVariableOptions(metodologias: Metodologia[]): boolean {
         const activa = metodologias.find((item) => item.activa) || metodologias[0];
         if (!activa?.preguntas?.length) {
@@ -1590,6 +1636,7 @@ export class ReporteriaPage implements OnInit {
         const variables = new Map<string, string>();
         activa.preguntas
             .filter((pregunta) => pregunta.codigoVariable)
+            .filter((pregunta) => !ReporteriaPage.VARIABLES_EXCLUIDAS.has(pregunta.codigoVariable.toUpperCase()))
             .sort((a, b) => a.orden - b.orden)
             .forEach((pregunta) => {
                 if (!variables.has(pregunta.codigoVariable)) {
