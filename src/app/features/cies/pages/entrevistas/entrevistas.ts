@@ -226,7 +226,7 @@ interface ValidationError {
                                 [class]="progressPercent === 100 ? 'progress-complete' : ''"></p-progressBar>
                             <span class="progress-label">{{ answeredCount }} / {{ answerableQuestions.length }} respondidas</span>
                         </div>
-                        <button pButton type="button" label="✕ Cerrar" severity="secondary" [text]="true"
+                        <button pButton type="button" label="Cerrar" icon="pi pi-times" severity="secondary" [text]="true"
                             (click)="confirmClose()"></button>
                     </div>
                 </div>
@@ -260,7 +260,7 @@ interface ValidationError {
                 <!-- Éxito validación -->
                 <div class="cies-note cies-note--success" *ngIf="showValidation && validationErrors.length === 0 && visibleQuestions.length > 0">
                     <i class="pi pi-check-circle"></i>
-                    <span>✅ Todas las respuestas obligatorias están completas. Puedes finalizar la entrevista.</span>
+                    <span>Todas las respuestas obligatorias están completas. Puedes finalizar la entrevista.</span>
                 </div>
 
                 <!-- PREGUNTAS -->
@@ -376,7 +376,7 @@ interface ValidationError {
                     <div class="footer-left"></div>
                     <div class="footer-right">
                         <button pButton type="button"
-                            [label]="terminatesInterview ? 'Finalizar (terminación temprana)' : '✅ Finalizar entrevista'"
+                            [label]="terminatesInterview ? 'Finalizar (terminación temprana)' : 'Finalizar entrevista'"
                             [severity]="terminatesInterview ? 'warn' : 'success'"
                             [loading]="submitting"
                             [disabled]="submitting"
@@ -450,7 +450,7 @@ interface ValidationError {
                     </div>
 
                     <div class="cies-note cies-note--error" *ngIf="directRegistrationError">
-                        ⚠️ {{ directRegistrationError }}
+                        <i class="pi pi-exclamation-triangle"></i> {{ directRegistrationError }}
                     </div>
                 </div>
 
@@ -458,7 +458,7 @@ interface ValidationError {
                 <div class="dialog-footer-actions">
                     <button pButton type="button" label="Cancelar" severity="secondary" [outlined]="true"
                             [disabled]="directRegistrationLoading" (click)="closeDirectRegistration()"></button>
-                    <button pButton type="button" label="✅ Crear y abrir entrevista"
+                    <button pButton type="button" label="Crear y abrir entrevista"
                         icon="pi pi-arrow-right" [loading]="directRegistrationLoading"
                         [disabled]="directRegistrationLoading"
                         (click)="registerDirectInterview()"></button>

@@ -14,7 +14,7 @@ import { Toast } from 'primeng/toast';
 import { TabsModule } from 'primeng/tabs';
 import { TooltipModule } from 'primeng/tooltip';
 import { BadgeModule } from 'primeng/badge';
-import { FechaCortaPipe } from '../../../../shared/pipes/formato.pipe';
+import { FechaCortaPipe, FechaHoraPipe } from '../../../../shared/pipes/formato.pipe';
 import { CiesInfoHintComponent } from '../../components/cies-info-hint';
 import { CiesService, AuditoriaRegistro, MedicareOutboxItem, Metodologia } from '../../services/cies.service';
 
@@ -32,7 +32,7 @@ interface FiltrosAuditoria {
     imports: [
         CommonModule, FormsModule, ButtonModule, DatePickerModule, DialogModule, InputTextModule,
         SelectModule, TableModule, TagModule, TextareaModule, Toast, TabsModule, TooltipModule, BadgeModule,
-        FechaCortaPipe, CiesInfoHintComponent
+        FechaCortaPipe, FechaHoraPipe, CiesInfoHintComponent
     ],
     providers: [MessageService],
     template: `
@@ -54,9 +54,9 @@ interface FiltrosAuditoria {
             <!-- TABS PRINCIPALES -->
             <p-tabs value="0" [style]="{ marginTop: '1.5rem' }">
                 <p-tablist>
-                    <p-tab value="0">📋 Auditoría General</p-tab>
-                    <p-tab value="1">🔗 Integración Medicare</p-tab>
-                    <p-tab value="2">📐 Versiones Metodológicas</p-tab>
+                    <p-tab value="0"><i class="pi pi-list" style="margin-right:.4rem"></i>Auditoría general</p-tab>
+                    <p-tab value="1"><i class="pi pi-share-alt" style="margin-right:.4rem"></i>Integración Medicare</p-tab>
+                    <p-tab value="2"><i class="pi pi-history" style="margin-right:.4rem"></i>Versiones metodológicas</p-tab>
                 </p-tablist>
                 <p-tabpanels>
 
@@ -67,7 +67,7 @@ interface FiltrosAuditoria {
                         <div class="cies-section-head">
                             <div class="cies-section-head__content">
                                 <div>
-                                    <h3>🔍 Filtros de Búsqueda</h3>
+                                    <h3>Filtros de búsqueda</h3>
                                     <p>Refina los resultados por tipo de evento, usuario, resultado o rango de fechas.</p>
                                 </div>
                                 <app-cies-info-hint text="Cada registro muestra quién hizo qué, cuándo y con qué resultado."></app-cies-info-hint>
@@ -102,10 +102,10 @@ interface FiltrosAuditoria {
                                 <p-datepicker [(ngModel)]="filtros.fechaFin" dateFormat="yy-mm-dd"
                                     class="w-full" [showIcon]="true" placeholder="Hasta..."></p-datepicker>
                             </div>
-                            <div class="cies-field--full" style="display: flex; gap: 0.5rem; align-items: flex-end;">
-                                <button pButton type="button" label="🔍 Buscar" icon="pi pi-search"
+                            <div class="cies-field--full cies-filters-actions">
+                                <button pButton type="button" label="Buscar" icon="pi pi-search"
                                     [loading]="loading" (click)="buscar(true)"></button>
-                                <button pButton type="button" label="Limpiar" icon="pi pi-eraser"
+                                <button pButton type="button" label="Limpiar filtros" icon="pi pi-eraser"
                                     severity="secondary" [outlined]="true" (click)="limpiarFiltros()"></button>
                             </div>
                         </div>
@@ -116,8 +116,8 @@ interface FiltrosAuditoria {
                         <div class="cies-section-head">
                             <div class="cies-section-head__content">
                                 <div>
-                                    <h3>📄 Registros de Auditoría</h3>
-                                    <p>{{ totalRegistros }} evento(s) encontrado(s) en total</p>
+                                    <h3>Registros de auditoría</h3>
+                                    <p>{{ totalRegistros }} evento(s) encontrado(s) en total.</p>
                                 </div>
                                 <div style="display: flex; gap: 0.5rem; align-items: center;">
                                     <p-tag [value]="totalRegistros + ' registros'" severity="info"></p-tag>
@@ -146,7 +146,7 @@ interface FiltrosAuditoria {
                             </ng-template>
                             <ng-template pTemplate="body" let-item>
                                 <tr>
-                                    <td style="white-space: nowrap; font-size: 0.82rem;">{{ item.fechaHora | fechaCorta }}</td>
+                                    <td style="white-space: nowrap; font-size: 0.82rem;">{{ item.fechaHora | fechaHora }}</td>
                                     <td>
                                         <p-tag [value]="getTipoLabel(item.tipo)"
                                             [severity]="getTipoSeverity(item.tipo)"
@@ -205,12 +205,12 @@ interface FiltrosAuditoria {
                         <div class="cies-section-head">
                             <div class="cies-section-head__content">
                                 <div>
-                                    <h3>📤 Trazas de integración Medicare</h3>
+                                    <h3>Trazas de integración Medicare</h3>
                                     <p>Registros técnicos de salida para soporte y auditoría de integración con Medicare.</p>
                                 </div>
-                                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                <div class="cies-section-actions">
                                     <p-tag [value]="totalOutbox + ' registros'" severity="contrast"></p-tag>
-                                    <button pButton type="button" label="🔄 Actualizar" icon="pi pi-refresh"
+                                    <button pButton type="button" label="Actualizar" icon="pi pi-refresh"
                                         size="small" severity="secondary" [outlined]="true"
                                         (click)="cargarOutbox()"></button>
                                 </div>
@@ -244,7 +244,7 @@ interface FiltrosAuditoria {
                                             [style]="{ 'font-size': '0.75rem' }"></p-tag>
                                     </td>
                                     <td style="font-family: monospace; font-size: 0.85rem;">{{ item.referenciaId }}</td>
-                                    <td>{{ item.fecha | fechaCorta }}</td>
+                                    <td>{{ item.fecha | fechaHora }}</td>
                                     <td>
                                         <button pButton type="button" icon="pi pi-code" text rounded severity="contrast" size="small"
                                             pTooltip="Ver payload JSON"
@@ -262,7 +262,7 @@ interface FiltrosAuditoria {
                         <div class="cies-section-head">
                             <div class="cies-section-head__content">
                                 <div>
-                                    <h3>📐 Historial de versiones metodológicas</h3>
+                                    <h3>Historial de versiones metodológicas</h3>
                                     <p>Cada cambio en ponderaciones, umbrales o fórmulas genera una nueva versión auditable.</p>
                                 </div>
                                 <app-cies-info-hint text="Cada encuesta queda asociada a la versión vigente al momento de su aplicación."></app-cies-info-hint>
@@ -287,42 +287,42 @@ interface FiltrosAuditoria {
                                         <p>{{ m.descripcion || 'Sin descripción' }}</p>
                                     </div>
                                     <div class="version-badges">
-                                        <p-tag *ngIf="m.activa" value="✅ ACTIVA" severity="success"></p-tag>
+                                        <p-tag *ngIf="m.activa" value="ACTIVA" severity="success" icon="pi pi-check"></p-tag>
                                         <p-tag *ngIf="!m.activa" value="Histórica" severity="info"></p-tag>
                                     </div>
                                 </div>
                                 <div class="version-details">
                                     <div class="version-detail-row">
-                                        <span class="detail-label">📅 Creada:</span>
-                                        <span class="detail-value">{{ m.fechaCreacion | fechaCorta }}</span>
+                                        <span class="detail-label"><i class="pi pi-calendar"></i> Creada:</span>
+                                        <span class="detail-value">{{ m.fechaCreacion | fechaHora }}</span>
                                     </div>
                                     <div class="version-detail-row">
-                                        <span class="detail-label">👤 Creada por:</span>
+                                        <span class="detail-label"><i class="pi pi-user"></i> Creada por:</span>
                                         <span class="detail-value">{{ m.creadoPor || 'Sistema' }}</span>
                                     </div>
                                     <div class="version-detail-row">
-                                        <span class="detail-label">🎯 Umbral Vulnerable:</span>
+                                        <span class="detail-label"><i class="pi pi-flag"></i> Umbral Pobre:</span>
                                         <span class="detail-value">{{ m.umbralPobre }} puntos</span>
                                     </div>
                                     <div class="version-detail-row">
-                                        <span class="detail-label">🚫 Umbral Excluido:</span>
+                                        <span class="detail-label"><i class="pi pi-ban"></i> Umbral Excluida:</span>
                                         <span class="detail-value">{{ m.umbralExcluido }} puntos</span>
                                     </div>
                                     <div class="version-detail-row">
-                                        <span class="detail-label">⚠️ Umbral Subatendido:</span>
+                                        <span class="detail-label"><i class="pi pi-exclamation-triangle"></i> Umbral Subatendida:</span>
                                         <span class="detail-value">{{ m.umbralSubatendido }} puntos</span>
                                     </div>
                                     <div class="version-detail-row">
-                                        <span class="detail-label">📝 Preguntas:</span>
+                                        <span class="detail-label"><i class="pi pi-list"></i> Preguntas:</span>
                                         <span class="detail-value">{{ m.preguntas.length || 0 }} configuradas</span>
                                     </div>
                                     <div class="version-detail-row" *ngIf="m.comentarioCambio">
-                                        <span class="detail-label">💬 Comentario:</span>
+                                        <span class="detail-label"><i class="pi pi-comment"></i> Comentario:</span>
                                         <span class="detail-value detail-comment">{{ m.comentarioCambio }}</span>
                                     </div>
                                 </div>
                                 <div class="version-formula" *ngIf="m.formulaTexto">
-                                    <strong>🧮 Fórmula:</strong>
+                                    <strong><i class="pi pi-calculator"></i> Fórmula:</strong>
                                     <code>{{ m.formulaTexto }}</code>
                                 </div>
                             </div>
@@ -336,7 +336,7 @@ interface FiltrosAuditoria {
             <p-dialog [(visible)]="showDetalle" [modal]="true"
                 [style]="{ width: '60rem', 'max-width': '96vw' }"
                 [draggable]="false" [resizable]="false"
-                header="📄 Detalle del Evento"
+                header="Detalle del evento"
                 styleClass="cies-dialog">
                 <div *ngIf="registroSeleccionado" class="detalle-container">
                     <!-- Info básica -->
@@ -354,8 +354,8 @@ interface FiltrosAuditoria {
                                     [severity]="registroSeleccionado.resultado === 'EXITO' ? 'success' : registroSeleccionado.resultado === 'ERROR' ? 'danger' : 'warn'"></p-tag>
                             </div>
                             <div class="detalle-field">
-                                <label>Fecha y Hora</label>
-                                <span>{{ registroSeleccionado.fechaHora | fechaCorta }}</span>
+                                <label>Fecha y hora</label>
+                                <span>{{ registroSeleccionado.fechaHora | fechaHora }}</span>
                             </div>
                             <div class="detalle-field">
                                 <label>Usuario</label>
@@ -380,13 +380,13 @@ interface FiltrosAuditoria {
 
                     <!-- Datos anteriores -->
                     <div class="detalle-section detalle-change-card detalle-change-card--before" *ngIf="registroSeleccionado.datosAnteriores">
-                        <h4>📋 Datos Anteriores (antes del cambio)</h4>
+                        <h4><i class="pi pi-history"></i> Datos anteriores (antes del cambio)</h4>
                         <pre class="detalle-json">{{ formatAuditData(registroSeleccionado.datosAnteriores) }}</pre>
                     </div>
 
                     <!-- Datos nuevos -->
                     <div class="detalle-section detalle-change-card detalle-change-card--after" *ngIf="registroSeleccionado.datosNuevos">
-                        <h4>📋 Datos Nuevos (después del cambio)</h4>
+                        <h4><i class="pi pi-check"></i> Datos nuevos (después del cambio)</h4>
                         <pre class="detalle-json">{{ formatAuditData(registroSeleccionado.datosNuevos) }}</pre>
                     </div>
 
@@ -402,7 +402,7 @@ interface FiltrosAuditoria {
             <p-dialog [(visible)]="showPayloadDialog" [modal]="true"
                 [style]="{ width: '50rem', 'max-width': '92vw' }"
                 [draggable]="false" [resizable]="false"
-                header="📦 Payload JSON"
+                header="Payload JSON"
                 styleClass="cies-dialog">
                 <pre class="payload-json-display">{{ selectedPayloadJson }}</pre>
                 <ng-template pTemplate="footer">
@@ -508,6 +508,37 @@ interface FiltrosAuditoria {
             font-weight: 600;
             color: var(--text-color-secondary);
             white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .detail-label i {
+            font-size: 0.85rem;
+            color: var(--primary-color);
+        }
+
+        .cies-filters-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+            justify-content: flex-end;
+            padding-top: 0.5rem;
+        }
+
+        .cies-section-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        @media (max-width: 720px) {
+            .cies-filters-actions { justify-content: stretch; }
+            .cies-filters-actions button { flex: 1 1 auto; }
+            .version-header { flex-wrap: wrap; }
+            .version-badges { width: 100%; }
         }
 
         .detail-value {
@@ -699,26 +730,26 @@ export class AuditoriaPage implements OnInit {
 
     tipoEventos = [
         { label: 'Todos los eventos', value: '' },
-        { label: '🔐 Acceso de Usuario', value: 'ACCESO_USUARIO' },
-        { label: '📐 Cambio de Metodología', value: 'CAMBIOS_METODOLOGIA' },
-        { label: '🎲 Selección Aleatoria', value: 'SELECCION_ALEATORIA' },
-        { label: '📝 Inicio de Entrevista', value: 'INICIO_ENTREVISTA' },
-        { label: '✅ Finalización de Entrevista', value: 'FINALIZACION_ENTREVISTA' },
-        { label: '🧮 Cálculo de Clasificación', value: 'CALCULO_CLASIFICACION' },
-        { label: '📊 Exportación de Reporte', value: 'EXPORTACION_REPORTE' },
-        { label: '👤 Creación de Usuario', value: 'CREACION_USUARIO' },
-        { label: '✏️ Modificación de Usuario', value: 'MODIFICACION_USUARIO' },
-        { label: '🗑️ Eliminación de Usuario', value: 'ELIMINACION_USUARIO' },
-        { label: '📦 Creación de Lote', value: 'CREACION_LOTE' },
-        { label: '🗑️ Eliminación de Lote', value: 'ELIMINACION_LOTE' },
-        { label: '🔗 Integración Medicare', value: 'INTEGRACION_MEDICARE' }
+        { label: 'Acceso de usuario', value: 'ACCESO_USUARIO' },
+        { label: 'Cambio de metodología', value: 'CAMBIOS_METODOLOGIA' },
+        { label: 'Selección aleatoria', value: 'SELECCION_ALEATORIA' },
+        { label: 'Inicio de entrevista', value: 'INICIO_ENTREVISTA' },
+        { label: 'Finalización de entrevista', value: 'FINALIZACION_ENTREVISTA' },
+        { label: 'Cálculo de clasificación', value: 'CALCULO_CLASIFICACION' },
+        { label: 'Exportación de reporte', value: 'EXPORTACION_REPORTE' },
+        { label: 'Creación de usuario', value: 'CREACION_USUARIO' },
+        { label: 'Modificación de usuario', value: 'MODIFICACION_USUARIO' },
+        { label: 'Eliminación de usuario', value: 'ELIMINACION_USUARIO' },
+        { label: 'Creación de lote', value: 'CREACION_LOTE' },
+        { label: 'Eliminación de lote', value: 'ELIMINACION_LOTE' },
+        { label: 'Integración Medicare', value: 'INTEGRACION_MEDICARE' }
     ];
 
     resultadoOptions = [
         { label: 'Todos', value: '' },
-        { label: '✅ Éxito', value: 'EXITO' },
-        { label: '❌ Error', value: 'ERROR' },
-        { label: '⚠️ Parcial', value: 'PARCIAL' }
+        { label: 'Éxito', value: 'EXITO' },
+        { label: 'Error', value: 'ERROR' },
+        { label: 'Parcial', value: 'PARCIAL' }
     ];
 
     ngOnInit(): void {

@@ -12,6 +12,9 @@ import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { Toast } from 'primeng/toast';
+import { TooltipModule } from 'primeng/tooltip';
+import { ConfirmationService } from 'primeng/api';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { NombrePropioPipe } from '../../../../shared/pipes/formato.pipe';
 import { CiesInfoHintComponent } from '../../components/cies-info-hint';
@@ -20,8 +23,8 @@ import { CiesService, UsuarioAdmin, UsuarioUpsertRequest } from '../../services/
 @Component({
     selector: 'app-usuarios-page',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, CheckboxModule, DialogModule, InputTextModule, PasswordModule, SelectModule, TableModule, TagModule, Toast, NombrePropioPipe, CiesInfoHintComponent],
-    providers: [MessageService],
+    imports: [CommonModule, FormsModule, ButtonModule, CheckboxModule, ConfirmDialogModule, DialogModule, InputTextModule, PasswordModule, SelectModule, TableModule, TagModule, Toast, TooltipModule, NombrePropioPipe, CiesInfoHintComponent],
+    providers: [MessageService, ConfirmationService],
     template: `
         <div class="cies-page">
             <section class="card cies-hero">
@@ -71,52 +74,93 @@ import { CiesService, UsuarioAdmin, UsuarioUpsertRequest } from '../../services/
                         <app-cies-info-hint text="Desde este bloque puedes crear usuarios, ajustar su rol y reactivar cuentas cuando sea necesario."></app-cies-info-hint>
                     </div>
                 </div>
+
+                <!-- Buscador y resumen -->
+                <div class="usuarios-toolbar" *ngIf="totalUsuarios || filtroBusqueda">
+                    <span class="p-input-icon-left usuarios-toolbar__search">
+                        <i class="pi pi-search"></i>
+                        <input pInputText type="text" [(ngModel)]="filtroBusqueda"
+                               placeholder="Buscar por nombre, apellido o correo"
+                               (keyup.enter)="aplicarBusqueda()" />
+                    </span>
+                    <div class="usuarios-toolbar__chips">
+                        <p-tag [value]="totalUsuarios + ' usuarios'" severity="info"></p-tag>
+                        <p-tag *ngIf="filtroBusqueda" [value]="usuariosFiltrados.length + ' coinciden'" severity="contrast"></p-tag>
+                    </div>
+                </div>
+
                 <div *ngIf="!loadingUsuarios && !totalUsuarios" class="cies-empty-state">
                     <div class="cies-empty-state__icon">
                         <i class="pi pi-users"></i>
                     </div>
                     <h3>Aún no hay usuarios creados</h3>
-                    <p>Crea primero las cuentas del equipo y asigna un rol simple: administrador, encuestador o analista.</p>
+                    <p>Crea primero las cuentas del equipo y asigna un rol: administrador, encuestador o analista.</p>
                     <div class="cies-empty-state__actions">
                         <button pButton type="button" label="Crear primer usuario" icon="pi pi-plus" (click)="openCreate()"></button>
                     </div>
                 </div>
 
-                <p-table *ngIf="totalUsuarios" [value]="usuarios" [tableStyle]="{ 'min-width': '56rem' }"
-                    responsiveLayout="scroll" [paginator]="true" [lazy]="true" [rows]="usuariosRows"
+                <p-table *ngIf="totalUsuarios" [value]="usuariosFiltrados" [tableStyle]="{ 'min-width': '60rem' }"
+                    responsiveLayout="stack" [breakpoint]="'960px'"
+                    [paginator]="!filtroBusqueda" [lazy]="!filtroBusqueda" [rows]="usuariosRows"
                     [first]="usuariosPage * usuariosRows" [totalRecords]="totalUsuarios"
                     [rowsPerPageOptions]="[10, 20, 50]" [loading]="loadingUsuarios"
-                    (onLazyLoad)="onUsuariosLazyLoad($any($event))" class="cies-table">
+                    (onLazyLoad)="onUsuariosLazyLoad($any($event))" class="cies-table usuarios-table"
+                    [globalFilterFields]="['nombre','apellido','email','rol']">
                     <ng-template pTemplate="header">
                         <tr>
-                            <th>ID</th>
-                            <th>Nombre</th>
+                            <th style="width: 4rem">ID</th>
+                            <th>Nombre completo</th>
                             <th>Correo</th>
-                            <th>Rol</th>
-                            <th>Estado</th>
-                            <th>Acciones</th>
+                            <th style="width: 9rem">Rol</th>
+                            <th style="width: 7rem">Estado</th>
+                            <th style="width: 11rem; text-align: right">Acciones</th>
                         </tr>
                     </ng-template>
                     <ng-template pTemplate="body" let-user>
                         <tr>
-                            <td>{{ user.id }}</td>
-                            <td>{{ user.nombre | nombrePropio }} {{ user.apellido | nombrePropio }}</td>
-                            <td>{{ user.email }}</td>
-                            <td><p-tag [value]="user.rol" [severity]="user.rol === 'ADMINISTRADOR' ? 'danger' : user.rol === 'ENCUESTADOR' ? 'info' : 'warn'"></p-tag></td>
-                            <td><p-tag [value]="user.activo ? 'Activo' : 'Inactivo'" [severity]="user.activo ? 'success' : 'secondary'"></p-tag></td>
+                            <td><span class="p-column-title">ID</span>{{ user.id }}</td>
                             <td>
+                                <span class="p-column-title">Nombre completo</span>
+                                <div class="usuario-cell">
+                                    <strong>{{ user.nombre | nombrePropio }} {{ user.apellido | nombrePropio }}</strong>
+                                </div>
+                            </td>
+                            <td><span class="p-column-title">Correo</span>{{ user.email }}</td>
+                            <td>
+                                <span class="p-column-title">Rol</span>
+                                <p-tag [value]="formatearRol(user.rol)" [severity]="severidadRol(user.rol)"></p-tag>
+                            </td>
+                            <td>
+                                <span class="p-column-title">Estado</span>
+                                <p-tag [value]="user.activo ? 'Activo' : 'Inactivo'" [severity]="user.activo ? 'success' : 'secondary'"
+                                       [icon]="user.activo ? 'pi pi-check' : 'pi pi-ban'"></p-tag>
+                            </td>
+                            <td style="text-align: right">
+                                <span class="p-column-title">Acciones</span>
                                 <div class="cies-inline-actions">
-                                    <button pButton type="button" icon="pi pi-pencil" text rounded severity="info" (click)="openEdit(user)"></button>
-                                    <button
-                                        pButton
-                                        type="button"
-                                        [icon]="user.activo ? 'pi pi-lock-open' : 'pi pi-lock'"
-                                        text
-                                        rounded
-                                        severity="contrast"
-                                        (click)="toggleEstado(user)"
-                                    ></button>
-                                    <button pButton type="button" icon="pi pi-trash" text rounded severity="danger" (click)="remove(user)"></button>
+                                    <button pButton type="button" icon="pi pi-pencil" text rounded severity="info"
+                                            pTooltip="Editar usuario" tooltipPosition="top"
+                                            (click)="openEdit(user)"></button>
+                                    <button pButton type="button"
+                                            [icon]="user.activo ? 'pi pi-lock-open' : 'pi pi-lock'"
+                                            text rounded severity="contrast"
+                                            [pTooltip]="user.activo ? 'Desactivar usuario' : 'Activar usuario'"
+                                            tooltipPosition="top"
+                                            (click)="toggleEstado(user)"></button>
+                                    <button pButton type="button" icon="pi pi-trash" text rounded severity="danger"
+                                            pTooltip="Eliminar usuario" tooltipPosition="top"
+                                            (click)="remove(user)"></button>
+                                </div>
+                            </td>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="emptymessage">
+                        <tr>
+                            <td colspan="6">
+                                <div class="cies-empty-state cies-empty-state--inline">
+                                    <i class="pi pi-search"></i>
+                                    <p>No hay usuarios que coincidan con "<strong>{{ filtroBusqueda }}</strong>".</p>
                                 </div>
                             </td>
                         </tr>
@@ -126,67 +170,173 @@ import { CiesService, UsuarioAdmin, UsuarioUpsertRequest } from '../../services/
         </div>
 
         <p-toast></p-toast>
+        <p-confirmDialog [style]="{ width: '32rem', 'max-width': '92vw' }" acceptButtonStyleClass="p-button-danger"
+                          rejectLabel="Cancelar" acceptLabel="Confirmar"></p-confirmDialog>
 
         <p-dialog
             [(visible)]="showDialog"
             [modal]="true"
-            [style]="{ width: '36rem', 'max-width': '96vw' }"
+            [style]="{ width: '38rem', 'max-width': '96vw' }"
             [contentStyle]="{ overflow: 'visible' }"
             [draggable]="false"
             [resizable]="false"
-            [header]="editingId ? 'Editar usuario' : 'Nuevo usuario'"
-            styleClass="cies-dialog"
+            [header]="editingId ? 'Editar usuario' : 'Crear nuevo usuario'"
+            styleClass="cies-dialog usuario-dialog"
+            (onHide)="resetForm()"
         >
-            <div class="cies-soft-note">
+            <p class="usuario-dialog__lead">
                 Usa <strong>Administrador</strong> para configuración y control, <strong>Encuestador</strong> para aplicar entrevistas y <strong>Analista</strong> para revisar resultados.
-            </div>
+            </p>
 
-            <div class="cies-form-grid cies-form-grid--two cies-dialog-form">
+            <div class="cies-form-grid cies-form-grid--two cies-dialog-form usuario-form">
                 <div>
-                    <label>Nombre <span style="color:#dc2626;font-weight:700">*</span></label>
-                    <input pInputText [(ngModel)]="form.nombre" class="w-full" placeholder="Ej. María" />
+                    <label for="usuario-nombre">Nombre(s) <span class="req">*</span></label>
+                    <input pInputText id="usuario-nombre" [(ngModel)]="form.nombre" class="w-full"
+                           placeholder="Ej. María Elena" maxlength="80" autocomplete="given-name" />
+                    <small class="field-help">Solo nombres de pila.</small>
                 </div>
                 <div>
-                    <label>Apellido</label>
-                    <input pInputText [(ngModel)]="form.apellido" class="w-full" placeholder="Ej. López" />
-                </div>
-                <div>
-                    <label>Correo <span style="color:#dc2626;font-weight:700">*</span></label>
-                    <input pInputText [(ngModel)]="form.email" type="email" class="w-full" placeholder="correo@dominio.com" />
-                </div>
-                <div>
-                    <label>Rol <span style="color:#dc2626;font-weight:700">*</span></label>
-                    <p-select [options]="roles" [(ngModel)]="form.rol" optionLabel="label" optionValue="value" appendTo="body" class="w-full"></p-select>
+                    <label for="usuario-apellido">Apellido completo <span class="req">*</span></label>
+                    <input pInputText id="usuario-apellido" [(ngModel)]="form.apellido" class="w-full"
+                           placeholder="Ej. López Quispe" maxlength="100" autocomplete="family-name" />
+                    <small class="field-help">Apellido paterno y materno.</small>
                 </div>
                 <div class="cies-field--full">
-                    <label>
+                    <label for="usuario-email">Correo electrónico <span class="req">*</span></label>
+                    <input pInputText id="usuario-email" [(ngModel)]="form.email" type="email" class="w-full"
+                           placeholder="nombre.apellido@cies.org.bo" autocomplete="email" />
+                    <small class="field-help">Será el identificador único de la cuenta.</small>
+                </div>
+                <div class="cies-field--full">
+                    <label for="usuario-rol">Rol <span class="req">*</span></label>
+                    <p-select inputId="usuario-rol" [options]="roles" [(ngModel)]="form.rol"
+                              optionLabel="label" optionValue="value" appendTo="body" class="w-full"></p-select>
+                </div>
+                <div class="cies-field--full">
+                    <label class="cies-checkbox-label">
                         <p-checkbox [(ngModel)]="form.activo" [binary]="true" inputId="usuario-activo"></p-checkbox>
-                        Usuario activo (puede iniciar sesión)
+                        <span>Cuenta activa <small>(podrá iniciar sesión)</small></span>
                     </label>
                 </div>
                 <div *ngIf="!editingId" class="cies-field--full">
-                    <label>Contraseña <span style="color:#dc2626;font-weight:700">*</span></label>
-                    <p-password [(ngModel)]="form.password" [feedback]="false" [toggleMask]="true" styleClass="w-full" inputStyleClass="w-full" placeholder="Mínimo 5 caracteres"></p-password>
+                    <label for="usuario-password">Contraseña <span class="req">*</span></label>
+                    <p-password inputId="usuario-password" [(ngModel)]="form.password" [feedback]="false"
+                                [toggleMask]="true" styleClass="w-full" inputStyleClass="w-full"
+                                placeholder="Mínimo 5 caracteres" autocomplete="new-password"></p-password>
                 </div>
                 <div *ngIf="editingId" class="cies-field--full">
-                    <label>Nueva contraseña (opcional)</label>
-                    <p-password [(ngModel)]="form.password" [feedback]="false" [toggleMask]="true" styleClass="w-full" inputStyleClass="w-full" placeholder="Dejar vacío para mantener la actual"></p-password>
+                    <label for="usuario-password">Nueva contraseña</label>
+                    <p-password inputId="usuario-password" [(ngModel)]="form.password" [feedback]="false"
+                                [toggleMask]="true" styleClass="w-full" inputStyleClass="w-full"
+                                placeholder="Dejar vacío para mantener la actual" autocomplete="new-password"></p-password>
+                    <small class="field-help">Solo se cambia si escribes una nueva.</small>
                 </div>
             </div>
 
             <ng-template pTemplate="footer">
-                <button pButton type="button" label="Cancelar" severity="secondary" [outlined]="true" (click)="showDialog = false"></button>
-                <button pButton type="button" label="Guardar" (click)="save()"></button>
+                <button pButton type="button" label="Cancelar" severity="secondary" [outlined]="true"
+                        icon="pi pi-times" (click)="showDialog = false"></button>
+                <button pButton type="button" [label]="editingId ? 'Guardar cambios' : 'Crear usuario'"
+                        icon="pi pi-check" (click)="save()" [loading]="saving"></button>
             </ng-template>
         </p-dialog>
     `,
-    styles: [``]
+    styles: [`
+        .usuarios-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            align-items: center;
+            justify-content: space-between;
+            margin: 0 0 1rem;
+            padding: 0.5rem 0;
+        }
+        .usuarios-toolbar__search {
+            position: relative;
+            flex: 1 1 18rem;
+            max-width: 30rem;
+        }
+        .usuarios-toolbar__search input {
+            width: 100%;
+            padding-left: 2.25rem;
+        }
+        .usuarios-toolbar__search i {
+            position: absolute;
+            top: 50%;
+            left: 0.85rem;
+            transform: translateY(-50%);
+            color: var(--text-color-secondary);
+        }
+        .usuarios-toolbar__chips {
+            display: flex;
+            gap: 0.45rem;
+            flex-wrap: wrap;
+        }
+        .usuario-cell strong {
+            display: block;
+            font-weight: 600;
+        }
+        .usuario-form .req {
+            color: #dc2626;
+            font-weight: 700;
+            margin-left: 0.15rem;
+        }
+        .usuario-form .field-help {
+            display: block;
+            margin-top: 0.25rem;
+            color: var(--text-color-secondary);
+            font-size: 0.78rem;
+        }
+        .usuario-dialog__lead {
+            margin: 0 0 1rem;
+            padding: 0.65rem 0.85rem;
+            background: var(--surface-ground);
+            border-radius: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--text-color-secondary);
+        }
+        .cies-checkbox-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.55rem;
+            cursor: pointer;
+        }
+        .cies-checkbox-label small {
+            color: var(--text-color-secondary);
+            margin-left: 0.25rem;
+        }
+        .cies-empty-state--inline {
+            padding: 1.5rem 1rem;
+            text-align: center;
+        }
+        .cies-empty-state--inline i {
+            font-size: 1.4rem;
+            color: var(--text-color-secondary);
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        :host ::ng-deep .usuarios-table .p-datatable-tbody > tr > td .p-column-title {
+            display: none;
+            font-weight: 600;
+            color: var(--text-color-secondary);
+            margin-right: 0.5rem;
+        }
+        @media (max-width: 960px) {
+            :host ::ng-deep .usuarios-table .p-datatable-tbody > tr > td .p-column-title {
+                display: inline-block;
+            }
+            :host ::ng-deep .usuarios-table .p-datatable-tbody > tr > td {
+                text-align: left !important;
+            }
+        }
+    `]
 })
 export class UsuariosPage implements OnInit {
     private authService = inject(AuthService);
     private ciesService = inject(CiesService);
     private cdr = inject(ChangeDetectorRef);
     private messageService = inject(MessageService);
+    private confirmationService = inject(ConfirmationService);
     private router = inject(Router);
 
     usuarios: UsuarioAdmin[] = [];
@@ -196,6 +346,49 @@ export class UsuariosPage implements OnInit {
     loadingUsuarios = false;
     showDialog = false;
     editingId: number | null = null;
+    saving = false;
+    filtroBusqueda = '';
+
+    get usuariosFiltrados(): UsuarioAdmin[] {
+        const q = this.filtroBusqueda.trim().toLowerCase();
+        if (!q) return this.usuarios;
+        return this.usuarios.filter((u) =>
+            (`${u.nombre || ''} ${u.apellido || ''}`).toLowerCase().includes(q) ||
+            (u.email || '').toLowerCase().includes(q) ||
+            (u.rol || '').toLowerCase().includes(q)
+        );
+    }
+
+    formatearRol(rol: string): string {
+        const map: Record<string, string> = {
+            'ADMINISTRADOR': 'Administrador',
+            'ENCUESTADOR': 'Encuestador',
+            'ANALISTA': 'Analista',
+            'EMPLEADO': 'Encuestador'
+        };
+        return map[(rol || '').toUpperCase()] || rol;
+    }
+
+    severidadRol(rol: string): 'danger' | 'info' | 'warn' | 'secondary' {
+        switch ((rol || '').toUpperCase()) {
+            case 'ADMINISTRADOR': return 'danger';
+            case 'ANALISTA':      return 'warn';
+            case 'ENCUESTADOR':
+            case 'EMPLEADO':      return 'info';
+            default:              return 'secondary';
+        }
+    }
+
+    aplicarBusqueda(): void {
+        // El getter usuariosFiltrados reacciona automaticamente.
+        this.cdr.detectChanges();
+    }
+
+    resetForm(): void {
+        if (this.showDialog) return; // si el dialog se reabre, no reseteamos
+        this.editingId = null;
+        this.form = { nombre: '', apellido: '', email: '', rol: 'ENCUESTADOR', activo: true, password: '' };
+    }
 
     form: UsuarioUpsertRequest = {
         nombre: '',
@@ -272,8 +465,12 @@ export class UsuariosPage implements OnInit {
         const rol = this.form.rol?.trim() || 'ENCUESTADOR';
         const password = this.form.password?.trim() || '';
 
-        if (!nombre || !email) {
-            this.messageService.add({ severity: 'warn', summary: 'Validación', detail: 'Nombre y correo son obligatorios' });
+        if (!nombre || !apellido || !email) {
+            this.messageService.add({ severity: 'warn', summary: 'Faltan datos', detail: 'Nombre, apellido completo y correo son obligatorios.' });
+            return;
+        }
+        if (apellido.length < 2) {
+            this.messageService.add({ severity: 'warn', summary: 'Apellido', detail: 'Ingresa el apellido completo (paterno y materno).' });
             return;
         }
 
@@ -302,20 +499,25 @@ export class UsuariosPage implements OnInit {
             password: password || undefined
         };
 
+        this.saving = true;
         const request$ = this.editingId ? this.ciesService.updateUsuario(this.editingId, payload) : this.ciesService.createUsuario(payload);
         request$.subscribe({
             next: (usuarioGuardado) => {
                 this.syncCurrentUser(usuarioGuardado);
+                const fueEdicion = !!this.editingId;
                 this.showDialog = false;
+                this.editingId = null;
+                this.saving = false;
                 this.cdr.detectChanges();
                 this.load();
                 this.messageService.add({
                     severity: 'success',
-                    summary: this.editingId ? 'Usuario actualizado' : 'Usuario creado',
+                    summary: fueEdicion ? 'Usuario actualizado' : 'Usuario creado',
                     detail: `${payload.nombre} ${payload.apellido}`.trim() + ' guardado correctamente.'
                 });
             },
             error: (error) => {
+                this.saving = false;
                 console.error('Error saving user:', error);
                 this.messageService.add({
                     severity: 'error',
@@ -363,32 +565,42 @@ export class UsuariosPage implements OnInit {
 
     remove(user: UsuarioAdmin): void {
         const isCurrentUser = this.authService.getUser()?.id === user.id;
-        const confirmationMessage = isCurrentUser
-            ? `Se eliminará tu propia cuenta (${user.nombre} ${user.apellido}) y se cerrará la sesión. ¿Deseas continuar?`
-            : `Se eliminará la cuenta de ${user.nombre} ${user.apellido}. Esta acción la ocultará del sistema. ¿Deseas continuar?`;
+        const nombreCompleto = `${user.nombre || ''} ${user.apellido || ''}`.trim() || user.email;
+        const message = isCurrentUser
+            ? `Vas a eliminar tu propia cuenta (<strong>${nombreCompleto}</strong>). Se cerrará tu sesión inmediatamente.`
+            : `La cuenta de <strong>${nombreCompleto}</strong> quedará oculta del sistema. ¿Deseas continuar?`;
 
-        if (!window.confirm(confirmationMessage)) {
-            return;
-        }
-
-        this.ciesService.deleteUsuario(user.id).subscribe({
-            next: () => {
-                if (isCurrentUser) {
-                    this.authService.clearSession();
-                    void this.router.navigate(['/auth/login']);
-                    return;
-                }
-
-                this.load();
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Eliminado',
-                    detail: `Usuario ${user.nombre} eliminado correctamente`
+        this.confirmationService.confirm({
+            header: isCurrentUser ? 'Eliminar tu propia cuenta' : 'Eliminar usuario',
+            message,
+            icon: 'pi pi-exclamation-triangle',
+            acceptLabel: 'Eliminar',
+            rejectLabel: 'Cancelar',
+            acceptButtonStyleClass: 'p-button-danger',
+            accept: () => {
+                this.ciesService.deleteUsuario(user.id).subscribe({
+                    next: () => {
+                        if (isCurrentUser) {
+                            this.authService.clearSession();
+                            void this.router.navigate(['/auth/login']);
+                            return;
+                        }
+                        this.load();
+                        this.messageService.add({
+                            severity: 'success',
+                            summary: 'Usuario eliminado',
+                            detail: `${nombreCompleto} fue eliminado correctamente.`
+                        });
+                    },
+                    error: (error) => {
+                        console.error('Error deleting user:', error);
+                        this.messageService.add({
+                            severity: 'error',
+                            summary: 'No se pudo eliminar',
+                            detail: this.extractErrorMessage(error, 'Intenta nuevamente o contacta al administrador.')
+                        });
+                    }
                 });
-            },
-            error: (error) => {
-                console.error('Error deleting user:', error);
-                this.messageService.add({ severity: 'error', summary: 'Error', detail: this.extractErrorMessage(error, 'No se pudo eliminar el usuario') });
             }
         });
     }
