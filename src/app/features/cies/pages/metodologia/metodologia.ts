@@ -111,7 +111,7 @@ interface CreateMetodologiaForm {
                             <span class="config-card-dot config-card-dot--pobre"></span>
                             Punto de corte «Pobreza»
                         </div>
-                        <div class="config-card-value">{{ active.umbralPobre }} <small>puntos o menos</small></div>
+                        <div class="config-card-value">{{ active.umbralPobre }} <small>puntos como corte</small></div>
                     </div>
                     <div class="config-card config-card--excluido">
                         <div class="config-card-label">
@@ -133,8 +133,8 @@ interface CreateMetodologiaForm {
                 <div class="config-explanation">
                     <h4>¿Qué significa cada punto de corte?</h4>
                     <ul>
-                        <li><strong>Pobreza:</strong> Si el puntaje del factor pobreza es <strong>{{ active.umbralPobre }} o menos</strong>, se marca como pobre.</li>
-                        <li><strong>Exclusión:</strong> Si el puntaje del factor exclusión es <strong>{{ active.umbralExcluido }} o menos</strong>, se marca como excluida.</li>
+                        <li><strong>Pobreza:</strong> Si el puntaje del factor pobreza es <strong>menor a {{ active.umbralPobre }}</strong>, se marca como pobre.</li>
+                        <li><strong>Exclusión:</strong> Si V16, V17 y V19 suman <strong>{{ active.umbralExcluido }} o menos</strong>, se marca como excluida.</li>
                         <li><strong>Subatención:</strong> Si el puntaje del factor subatención es <strong>{{ active.umbralSubatendido }} o menos</strong>, se marca como subatendida.</li>
                     </ul>
                 </div>
@@ -334,12 +334,12 @@ interface CreateMetodologiaForm {
                         <div>
                             <label>Punto de corte «Pobreza»</label>
                             <p-inputnumber [(ngModel)]="editor.umbralPobre" [min]="0" [max]="100" class="w-full"></p-inputnumber>
-                            <small class="field-help">Si el puntaje de pobreza es ≤ este valor, se marca como pobre</small>
+                            <small class="field-help">Si el puntaje de pobreza es menor a este valor, se marca como pobre</small>
                         </div>
                         <div>
                             <label>Punto de corte «Excluido»</label>
                             <p-inputnumber [(ngModel)]="editor.umbralExcluido" [min]="0" [max]="100" class="w-full"></p-inputnumber>
-                            <small class="field-help">Si el resultado es ≤ este valor, se considera excluido</small>
+                            <small class="field-help">Se calcula con V16, V17 y V19. Si el resultado es ≤ este valor, se considera excluido</small>
                         </div>
                         <div>
                             <label>Punto de corte «Subatendido»</label>

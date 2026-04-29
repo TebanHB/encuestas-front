@@ -196,8 +196,8 @@ interface SelectOption {
                             </div>
                             <strong>{{ resumen.totalEntrevistas | numeroFormato }}</strong>
                             <p>
-                                entrevistas finalizadas. El total no se calcula sumando pobreza, exclusión y subatención;
-                                esas son categorías del subconjunto con vulnerabilidad.
+                                entrevistas finalizadas. Pobreza, exclusión y subatención son marcas por factor y pueden solaparse;
+                                el control del total se hace con 0, 1, 2 o 3 condiciones.
                             </p>
                         </div>
                         <div class="cies-summary-panel__split">
@@ -289,19 +289,19 @@ interface SelectOption {
                     <section class="card cies-chart-card" style="margin-top: 1rem;">
                         <div class="cies-section-head">
                             <div>
-                                <h3>Clasificación consolidada</h3>
-                                <p>Distribución global según filtros vigentes (Pobreza, Exclusión, Sub-atención y Sin vulnerabilidad).</p>
+                                <h3>Condiciones por entrevista</h3>
+                                <p>Distribución global por número de condiciones simultáneas. Esta gráfica siempre suma el total filtrado.</p>
                             </div>
-                            <app-cies-info-hint text="Las categorías Pobreza/Exclusión/Sub-atención NO son excluyentes: una misma entrevista puede aparecer en varias. 'Sin vulnerabilidad' agrupa entrevistas que no cumplen ninguno de los tres umbrales."></app-cies-info-hint>
+                            <app-cies-info-hint text="El Excel consolida la vulnerabilidad contando 0, 1, 2 o 3 factores por entrevista. Los totales por factor se muestran aparte porque no son excluyentes."></app-cies-info-hint>
                         </div>
                         <div class="chart-container">
                             <p-chart type="doughnut" [data]="classificationChartData" [options]="doughnutOptions"></p-chart>
                         </div>
                         <div class="associated-summary">
-                            <span><strong>{{ resumen.porcentajePobres }}%</strong>{{ resumen.totalPobres | numeroFormato }} - Pobreza</span>
-                            <span><strong>{{ resumen.porcentajeExcluidas }}%</strong>{{ resumen.totalExcluidas | numeroFormato }} - Excluidas</span>
-                            <span><strong>{{ resumen.porcentajeSubatendidas }}%</strong>{{ resumen.totalSubatendidas | numeroFormato }} - Subatendidas</span>
                             <span><strong>{{ resumen.porcentajeSinVulnerabilidad }}%</strong>{{ resumen.totalSinVulnerabilidad | numeroFormato }} - Sin vulnerabilidad</span>
+                            <span><strong>{{ pct(resumen.totalUnFactor, resumen.totalEntrevistas) }}%</strong>{{ resumen.totalUnFactor | numeroFormato }} - 1 condición</span>
+                            <span><strong>{{ pct(resumen.totalDosFactores, resumen.totalEntrevistas) }}%</strong>{{ resumen.totalDosFactores | numeroFormato }} - 2 condiciones</span>
+                            <span><strong>{{ pct(resumen.totalTresFactores, resumen.totalEntrevistas) }}%</strong>{{ resumen.totalTresFactores | numeroFormato }} - 3 condiciones</span>
                         </div>
                     </section>
                 </p-tabpanel>
@@ -524,7 +524,7 @@ interface SelectOption {
                                     <h3>% de usuarias pobres y no pobres</h3>
                                     <p>Comparación entre entrevistadas que cumplen el umbral de pobreza y el resto.</p>
                                 </div>
-                                <app-cies-info-hint text="Una entrevistada se cuenta como 'pobre' si su puntaje normalizado es mayor o igual al umbral de pobreza definido en la metodología activa."></app-cies-info-hint>
+                                <app-cies-info-hint text="Una entrevistada se cuenta como pobre si respondió las preguntas de pobreza y su puntaje del factor es menor al punto de corte definido."></app-cies-info-hint>
                             </div>
                             <div class="chart-container chart-container--compact">
                                 <p-chart type="pie" [data]="excelPobreChartData" [options]="pieChartOptions"></p-chart>
@@ -556,7 +556,7 @@ interface SelectOption {
                                     <h3>% de usuarias clasificadas como excluidas por regional</h3>
                                     <p>Porcentaje de entrevistas finalizadas en cada regional que cumplen el umbral de exclusión.</p>
                                 </div>
-                                <app-cies-info-hint text="Exclusión = puntaje normalizado >= umbral de exclusión definido en la metodología activa."></app-cies-info-hint>
+                                <app-cies-info-hint text="Exclusión se calcula con V16, V17 y V19 del Excel. Se marca si esas tres respuestas suman el punto de corte o menos."></app-cies-info-hint>
                             </div>
                             <div class="chart-container">
                                 <p-chart type="bar" [data]="excelExclusionRegionalChartData" [options]="percentByRegionalChartOptions"></p-chart>
@@ -569,7 +569,7 @@ interface SelectOption {
                                     <h3>% de usuarias sub-atendidas por regional</h3>
                                     <p>Porcentaje de entrevistas finalizadas en cada regional que cumplen el umbral de subatención.</p>
                                 </div>
-                                <app-cies-info-hint text="Subatención = puntaje normalizado >= umbral de subatención. Una misma entrevista puede aparecer en varias clasificaciones."></app-cies-info-hint>
+                                <app-cies-info-hint text="Subatención se calcula con V20, V21 y V22. Se marca si esas respuestas suman el punto de corte o menos."></app-cies-info-hint>
                             </div>
                             <div class="chart-container">
                                 <p-chart type="bar" [data]="excelSubatencionRegionalChartData" [options]="percentByRegionalChartOptions"></p-chart>
@@ -582,7 +582,7 @@ interface SelectOption {
                                     <h3>% de vulnerabilidad por regional (las 3 condiciones)</h3>
                                     <p>Para cada regional muestra el porcentaje de entrevistas clasificadas como Pobre, Excluida y Subatendida.</p>
                                 </div>
-                                <app-cies-info-hint text="Las tres barras son INDEPENDIENTES — no suman 100%. Una misma entrevista puede contar en varias categorías si supera más de un umbral."></app-cies-info-hint>
+                                <app-cies-info-hint text="Las tres barras son independientes y no suman 100%. Una misma entrevista puede contar en varias categorías si cumple más de una condición."></app-cies-info-hint>
                             </div>
                             <div class="chart-container">
                                 <p-chart type="bar" [data]="excelRegionalChartData" [options]="barChartOptions"></p-chart>
@@ -1461,6 +1461,10 @@ export class ReporteriaPage implements OnInit {
 
     private formatPct = (n: number) => `${(Math.round(n * 10) / 10).toLocaleString('es-BO')}%`;
 
+    pct(valor: number, total: number): number {
+        return total > 0 ? Math.round((valor * 100) / total) : 0;
+    }
+
     // Mantener aspect ratio razonable para doughnut/pie evita que la legend ocupe demasiado y la dona quede minúscula.
 
     private tooltipNumeroPorcentaje = (ctx: any): string => {
@@ -1914,10 +1918,10 @@ export class ReporteriaPage implements OnInit {
     private buildCharts(): void {
         if (this.resumen) {
             this.classificationChartData = {
-                labels: ['Pobreza', 'Exclusión', 'Sub-atención', 'Sin vulnerabilidad'],
+                labels: ['Sin condiciones', '1 condición', '2 condiciones', '3 condiciones'],
                 datasets: [{
-                    data: [this.resumen.totalPobres, this.resumen.totalExcluidas, this.resumen.totalSubatendidas, this.resumen.totalSinVulnerabilidad],
-                    backgroundColor: ['#ef4444', '#f59e0b', '#0ea5e9', '#64748b'],
+                    data: [this.resumen.totalSinVulnerabilidad, this.resumen.totalUnFactor, this.resumen.totalDosFactores, this.resumen.totalTresFactores],
+                    backgroundColor: ['#64748b', '#10b981', '#f59e0b', '#ef4444'],
                     hoverOffset: 8
                 }]
             };
