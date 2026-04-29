@@ -50,7 +50,7 @@ interface CreateMetodologiaForm {
                 <div class="cies-hero__content">
                     <div class="cies-chip cies-chip--verde">Configuración</div>
                     <h1 class="cies-hero__title">Ajustar puntajes y clasificación</h1>
-                    <p class="cies-hero__copy">Aquí defines cuánto vale cada respuesta y en qué punto una persona se clasifica como vulnerable. Estos valores se usan para calcular el resultado de las entrevistas.</p>
+                    <p class="cies-hero__copy">Aquí defines cuánto vale cada respuesta y los puntos de corte para pobreza, exclusión y subatención.</p>
                 </div>
             </section>
 
@@ -109,7 +109,7 @@ interface CreateMetodologiaForm {
                     <div class="config-card config-card--pobre">
                         <div class="config-card-label">
                             <span class="config-card-dot config-card-dot--pobre"></span>
-                            Punto de corte «Vulnerable»
+                            Punto de corte «Pobreza»
                         </div>
                         <div class="config-card-value">{{ active.umbralPobre }} <small>puntos o menos</small></div>
                     </div>
@@ -133,9 +133,9 @@ interface CreateMetodologiaForm {
                 <div class="config-explanation">
                     <h4>¿Qué significa cada punto de corte?</h4>
                     <ul>
-                        <li><strong>Vulnerable:</strong> Si el puntaje total es <strong>{{ active.umbralPobre }} o menos</strong>, la persona se clasifica como vulnerable.</li>
-                        <li><strong>Excluido:</strong> Si el puntaje es <strong>{{ active.umbralExcluido }} o menos</strong>, se considera en situación de exclusión.</li>
-                        <li><strong>Subatendido:</strong> Si el puntaje es <strong>{{ active.umbralSubatendido }} o menos</strong>, se marca como subatendido.</li>
+                        <li><strong>Pobreza:</strong> Si el puntaje del factor pobreza es <strong>{{ active.umbralPobre }} o menos</strong>, se marca como pobre.</li>
+                        <li><strong>Exclusión:</strong> Si el puntaje del factor exclusión es <strong>{{ active.umbralExcluido }} o menos</strong>, se marca como excluida.</li>
+                        <li><strong>Subatención:</strong> Si el puntaje del factor subatención es <strong>{{ active.umbralSubatendido }} o menos</strong>, se marca como subatendida.</li>
                     </ul>
                 </div>
 
@@ -227,7 +227,7 @@ interface CreateMetodologiaForm {
                         <p-tag *ngIf="item.id === activeMetodologiaId" value="Activa" severity="success" styleClass="ml-2"></p-tag>
                     </h4>
                     <div class="comparativo-stat">
-                        <span class="stat-label">Umbral Vulnerable</span>
+                        <span class="stat-label">Umbral Pobreza</span>
                         <span class="stat-value">{{ item.umbralPobre }}</span>
                     </div>
                     <div class="comparativo-stat">
@@ -328,13 +328,13 @@ interface CreateMetodologiaForm {
                 <!-- Sección 1: Puntos de corte -->
                 <div class="editor-section">
                     <h3>Puntos de corte</h3>
-                    <p class="section-desc">Define desde qué puntaje una persona se clasifica en cada categoría. Un valor más bajo hace más fácil clasificarla en esa categoría.</p>
+                    <p class="section-desc">Define el puntaje máximo de cada factor para activar la categoría. Un valor más alto hace más amplia la clasificación.</p>
 
                     <div class="config-summary-grid">
                         <div>
-                            <label>Punto de corte «Vulnerable»</label>
+                            <label>Punto de corte «Pobreza»</label>
                             <p-inputnumber [(ngModel)]="editor.umbralPobre" [min]="0" [max]="100" class="w-full"></p-inputnumber>
-                            <small class="field-help">Si el resultado es ≤ este valor, se clasifica como vulnerable</small>
+                            <small class="field-help">Si el puntaje de pobreza es ≤ este valor, se marca como pobre</small>
                         </div>
                         <div>
                             <label>Punto de corte «Excluido»</label>
@@ -397,8 +397,8 @@ interface CreateMetodologiaForm {
                 <div class="editor-section">
                     <h3>Puntos de cada respuesta</h3>
                     <p class="section-desc">
-                        Cuando una persona responde, la opción elegida aporta estos puntos al resultado total.
-                        <strong>Más puntos = más contribución al resultado.</strong>
+                        Cuando una persona responde, la opción elegida aporta estos puntos al factor correspondiente.
+                        <strong>Más puntos = menor vulnerabilidad en ese factor.</strong>
                     </p>
 
                     @for (section of editorPreguntasPorSeccion(); track section.seccion) {

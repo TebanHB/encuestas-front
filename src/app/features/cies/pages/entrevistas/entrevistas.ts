@@ -1424,23 +1424,6 @@ export class EntrevistasPage implements OnInit {
     }
 
     getSkipLogic(question: PreguntaInstrumento): string | null {
-        switch (question.codigoVariable) {
-            case 'NO_CASTELLANO': {
-                const idiomaHogar = this.getAnswerByCode('IDIOMA_HOGAR');
-                if (idiomaHogar === '1') return 'Se omite: el idioma del hogar es castellano.';
-                return null;
-            }
-            case 'LUGAR_PARTO': {
-                const servicio = this.getAnswerByCode('SERVICIO');
-                if (servicio && servicio !== '2') return 'Se omite: solo aplica cuando el servicio es Embarazo/parto.';
-                return null;
-            }
-            case 'METODO_AC': {
-                const consultaPara = this.getAnswerByCode('CONSULTA_PARA');
-                if (consultaPara === '2') return 'Se omite: la consulta es para otra persona.';
-                return null;
-            }
-        }
         return null;
     }
 
@@ -1452,23 +1435,6 @@ export class EntrevistasPage implements OnInit {
     }
 
     shouldSkipQuestion(question: PreguntaInstrumento): boolean {
-        switch (question.codigoVariable) {
-            case 'NO_CASTELLANO': {
-                const idiomaHogar = this.getAnswerByCode('IDIOMA_HOGAR');
-                if (idiomaHogar === '1') return true;
-                break;
-            }
-            case 'LUGAR_PARTO': {
-                const servicio = this.getAnswerByCode('SERVICIO');
-                if (servicio && servicio !== '2') return true;
-                break;
-            }
-            case 'METODO_AC': {
-                const consultaPara = this.getAnswerByCode('CONSULTA_PARA');
-                if (consultaPara === '2') return true;
-                break;
-            }
-        }
         return false;
     }
 

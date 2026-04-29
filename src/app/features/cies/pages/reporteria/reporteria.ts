@@ -1427,17 +1427,17 @@ export class ReporteriaPage implements OnInit {
         { label: 'Servicio', value: 'SERVICIO' },
         { label: 'Miembros del hogar', value: 'MIEMBROS_HOGAR' },
         { label: 'Jefe del hogar trabaja', value: 'JEFE_TRABAJO' },
-        { label: 'Idioma niñez', value: 'IDIOMA_NIÑEZ' },
+        { label: 'Idioma ninez', value: 'IDIOMA_NINEZ' },
         { label: 'Cuartos', value: 'CUARTOS' },
         { label: 'Material del piso', value: 'MATERIAL_PISO' },
-        { label: 'Tipo de baño', value: 'TIPO_BAÑO' },
+        { label: 'Tipo de bano', value: 'TIPO_BANO' },
         { label: 'Combustible', value: 'COMBUSTIBLE' },
         { label: 'Refrigerador', value: 'REFRIGERADOR' },
         { label: 'Televisor', value: 'TELEVISOR' },
-        { label: 'Vehículo', value: 'VEHICULO' },
+        { label: 'Vehiculo', value: 'VEHICULO' },
         { label: 'Idioma hogar', value: 'IDIOMA_HOGAR' },
-        { label: 'Educación', value: 'EDUCACION' },
-        { label: 'Método anticonceptivo', value: 'METODO_AC' },
+        { label: 'Educacion', value: 'EDUCACION' },
+        { label: 'Metodo anticonceptivo', value: 'METODO_AC' },
         { label: 'Computadora', value: 'COMPUTADORA' },
         { label: 'Celular', value: 'CELULAR' },
         { label: 'Lugar parto', value: 'LUGAR_PARTO' },
@@ -1676,9 +1676,10 @@ export class ReporteriaPage implements OnInit {
 
     clasificaciones = [
         { label: 'Todas', value: '' },
-        { label: 'Vulnerable', value: 'POBRE' },
+        { label: 'Pobreza', value: 'POBRE' },
         { label: 'Excluida', value: 'EXCLUIDA' },
-        { label: 'Subatendida', value: 'SUBATENDIDA' }
+        { label: 'Subatendida', value: 'SUBATENDIDA' },
+        { label: 'Sin vulnerabilidad', value: 'SIN_VULNERABILIDAD' }
     ];
 
     ngOnInit(): void {
@@ -1704,12 +1705,8 @@ export class ReporteriaPage implements OnInit {
 
     private static readonly VARIABLES_EXCLUIDAS = new Set([
         'CLINICA',
-        'COD_ENTREVISTA',
         'FECHA_INICIO',
-        'FECHA_FIN',
-        'CONSULTA_PARA',
-        'NO_CASTELLANO',
-        'SUGERENCIAS'
+        'CONSULTA_PARA'
     ]);
 
     private syncVariableOptions(metodologias: Metodologia[]): boolean {
