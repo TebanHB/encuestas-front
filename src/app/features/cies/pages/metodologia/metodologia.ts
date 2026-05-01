@@ -3,6 +3,7 @@ import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
+import { CheckboxModule } from 'primeng/checkbox';
 import { DialogModule } from 'primeng/dialog';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { InputTextModule } from 'primeng/inputtext';
@@ -13,6 +14,7 @@ import { AccordionModule } from 'primeng/accordion';
 import { Toast } from 'primeng/toast';
 import { TabsModule } from 'primeng/tabs';
 import { SelectModule } from 'primeng/select';
+import { TooltipModule } from 'primeng/tooltip';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { CiesInfoHintComponent } from '../../components/cies-info-hint';
@@ -42,7 +44,7 @@ interface CreateMetodologiaForm {
 @Component({
     selector: 'app-metodologia-page',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, DialogModule, InputNumberModule, InputTextModule, TableModule, TagModule, TextareaModule, AccordionModule, Toast, TabsModule, SelectModule, CiesInfoHintComponent],
+    imports: [CommonModule, FormsModule, ButtonModule, CheckboxModule, DialogModule, InputNumberModule, InputTextModule, TableModule, TagModule, TextareaModule, AccordionModule, Toast, TabsModule, SelectModule, TooltipModule, CiesInfoHintComponent],
     providers: [MessageService],
     template: `
         <div class="cies-page">
@@ -131,11 +133,15 @@ interface CreateMetodologiaForm {
 
                 <!-- Explicación de puntos de corte -->
                 <div class="config-explanation">
-                    <h4>¿Qué significa cada punto de corte?</h4>
+                    <h4><i class="pi pi-info-circle" style="color:var(--primary-color);margin-right:0.4rem"></i>¿Qué es el "Punto de corte"?</h4>
+                    <p style="font-size:0.88rem;color:var(--text-color-secondary);margin:0 0 0.75rem;">
+                        El <strong>punto de corte</strong> es el puntaje mínimo de referencia que el sistema usa para determinar si una persona cae dentro de una categoría de vulnerabilidad.
+                        Si el puntaje total alcanza o supera este valor, el sistema considera que la condición está presente. Si no lo alcanza, se clasifica como vulnerable en ese factor.
+                    </p>
                     <ul>
-                        <li><strong>Pobreza:</strong> Si el puntaje del factor pobreza es <strong>menor a {{ active.umbralPobre }}</strong>, se marca como pobre.</li>
-                        <li><strong>Exclusión:</strong> Si V16, V17 y V19 suman <strong>{{ active.umbralExcluido }} o menos</strong>, se marca como excluida.</li>
-                        <li><strong>Subatención:</strong> Si el puntaje del factor subatención es <strong>{{ active.umbralSubatendido }} o menos</strong>, se marca como subatendida.</li>
+                        <li><strong>Pobreza:</strong> Si el puntaje del factor pobreza es <strong>menor a {{ active.umbralPobre }}</strong>, se marca como pobre. (Corte actual: {{ active.umbralPobre }} puntos)</li>
+                        <li><strong>Exclusión:</strong> Si V16, V17 y V19 suman <strong>{{ active.umbralExcluido }} o menos</strong>, se marca como excluida. (Corte actual: {{ active.umbralExcluido }} puntos)</li>
+                        <li><strong>Subatención:</strong> Si el puntaje del factor subatención es <strong>{{ active.umbralSubatendido }} o menos</strong>, se marca como subatendida. (Corte actual: {{ active.umbralSubatendido }} puntos)</li>
                     </ul>
                 </div>
 
@@ -327,24 +333,48 @@ interface CreateMetodologiaForm {
 
                 <!-- Sección 1: Puntos de corte -->
                 <div class="editor-section">
-                    <h3>Puntos de corte</h3>
-                    <p class="section-desc">Define el puntaje máximo de cada factor para activar la categoría. Un valor más alto hace más amplia la clasificación.</p>
+                    <h3>
+                        Puntos de corte
+                        <i class="pi pi-question-circle corte-help-icon"
+                            pTooltip="El punto de corte es el puntaje mínimo usado para determinar si el resultado cumple una condición o clasificación. Si el puntaje total no alcanza el corte, la persona se clasifica como vulnerable en ese factor."
+                            tooltipPosition="right"></i>
+                    </h3>
+                    <p class="section-desc">
+                        El <strong>punto de corte</strong> es el puntaje mínimo de referencia para cada factor de vulnerabilidad.
+                        Si el puntaje calculado es <em>menor o igual</em> al corte, el sistema clasifica a la persona como vulnerable en ese factor.
+                        Un valor más alto amplía el rango de personas que quedan clasificadas.
+                    </p>
 
                     <div class="config-summary-grid">
                         <div>
-                            <label>Punto de corte «Pobreza»</label>
+                            <label>
+                                Punto de corte «Pobreza»
+                                <i class="pi pi-question-circle field-help-icon"
+                                    pTooltip="Puntaje mínimo del factor pobreza. Si el puntaje calculado es menor a este valor, la persona se clasifica como pobre."
+                                    tooltipPosition="top"></i>
+                            </label>
                             <p-inputnumber [(ngModel)]="editor.umbralPobre" [min]="0" [max]="100" class="w-full"></p-inputnumber>
-                            <small class="field-help">Si el puntaje de pobreza es menor a este valor, se marca como pobre</small>
+                            <small class="field-help">Si el puntaje de pobreza es <strong>menor a este valor</strong>, la persona se marca como pobre</small>
                         </div>
                         <div>
-                            <label>Punto de corte «Excluido»</label>
+                            <label>
+                                Punto de corte «Excluido»
+                                <i class="pi pi-question-circle field-help-icon"
+                                    pTooltip="Puntaje de referencia para exclusión (calculado con V16, V17 y V19). Si el resultado es menor o igual a este valor, se considera excluido."
+                                    tooltipPosition="top"></i>
+                            </label>
                             <p-inputnumber [(ngModel)]="editor.umbralExcluido" [min]="0" [max]="100" class="w-full"></p-inputnumber>
-                            <small class="field-help">Se calcula con V16, V17 y V19. Si el resultado es ≤ este valor, se considera excluido</small>
+                            <small class="field-help">Se calcula con V16, V17 y V19. Si el resultado es <strong>≤ este valor</strong>, se considera excluido</small>
                         </div>
                         <div>
-                            <label>Punto de corte «Subatendido»</label>
+                            <label>
+                                Punto de corte «Subatendido»
+                                <i class="pi pi-question-circle field-help-icon"
+                                    pTooltip="Puntaje de referencia para subatención. Si el resultado es menor o igual a este valor, la persona se marca como subatendida."
+                                    tooltipPosition="top"></i>
+                            </label>
                             <p-inputnumber [(ngModel)]="editor.umbralSubatendido" [min]="0" [max]="100" class="w-full"></p-inputnumber>
-                            <small class="field-help">Si el resultado es ≤ este valor, se marca como subatendido</small>
+                            <small class="field-help">Si el resultado es <strong>≤ este valor</strong>, se marca como subatendido</small>
                         </div>
                     </div>
                 </div>
@@ -358,6 +388,14 @@ interface CreateMetodologiaForm {
                         Si pones <strong>100</strong>, tiene el máximo peso.
                     </p>
 
+                    <div class="obligatoria-note">
+                        <i class="pi pi-info-circle"></i>
+                        <span>
+                            Marca <strong>"Obligatoria"</strong> si esa pregunta debe ser respondida durante la entrevista.
+                            Las preguntas sin marcar serán opcionales y el encuestador podrá dejarlas en blanco.
+                        </span>
+                    </div>
+
                     @for (section of editorPreguntasPorSeccion(); track section.seccion) {
                         <div class="editor-pregunta-group">
                             <h4><i [class]="sectionIcon(section.seccion)" class="accordion-section-icon"></i> {{ section.seccion }}</h4>
@@ -368,6 +406,9 @@ interface CreateMetodologiaForm {
                                         <th style="width: 3rem">#</th>
                                         <th>Pregunta</th>
                                         <th style="width: 10rem">Importancia (0-100)</th>
+                                        <th style="width: 9rem" pTooltip="Marca si esta pregunta debe responderse obligatoriamente. Si está desmarcada, el encuestador puede dejarla sin responder." tooltipPosition="top">
+                                            Obligatoria
+                                        </th>
                                     </tr>
                                 </ng-template>
                                 <ng-template pTemplate="body" let-q>
@@ -385,6 +426,21 @@ interface CreateMetodologiaForm {
                                                 [disabled]="q.metadato"
                                                 class="w-full"
                                             ></p-inputnumber>
+                                        </td>
+                                        <td>
+                                            <div class="obligatoria-check-cell"
+                                                pTooltip="Marca esta opción si esta pregunta debe ser respondida obligatoriamente durante la entrevista. Si está desmarcada, la pregunta será opcional."
+                                                tooltipPosition="left">
+                                                <p-checkbox
+                                                    [(ngModel)]="q.obligatoria"
+                                                    [binary]="true"
+                                                    [disabled]="q.metadato"
+                                                    inputId="oblig_{{ q.id }}"></p-checkbox>
+                                                <label [for]="'oblig_' + q.id" class="oblig-label"
+                                                    [class.text-muted]="q.metadato">
+                                                    {{ q.obligatoria && !q.metadato ? 'Sí' : 'No' }}
+                                                </label>
+                                            </div>
                                         </td>
                                     </tr>
                                 </ng-template>
@@ -743,6 +799,57 @@ interface CreateMetodologiaForm {
             font-size: 0.9rem;
             font-weight: 600;
             margin-bottom: 0.5rem;
+        }
+
+        .corte-help-icon {
+            font-size: 0.85rem;
+            color: var(--text-color-secondary);
+            cursor: help;
+            margin-left: 0.4rem;
+            vertical-align: middle;
+        }
+
+        .field-help-icon {
+            font-size: 0.75rem;
+            color: var(--text-color-secondary);
+            cursor: help;
+            margin-left: 0.3rem;
+            vertical-align: middle;
+        }
+
+        .obligatoria-note {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            padding: 0.65rem 0.85rem;
+            background: color-mix(in srgb, var(--primary-color) 8%, var(--surface-ground));
+            border: 1px solid color-mix(in srgb, var(--primary-color) 30%, transparent);
+            border-radius: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--text-color-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .obligatoria-note i {
+            color: var(--primary-color);
+            margin-top: 0.1rem;
+            flex-shrink: 0;
+        }
+
+        .obligatoria-check-cell {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .oblig-label {
+            font-size: 0.82rem;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .oblig-label.text-muted {
+            color: var(--text-color-secondary);
         }
 
         .cies-actions-row {

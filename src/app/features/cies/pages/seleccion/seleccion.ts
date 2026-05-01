@@ -4,19 +4,33 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
+import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
+import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { TextareaModule } from 'primeng/textarea';
+import { TooltipModule } from 'primeng/tooltip';
 import { Toast } from 'primeng/toast';
 import { FechaCortaPipe, EstadoTextoPipe } from '../../../../shared/pipes/formato.pipe';
 import { CiesInfoHintComponent } from '../../components/cies-info-hint';
-import { CiesService, EjecucionSeleccion, LoteMedicare } from '../../services/cies.service';
+import { CiesService, EjecucionSeleccion, LoteMedicare, PersonaElegible, PersonaUpsertRequest } from '../../services/cies.service';
+
+interface PersonaForm {
+    nombre: string;
+    apellido: string;
+    documento: string;
+    medicarePersonId: string;
+    clinica: string;
+    regional: string;
+    fechaConsulta: string;
+    tipoConsulta: string;
+}
 
 @Component({
     selector: 'app-seleccion-page',
     standalone: true,
-    imports: [CommonModule, FormsModule, RouterModule, ButtonModule, InputTextModule, TableModule, TagModule, TextareaModule, Toast, FechaCortaPipe, EstadoTextoPipe, CiesInfoHintComponent],
+    imports: [CommonModule, FormsModule, RouterModule, ButtonModule, DialogModule, InputTextModule, SelectModule, TableModule, TagModule, TextareaModule, TooltipModule, Toast, FechaCortaPipe, EstadoTextoPipe, CiesInfoHintComponent],
     providers: [MessageService],
     template: `
         <div class="cies-page">
@@ -353,6 +367,170 @@ import { CiesService, EjecucionSeleccion, LoteMedicare } from '../../services/ci
             </section>
         </div>
 
+        <!-- ===================== SECCIÓN: Personas pendientes de entrevista ===================== -->
+        <section class="card">
+            <div class="cies-section-head">
+                <div class="cies-section-head__content">
+                    <div>
+                        <h3>Personas pendientes de entrevista</h3>
+                        <p>Administra las personas que todavía no han respondido la entrevista. Puedes agregar, editar o eliminar registros.</p>
+                    </div>
+                    <app-cies-info-hint text="Solo puedes editar personas que aún no hayan finalizado su entrevista. Una vez respondida, los datos quedan protegidos."></app-cies-info-hint>
+                </div>
+                <div class="cies-actions-row" style="margin-top:0">
+                    <button pButton type="button" label="Nueva persona" icon="pi pi-user-plus"
+                        [loading]="loadingPersonas" (click)="openCrearPersona()"></button>
+                    <button pButton type="button" label="Actualizar" icon="pi pi-refresh"
+                        severity="secondary" [outlined]="true" [loading]="loadingPersonas"
+                        (click)="loadPersonasPendientes()"></button>
+                </div>
+            </div>
+
+            <!-- Búsqueda -->
+            <div class="cies-field--wide" style="margin-bottom:1rem">
+                <input pInputText [(ngModel)]="personasSearchTerm" class="w-full"
+                    placeholder="Buscar por nombre, documento o clínica..."
+                    (ngModelChange)="onPersonasSearchChange($event)" />
+            </div>
+
+            <!-- Empty state -->
+            <div *ngIf="!loadingPersonas && !personasPendientes.length && !personasSearchTerm" class="cies-empty-state">
+                <div class="cies-empty-state__icon"><i class="pi pi-users"></i></div>
+                <h3>No hay personas pendientes de entrevista</h3>
+                <p>Usa <strong>"Nueva persona"</strong> para registrar una persona directamente, o carga un listado arriba.</p>
+            </div>
+
+            <div *ngIf="!loadingPersonas && !filteredPersonas.length && personasSearchTerm" class="cies-empty-state">
+                <div class="cies-empty-state__icon"><i class="pi pi-search"></i></div>
+                <h3>Sin resultados para "{{ personasSearchTerm }}"</h3>
+                <button pButton type="button" label="Limpiar búsqueda" severity="secondary"
+                    [outlined]="true" icon="pi pi-times" (click)="personasSearchTerm = ''; onPersonasSearchChange('')"></button>
+            </div>
+
+            <!-- Tabla -->
+            <p-table *ngIf="filteredPersonas.length || loadingPersonas"
+                [value]="filteredPersonas" [loading]="loadingPersonas"
+                [paginator]="true" [rows]="personasRows" [totalRecords]="totalPersonas"
+                [rowsPerPageOptions]="[5, 10, 20]" [lazy]="true"
+                [first]="personasPage * personasRows"
+                (onLazyLoad)="onPersonasLazyLoad($any($event))"
+                [tableStyle]="{ 'min-width': '72rem' }" responsiveLayout="scroll"
+                class="cies-table">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th>Persona</th>
+                        <th>Documento</th>
+                        <th pSortableColumn="clinica">Clínica <p-sortIcon field="clinica"></p-sortIcon></th>
+                        <th>Regional</th>
+                        <th>Fecha consulta</th>
+                        <th>Estado</th>
+                        <th style="width:9rem">Acciones</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-item>
+                    <tr>
+                        <td><strong>{{ item.nombreCompleto }}</strong></td>
+                        <td>{{ item.documento || '—' }}</td>
+                        <td>{{ item.clinica }}</td>
+                        <td>{{ item.regional }}</td>
+                        <td class="text-muted">{{ item.fechaConsulta | fechaCorta }}</td>
+                        <td>
+                            <p-tag [value]="item.estadoEntrevista"
+                                [severity]="item.estadoEntrevista === 'PENDIENTE' ? 'warn' : 'info'"></p-tag>
+                        </td>
+                        <td>
+                            <div class="cies-inline-actions">
+                                <button pButton type="button" icon="pi pi-pencil" text rounded severity="info"
+                                    pTooltip="Editar datos de la persona"
+                                    (click)="openEditarPersona(item)"></button>
+                                <button pButton type="button" icon="pi pi-trash" text rounded severity="danger"
+                                    pTooltip="Eliminar persona"
+                                    (click)="confirmarEliminarPersona(item)"></button>
+                            </div>
+                        </td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        </section>
+
+        <!-- ===================== DIALOG: Crear/Editar persona ===================== -->
+        <p-dialog [(visible)]="showPersonaDialog" [modal]="true" [draggable]="false"
+            [closable]="!savingPersona"
+            [style]="{ width: 'min(52rem, 96vw)' }"
+            [header]="editingPersonaId ? 'Editar persona' : 'Registrar nueva persona'"
+            styleClass="cies-dialog">
+
+            <div class="cies-dialog-content" *ngIf="showPersonaDialog">
+                <div *ngIf="editingPersonaId" class="cies-note cies-note--warning" style="margin-bottom:1rem">
+                    <i class="pi pi-info-circle"></i>
+                    Solo puedes editar personas cuya entrevista no haya sido finalizada.
+                </div>
+
+                <div class="registro-form-grid">
+                    <div class="registro-field">
+                        <label>Nombre <span class="required-star">*</span></label>
+                        <input pInputText [(ngModel)]="personaForm.nombre" class="w-full"
+                            placeholder="Ejemplo: María" />
+                    </div>
+                    <div class="registro-field">
+                        <label>Apellido <span class="required-star">*</span></label>
+                        <input pInputText [(ngModel)]="personaForm.apellido" class="w-full"
+                            placeholder="Ejemplo: López" />
+                    </div>
+                    <div class="registro-field">
+                        <label>Documento de identidad</label>
+                        <input pInputText [(ngModel)]="personaForm.documento" class="w-full"
+                            inputmode="numeric" pattern="[0-9]*" maxlength="12"
+                            placeholder="Opcional" />
+                    </div>
+                    <div class="registro-field">
+                        <label>ID Medicare</label>
+                        <input pInputText [(ngModel)]="personaForm.medicarePersonId" class="w-full"
+                            placeholder="Se genera automático si se omite" />
+                    </div>
+                    <div class="registro-field">
+                        <label>Clínica <span class="required-star">*</span></label>
+                        <p-select [options]="ciesClinicOptions"
+                            [(ngModel)]="personaForm.clinica"
+                            optionLabel="label" optionValue="value" appendTo="body" class="w-full"
+                            placeholder="Selecciona una clínica"
+                            (ngModelChange)="onPersonaClinicaChange($event)"></p-select>
+                    </div>
+                    <div class="registro-field">
+                        <label>Regional <span class="required-star">*</span></label>
+                        <p-select [options]="ciesRegionalOptions"
+                            [(ngModel)]="personaForm.regional"
+                            optionLabel="label" optionValue="value" appendTo="body" class="w-full"
+                            placeholder="Selecciona una ciudad"></p-select>
+                    </div>
+                    <div class="registro-field">
+                        <label>Fecha de consulta <span class="required-star">*</span></label>
+                        <input pInputText [(ngModel)]="personaForm.fechaConsulta" class="w-full"
+                            type="date" />
+                    </div>
+                    <div class="registro-field">
+                        <label>Tipo de consulta</label>
+                        <p-select [options]="tipoConsultaOptions"
+                            [(ngModel)]="personaForm.tipoConsulta"
+                            optionLabel="label" optionValue="value" appendTo="body" class="w-full"></p-select>
+                    </div>
+                </div>
+
+                <div class="cies-note cies-note--error" *ngIf="personaDialogError" style="margin-top:1rem">
+                    <i class="pi pi-exclamation-triangle"></i> {{ personaDialogError }}
+                </div>
+            </div>
+
+            <ng-template pTemplate="footer">
+                <button pButton type="button" label="Cancelar" severity="secondary" [outlined]="true"
+                    [disabled]="savingPersona" (click)="closePersonaDialog()"></button>
+                <button pButton type="button"
+                    [label]="savingPersona ? 'Guardando...' : (editingPersonaId ? 'Guardar cambios' : 'Registrar persona')"
+                    icon="pi pi-check" [loading]="savingPersona"
+                    [disabled]="savingPersona" (click)="guardarPersona()"></button>
+            </ng-template>
+        </p-dialog>
+
         <p-toast></p-toast>
     `,
     styles: [
@@ -687,6 +865,38 @@ import { CiesService, EjecucionSeleccion, LoteMedicare } from '../../services/ci
                 justify-content: flex-end;
             }
 
+            .registro-form-grid {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1.25rem 1.5rem;
+            }
+
+            .registro-field {
+                display: flex;
+                flex-direction: column;
+                gap: 0.4rem;
+            }
+
+            .registro-field label {
+                font-size: 0.85rem;
+                font-weight: 600;
+                color: var(--text-color);
+                display: flex;
+                align-items: center;
+                gap: 0.25rem;
+            }
+
+            .required-star {
+                color: #ef4444;
+                font-weight: 700;
+            }
+
+            @media (max-width: 768px) {
+                .registro-form-grid {
+                    grid-template-columns: 1fr;
+                }
+            }
+
             @media (max-width: 768px) {
                 .steps-container {
                     grid-template-columns: 1fr;
@@ -753,6 +963,53 @@ export class SeleccionPage implements OnInit {
     private cdr = inject(ChangeDetectorRef);
     private messageService = inject(MessageService);
 
+    // ── Personas pendientes CRUD ────────────────────────────────────────────────
+    personasPendientes: PersonaElegible[] = [];
+    filteredPersonas: PersonaElegible[] = [];
+    personasSearchTerm = '';
+    totalPersonas = 0;
+    personasPage = 0;
+    personasRows = 10;
+    loadingPersonas = false;
+    showPersonaDialog = false;
+    editingPersonaId: number | null = null;
+    savingPersona = false;
+    personaDialogError = '';
+    personaForm: PersonaForm = this.createPersonaForm();
+
+    readonly ciesRegionalOptions = [
+        { label: 'Cochabamba', value: 'Cochabamba' },
+        { label: 'El Alto', value: 'El Alto' },
+        { label: 'La Paz', value: 'La Paz' },
+        { label: 'Oruro', value: 'Oruro' },
+        { label: 'Pando', value: 'Pando' },
+        { label: 'Potosí', value: 'Potosí' },
+        { label: 'Riberalta', value: 'Riberalta' },
+        { label: 'Santa Cruz', value: 'Santa Cruz' },
+        { label: 'Sucre', value: 'Sucre' },
+        { label: 'Tarija', value: 'Tarija' }
+    ];
+
+    readonly ciesClinicOptions = [
+        { label: 'CIES Cochabamba', value: 'CIES Cochabamba', regional: 'Cochabamba' },
+        { label: 'CIES El Alto', value: 'CIES El Alto', regional: 'El Alto' },
+        { label: 'CIES La Paz', value: 'CIES La Paz', regional: 'La Paz' },
+        { label: 'CIES Oruro', value: 'CIES Oruro', regional: 'Oruro' },
+        { label: 'CIES Pando', value: 'CIES Pando', regional: 'Pando' },
+        { label: 'CIES Potosí', value: 'CIES Potosí', regional: 'Potosí' },
+        { label: 'CIES Riberalta', value: 'CIES Riberalta', regional: 'Riberalta' },
+        { label: 'CIES Santa Cruz', value: 'CIES Santa Cruz', regional: 'Santa Cruz' },
+        { label: 'CIES Sucre', value: 'CIES Sucre', regional: 'Sucre' },
+        { label: 'CIES Tarija', value: 'CIES Tarija', regional: 'Tarija' }
+    ];
+
+    readonly tipoConsultaOptions = [
+        { label: 'Primera consulta SSR', value: 'PRIMERA_CONSULTA_SSR' },
+        { label: 'Consulta general', value: 'CONSULTA_GENERAL' },
+        { label: 'Control', value: 'CONTROL' }
+    ];
+
+    // ── Lotes ───────────────────────────────────────────────────────────────────
     editingLoteId: number | null = null;
     nombreLote = '';
     cargaMasiva = '';
@@ -782,11 +1039,208 @@ export class SeleccionPage implements OnInit {
 
     ngOnInit(): void {
         this.load();
+        this.loadPersonasPendientes();
     }
 
     get hasLotes(): boolean {
         return this.totalLotesPendientes + this.totalLotesProcesados > 0;
     }
+
+    // ── Personas pendientes CRUD ────────────────────────────────────────────────
+
+    loadPersonasPendientes(page = this.personasPage, size = this.personasRows): void {
+        this.loadingPersonas = true;
+        this.ciesService.listPersonasPendientesPaginado(page, size).subscribe({
+            next: (response) => {
+                this.personasPendientes = response.content;
+                this.totalPersonas = response.totalElements;
+                this.personasPage = response.page;
+                this.personasRows = response.size;
+                this.loadingPersonas = false;
+                this.applyPersonasFilter();
+                this.cdr.detectChanges();
+            },
+            error: (error) => {
+                this.loadingPersonas = false;
+                this.messageService.add({ severity: 'error', summary: 'Error', detail: this.extractErrorMessage(error, 'No se pudieron cargar las personas') });
+            }
+        });
+    }
+
+    onPersonasLazyLoad(event: { first?: number; rows?: number }): void {
+        const rows = event.rows || this.personasRows;
+        const page = Math.floor((event.first || 0) / rows);
+        this.loadPersonasPendientes(page, rows);
+    }
+
+    onPersonasSearchChange(term: string): void {
+        this.personasSearchTerm = term ?? '';
+        this.applyPersonasFilter();
+        this.cdr.detectChanges();
+    }
+
+    private applyPersonasFilter(): void {
+        const search = this.normalizeText(this.personasSearchTerm);
+        if (!search) {
+            this.filteredPersonas = [...this.personasPendientes];
+            return;
+        }
+        const tokens = search.split(' ').filter(Boolean);
+        this.filteredPersonas = this.personasPendientes.filter((p) => {
+            const haystack = this.normalizeText([p.nombreCompleto, p.documento, p.clinica, p.regional].filter(Boolean).join(' '));
+            return tokens.every((t) => haystack.includes(t));
+        });
+    }
+
+    openCrearPersona(): void {
+        this.editingPersonaId = null;
+        this.personaForm = this.createPersonaForm();
+        this.personaDialogError = '';
+        this.showPersonaDialog = true;
+        this.cdr.detectChanges();
+    }
+
+    openEditarPersona(item: PersonaElegible): void {
+        if (item.estadoEntrevista === 'FINALIZADA') {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'No editable',
+                detail: 'Esta persona ya respondió la entrevista, por lo tanto sus datos no pueden ser modificados.'
+            });
+            return;
+        }
+        const nombrePartes = (item.nombreCompleto || '').split(' ');
+        this.personaForm = {
+            nombre: nombrePartes[0] || '',
+            apellido: nombrePartes.slice(1).join(' ') || '',
+            documento: item.documento || '',
+            medicarePersonId: item.medicarePersonId || '',
+            clinica: item.clinica || '',
+            regional: item.regional || '',
+            fechaConsulta: item.fechaConsulta ? String(item.fechaConsulta).substring(0, 10) : this.todayLocalIsoDate(),
+            tipoConsulta: item.tipoConsulta || 'PRIMERA_CONSULTA_SSR'
+        };
+        this.editingPersonaId = item.id;
+        this.personaDialogError = '';
+        this.showPersonaDialog = true;
+        this.cdr.detectChanges();
+    }
+
+    closePersonaDialog(): void {
+        if (this.savingPersona) return;
+        this.showPersonaDialog = false;
+        this.editingPersonaId = null;
+        this.personaDialogError = '';
+        this.personaForm = this.createPersonaForm();
+        this.cdr.detectChanges();
+    }
+
+    onPersonaClinicaChange(value: string): void {
+        const seleccion = this.ciesClinicOptions.find((item) => item.value === value);
+        if (seleccion) {
+            this.personaForm.regional = seleccion.regional;
+        }
+    }
+
+    guardarPersona(): void {
+        if (this.savingPersona) return;
+
+        const nombre = this.personaForm.nombre.trim();
+        const apellido = this.personaForm.apellido.trim();
+        const clinica = this.personaForm.clinica.trim();
+        const regional = this.personaForm.regional.trim();
+
+        if (!nombre || !apellido || !clinica || !regional || !this.personaForm.fechaConsulta) {
+            this.personaDialogError = 'Nombre, apellido, clínica, regional y fecha de consulta son obligatorios.';
+            this.cdr.detectChanges();
+            return;
+        }
+
+        const payload: PersonaUpsertRequest = {
+            nombre,
+            apellido,
+            documento: this.personaForm.documento.replace(/\D/g, ''),
+            medicarePersonId: this.personaForm.medicarePersonId.trim() || undefined,
+            clinica,
+            regional,
+            fechaConsulta: this.personaForm.fechaConsulta,
+            tipoConsulta: this.personaForm.tipoConsulta
+        };
+
+        this.savingPersona = true;
+        this.personaDialogError = '';
+
+        const request$ = this.editingPersonaId
+            ? this.ciesService.actualizarPersona(this.editingPersonaId, payload)
+            : this.ciesService.crearPersonaDirecta(payload);
+
+        request$.subscribe({
+            next: () => {
+                this.savingPersona = false;
+                this.closePersonaDialog();
+                this.loadPersonasPendientes();
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Éxito',
+                    detail: this.editingPersonaId ? 'Persona actualizada correctamente' : 'Persona registrada correctamente'
+                });
+            },
+            error: (error) => {
+                this.savingPersona = false;
+                this.personaDialogError = this.extractErrorMessage(error, 'No se pudo guardar la persona');
+                this.cdr.detectChanges();
+            }
+        });
+    }
+
+    confirmarEliminarPersona(item: PersonaElegible): void {
+        if (item.estadoEntrevista === 'FINALIZADA') {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'No eliminable',
+                detail: 'Esta persona ya respondió la entrevista y no puede ser eliminada.'
+            });
+            return;
+        }
+
+        if (!window.confirm(`Se eliminará a "${item.nombreCompleto}". ¿Deseas continuar?`)) return;
+
+        this.ciesService.eliminarPersona(item.id).subscribe({
+            next: () => {
+                this.loadPersonasPendientes();
+                this.messageService.add({ severity: 'success', summary: 'Eliminado', detail: 'Persona eliminada correctamente' });
+            },
+            error: (error) => {
+                this.messageService.add({ severity: 'error', summary: 'Error', detail: this.extractErrorMessage(error, 'No se pudo eliminar la persona') });
+            }
+        });
+    }
+
+    private createPersonaForm(): PersonaForm {
+        return {
+            nombre: '',
+            apellido: '',
+            documento: '',
+            medicarePersonId: '',
+            clinica: '',
+            regional: '',
+            fechaConsulta: this.todayLocalIsoDate(),
+            tipoConsulta: 'PRIMERA_CONSULTA_SSR'
+        };
+    }
+
+    private normalizeText(value: unknown): string {
+        return String(value ?? '')
+            .trim()
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[̀-ͯ]/g, '')
+            .replace(/[^a-z0-9\s-]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    // ── Lotes ───────────────────────────────────────────────────────────────────
 
     load(): void {
         this.loadLotesPendientes();

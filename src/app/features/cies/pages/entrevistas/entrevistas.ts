@@ -1495,10 +1495,17 @@ export class EntrevistasPage implements OnInit {
         if (!this.answers[preguntaId]) {
             this.answers[preguntaId] = {};
         }
-        this.answers[preguntaId].codigoOpcion = codigo;
-        const question = this.currentInterview?.preguntas.find((q) => q.id === preguntaId);
-        if (question && !this.isOtroOption(question, codigo)) {
+
+        // Toggle: hacer clic en la opción ya seleccionada la deselecciona
+        if (this.answers[preguntaId].codigoOpcion === codigo) {
+            this.answers[preguntaId].codigoOpcion = '';
             this.answers[preguntaId].valorOtro = '';
+        } else {
+            this.answers[preguntaId].codigoOpcion = codigo;
+            const question = this.currentInterview?.preguntas.find((q) => q.id === preguntaId);
+            if (question && !this.isOtroOption(question, codigo)) {
+                this.answers[preguntaId].valorOtro = '';
+            }
         }
         this.onAnswerChange();
     }

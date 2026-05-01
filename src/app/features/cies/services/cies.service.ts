@@ -252,6 +252,17 @@ export interface ReporteExcelGraficos {
     }[];
 }
 
+export interface PersonaUpsertRequest {
+    medicarePersonId?: string;
+    nombre: string;
+    apellido: string;
+    documento?: string;
+    clinica: string;
+    regional: string;
+    fechaConsulta: string;
+    tipoConsulta: string;
+}
+
 export interface MedicareOutboxItem {
     id: number;
     tipo: string;
@@ -626,6 +637,30 @@ export class CiesService {
 
     exportSps(filters?: Record<string, string | number | null | undefined>): Observable<Blob> {
         return this.http.get(`${this.apiBase}/exportaciones/reportes.sps`, { params: this.toParams(filters), responseType: 'blob' });
+    }
+
+    listPersonasPendientesPaginado(page = 0, size = 10): Observable<PagedResponse<PersonaElegible>> {
+        return this.http.get<PagedResponse<PersonaElegible>>(`${this.apiBase}/seleccion/personas/pendientes`, {
+            params: this.toParams({ page, size })
+        });
+    }
+
+    crearPersonaDirecta(payload: PersonaUpsertRequest): Observable<PersonaElegible> {
+        return this.http.post<PersonaElegible>(`${this.apiBase}/seleccion/personas`, payload).pipe(
+            tap(() => this.resetOperacionCache())
+        );
+    }
+
+    actualizarPersona(id: number, payload: PersonaUpsertRequest): Observable<PersonaElegible> {
+        return this.http.put<PersonaElegible>(`${this.apiBase}/seleccion/personas/${id}`, payload).pipe(
+            tap(() => this.resetOperacionCache())
+        );
+    }
+
+    eliminarPersona(id: number): Observable<void> {
+        return this.http.delete<void>(`${this.apiBase}/seleccion/personas/${id}`).pipe(
+            tap(() => this.resetOperacionCache())
+        );
     }
 
     getMedicareOutbox(): Observable<MedicareOutboxItem[]> {
