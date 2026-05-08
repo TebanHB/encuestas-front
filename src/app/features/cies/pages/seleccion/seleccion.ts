@@ -14,6 +14,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { Toast } from 'primeng/toast';
 import { FechaCortaPipe, EstadoTextoPipe } from '../../../../shared/pipes/formato.pipe';
 import { CiesInfoHintComponent } from '../../components/cies-info-hint';
+import { AuthService } from '../../../../core/auth/auth.service';
 import { CiesService, EjecucionSeleccion, LoteMedicare, PersonaElegible, PersonaUpsertRequest } from '../../services/cies.service';
 
 interface PersonaForm {
@@ -368,7 +369,7 @@ interface PersonaForm {
         </div>
 
         <!-- ===================== SECCIÓN: Personas pendientes de entrevista ===================== -->
-        <section class="card">
+        <section class="card" *ngIf="isAdmin">
             <div class="cies-section-head">
                 <div class="cies-section-head__content">
                     <div>
@@ -962,6 +963,11 @@ export class SeleccionPage implements OnInit {
     private ciesService = inject(CiesService);
     private cdr = inject(ChangeDetectorRef);
     private messageService = inject(MessageService);
+    private authService = inject(AuthService);
+
+    get isAdmin(): boolean {
+        return this.authService.isAdministrador();
+    }
 
     // ── Personas pendientes CRUD ────────────────────────────────────────────────
     personasPendientes: PersonaElegible[] = [];
@@ -1039,7 +1045,9 @@ export class SeleccionPage implements OnInit {
 
     ngOnInit(): void {
         this.load();
-        this.loadPersonasPendientes();
+        if (this.isAdmin) {
+            this.loadPersonasPendientes();
+        }
     }
 
     get hasLotes(): boolean {
