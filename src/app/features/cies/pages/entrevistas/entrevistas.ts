@@ -17,7 +17,7 @@ import { firstValueFrom } from 'rxjs';
 import { FechaCortaPipe } from '../../../../shared/pipes/formato.pipe';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { CiesInfoHintComponent } from '../../components/cies-info-hint';
-import { CiesService, Entrevista, PersonaElegible, PreguntaInstrumento, RespuestaPayload } from '../../services/cies.service';
+import { CiesService, Entrevista, EntrevistaFinalizadaResumen, PersonaElegible, PreguntaInstrumento, RespuestaPayload } from '../../services/cies.service';
 
 interface AnswerValue {
     codigoOpcion?: string;
@@ -67,8 +67,21 @@ interface ValidationError {
                 </div>
             </section>
 
+            <section *ngIf="!currentInterview" class="card cies-list-tabs">
+                <button pButton type="button" class="cies-list-tab"
+                    [class.cies-list-tab--active]="activeListTab === 'pendientes'"
+                    [text]="activeListTab !== 'pendientes'"
+                    label="Pendientes" icon="pi pi-clock"
+                    (click)="setActiveListTab('pendientes')"></button>
+                <button pButton type="button" class="cies-list-tab"
+                    [class.cies-list-tab--active]="activeListTab === 'finalizadas'"
+                    [text]="activeListTab !== 'finalizadas'"
+                    label="Finalizado" icon="pi pi-check-circle"
+                    (click)="setActiveListTab('finalizadas')"></button>
+            </section>
+
             <!-- ===================== VISTA: Lista de pendientes ===================== -->
-            <section *ngIf="!currentInterview" class="cies-guidance-grid">
+            <section *ngIf="!currentInterview && activeListTab === 'pendientes'" class="cies-guidance-grid">
                 <article class="card cies-guidance-card">
                     <div class="cies-guidance-step">1</div>
                     <div class="cies-stack">
@@ -95,7 +108,7 @@ interface ValidationError {
             </section>
 
             <!-- TABLA de pendientes -->
-            <section *ngIf="!currentInterview" class="card">
+            <section *ngIf="!currentInterview && activeListTab === 'pendientes'" class="card">
                 <div class="cies-section-head">
                     <div class="cies-section-head__content">
                         <div>
@@ -197,6 +210,83 @@ interface ValidationError {
                                 <button pButton type="button" [label]="startingPersonaId === item.id ? 'Abriendo...' : 'Iniciar'" icon="pi pi-play"
                                     size="small" [loading]="startingPersonaId === item.id"
                                     [disabled]="isInterviewActionBusy && startingPersonaId !== item.id" (click)="start(item)"></button>
+                            </td>
+                        </tr>
+                    </ng-template>
+                </p-table>
+            </section>
+
+            <section *ngIf="!currentInterview && activeListTab === 'finalizadas'" class="card">
+                <div class="cies-section-head">
+                    <div class="cies-section-head__content">
+                        <div>
+                            <h3>Personas ya encuestadas</h3>
+                            <p>Consulta entrevistas finalizadas y abre el detalle completo de respuestas.</p>
+                        </div>
+                        <p-tag *ngIf="finalizadas.length" [value]="filteredFinalizadas.length + ' de ' + finalizadas.length + ' visibles'" severity="success"></p-tag>
+                    </div>
+                </div>
+
+                <div class="cies-form-grid cies-form-grid--three" *ngIf="finalizadas.length">
+                    <div class="cies-field--wide">
+                        <label>Buscar entrevista finalizada</label>
+                        <input pInputText [ngModel]="finalizadasSearchTerm" class="w-full"
+                            placeholder="Nombre, documento, código, clínica o encuestador..."
+                            (ngModelChange)="onFinalizadasSearchChange($event)" />
+                    </div>
+                </div>
+
+                <div *ngIf="!finalizadas.length && !loadingFinalizadas" class="cies-empty-state">
+                    <div class="cies-empty-state__icon"><i class="pi pi-check"></i></div>
+                    <h3>Aún no hay entrevistas finalizadas</h3>
+                    <p>Cuando se complete una encuesta, aparecerá aquí para consulta y revisión.</p>
+                </div>
+
+                <div *ngIf="finalizadas.length && !filteredFinalizadas.length" class="cies-empty-state">
+                    <div class="cies-empty-state__icon"><i class="pi pi-search"></i></div>
+                    <h3>No hay coincidencias</h3>
+                    <p>Prueba con otro término para encontrar la entrevista finalizada.</p>
+                </div>
+
+                <p-table *ngIf="filteredFinalizadas.length" [value]="filteredFinalizadas"
+                    [tableStyle]="{ 'min-width': '78rem' }" responsiveLayout="scroll"
+                    [paginator]="true" [rows]="5" [rowsPerPageOptions]="[5, 10, 20]"
+                    class="cies-table">
+                    <ng-template pTemplate="header">
+                        <tr>
+                            <th>Persona</th>
+                            <th>Documento</th>
+                            <th>Clínica</th>
+                            <th>Regional</th>
+                            <th>Finalizó</th>
+                            <th>Condiciones</th>
+                            <th style="width: 8rem">Detalle</th>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-item>
+                        <tr>
+                            <td>
+                                <div class="cies-stack" style="gap: 0.35rem">
+                                    <strong>{{ item.personaNombre }}</strong>
+                                    <small class="text-muted">{{ item.codigoEntrevista }}</small>
+                                </div>
+                            </td>
+                            <td>{{ item.documento || '—' }}</td>
+                            <td>{{ item.clinica }}</td>
+                            <td>{{ item.regional }}</td>
+                            <td>{{ item.fechaFin | fechaCorta }}</td>
+                            <td>
+                                <div class="cies-flag-list">
+                                    <p-tag *ngIf="item.pobre" value="Pobre" severity="danger"></p-tag>
+                                    <p-tag *ngIf="item.excluido" value="Excluida" severity="warn"></p-tag>
+                                    <p-tag *ngIf="item.subatendido" value="Subatendida" severity="info"></p-tag>
+                                    <span *ngIf="!item.pobre && !item.excluido && !item.subatendido" class="text-muted">Sin condiciones</span>
+                                </div>
+                            </td>
+                            <td>
+                                <button pButton type="button" label="Ver" icon="pi pi-eye" size="small"
+                                    [loading]="loadingFinalizadaDetalleId === item.entrevistaId"
+                                    (click)="openFinalizadaDetalle(item)"></button>
                             </td>
                         </tr>
                     </ng-template>
@@ -481,6 +571,49 @@ interface ValidationError {
                     </div>
                 </div>
             </p-dialog>
+
+            <p-dialog [(visible)]="finalizadaDetailVisible" [modal]="true" [draggable]="false"
+                [style]="{ width: 'min(72rem, 96vw)' }"
+                header="Detalle de entrevista finalizada"
+                styleClass="cies-dialog">
+                <div *ngIf="selectedFinalizadaDetail" class="cies-detail-dialog">
+                    <div class="cies-detail-summary">
+                        <div>
+                            <strong>{{ selectedFinalizadaDetail.personaNombre }}</strong>
+                            <span>{{ selectedFinalizadaDetail.codigo }}</span>
+                        </div>
+                        <div>
+                            <span>{{ selectedFinalizadaDetail.clinica }} - {{ selectedFinalizadaDetail.regional }}</span>
+                            <span *ngIf="selectedFinalizadaDetail.fechaFin">Finalizada: {{ selectedFinalizadaDetail.fechaFin | fechaCorta }}</span>
+                        </div>
+                    </div>
+
+                    <div class="cies-detail-flags" *ngIf="selectedFinalizadaDetail.resultado">
+                        <p-tag [value]="selectedFinalizadaDetail.resultado.pobre ? 'Pobre' : 'No pobre'"
+                            [severity]="selectedFinalizadaDetail.resultado.pobre ? 'danger' : 'secondary'"></p-tag>
+                        <p-tag [value]="selectedFinalizadaDetail.resultado.excluido ? 'Excluida' : 'No excluida'"
+                            [severity]="selectedFinalizadaDetail.resultado.excluido ? 'warn' : 'secondary'"></p-tag>
+                        <p-tag [value]="selectedFinalizadaDetail.resultado.subatendido ? 'Subatendida' : 'No subatendida'"
+                            [severity]="selectedFinalizadaDetail.resultado.subatendido ? 'info' : 'secondary'"></p-tag>
+                    </div>
+
+                    <p-table [value]="selectedFinalizadaAnswers" [tableStyle]="{ 'min-width': '100%' }"
+                        responsiveLayout="scroll" class="cies-table">
+                        <ng-template pTemplate="header">
+                            <tr>
+                                <th>Pregunta</th>
+                                <th>Respuesta</th>
+                            </tr>
+                        </ng-template>
+                        <ng-template pTemplate="body" let-item>
+                            <tr>
+                                <td>{{ item.etiqueta }}</td>
+                                <td>{{ item.respuesta }}</td>
+                            </tr>
+                        </ng-template>
+                    </p-table>
+                </div>
+            </p-dialog>
         </div>
 
         <p-toast></p-toast>
@@ -577,6 +710,45 @@ interface ValidationError {
         .progress-complete + .progress-label {
             color: #22c55e;
             font-weight: 600;
+        }
+
+        .cies-list-tabs {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        .cies-list-tab--active {
+            font-weight: 700;
+        }
+
+        .cies-flag-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+        }
+
+        .cies-detail-dialog {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .cies-detail-summary {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.75rem;
+            padding: 0.85rem 1rem;
+            border: 1px solid var(--surface-border);
+            border-radius: 0.75rem;
+            background: var(--surface-ground);
+        }
+
+        .cies-detail-summary div,
+        .cies-detail-flags {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
         }
 
         .entrevista-guide-note {
@@ -1050,6 +1222,14 @@ interface ValidationError {
         }
 
         @media (max-width: 768px) {
+            .cies-list-tabs {
+                flex-wrap: wrap;
+            }
+
+            .cies-detail-summary {
+                grid-template-columns: 1fr;
+            }
+
             .entrevista-header {
                 flex-direction: column;
                 gap: 1rem;
@@ -1145,7 +1325,15 @@ export class EntrevistasPage implements OnInit {
     selectedEstado = '';
     selectedClinica = '';
     selectedLote = '';
+    activeListTab: 'pendientes' | 'finalizadas' = 'pendientes';
     filteredPendientesList: PersonaElegible[] = [];
+    finalizadas: EntrevistaFinalizadaResumen[] = [];
+    filteredFinalizadas: EntrevistaFinalizadaResumen[] = [];
+    finalizadasSearchTerm = '';
+    loadingFinalizadas = false;
+    loadingFinalizadaDetalleId: number | null = null;
+    finalizadaDetailVisible = false;
+    selectedFinalizadaDetail: Entrevista | null = null;
 
     readonly estadoOptions = [
         { label: 'Todos', value: '' },
@@ -1234,6 +1422,13 @@ export class EntrevistasPage implements OnInit {
         return Math.round((this.answeredCount / total) * 100);
     }
 
+    get selectedFinalizadaAnswers(): Array<{ etiqueta: string; respuesta: string }> {
+        return (this.selectedFinalizadaDetail?.respuestas || []).map((item) => ({
+            etiqueta: item.etiqueta,
+            respuesta: item.etiquetaRespuesta || item.valorOtro || item.valorCrudo || 'Sin respuesta'
+        }));
+    }
+
     get clinicaOptions(): Array<{ label: string; value: string }> {
         const values = Array.from(new Set(this.pendientes.map((i) => i.clinica).filter(Boolean)))
             .sort((a, b) => a.localeCompare(b));
@@ -1271,6 +1466,13 @@ export class EntrevistasPage implements OnInit {
         this.loadPendientes();
     }
 
+    setActiveListTab(tab: 'pendientes' | 'finalizadas'): void {
+        this.activeListTab = tab;
+        if (tab === 'finalizadas' && !this.finalizadas.length && !this.loadingFinalizadas) {
+            this.loadFinalizadas();
+        }
+    }
+
     loadPendientes(forceRefresh = false): void {
         if (this.loadingPendientes) return;
 
@@ -1290,6 +1492,29 @@ export class EntrevistasPage implements OnInit {
                     detail: this.extractErrorMessage(err, 'No se pudieron cargar las personas pendientes.')
                 });
                 console.error('Error loading pendientes:', err);
+            }
+        });
+    }
+
+    loadFinalizadas(): void {
+        if (this.loadingFinalizadas) return;
+
+        this.loadingFinalizadas = true;
+        this.ciesService.getFinalizadasEntrevista().subscribe({
+            next: (response) => {
+                this.loadingFinalizadas = false;
+                this.finalizadas = response || [];
+                this.applyFinalizadasFilter();
+                this.cdr.detectChanges();
+            },
+            error: (err) => {
+                this.loadingFinalizadas = false;
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: this.extractErrorMessage(err, 'No se pudieron cargar las entrevistas finalizadas.')
+                });
+                console.error('Error loading finalizadas:', err);
             }
         });
     }
@@ -1424,6 +1649,9 @@ export class EntrevistasPage implements OnInit {
     }
 
     getSkipLogic(question: PreguntaInstrumento): string | null {
+        if (question.codigoVariable === 'IDIOMA_NINEZ' && this.getAnswerByCode('JEFE_TRABAJO') === '2') {
+            return 'Se omite porque se indicó que no hay jefe del hogar/esposo.';
+        }
         return null;
     }
 
@@ -1435,6 +1663,9 @@ export class EntrevistasPage implements OnInit {
     }
 
     shouldSkipQuestion(question: PreguntaInstrumento): boolean {
+        if (question.codigoVariable === 'IDIOMA_NINEZ') {
+            return this.getAnswerByCode('JEFE_TRABAJO') === '2';
+        }
         return false;
     }
 
@@ -1558,6 +1789,7 @@ export class EntrevistasPage implements OnInit {
                     detail: 'La entrevista se guardó exitosamente. Los resultados fueron procesados.'
                 });
                 this.closeInterview();
+                this.loadFinalizadas();
                 this.loadPendientes(true);
             },
             error: (err) => {
@@ -1610,6 +1842,12 @@ export class EntrevistasPage implements OnInit {
     onLoteChange(value: string): void {
         this.selectedLote = value ?? '';
         this.applyPendingFilters();
+        this.cdr.detectChanges();
+    }
+
+    onFinalizadasSearchChange(value: string): void {
+        this.finalizadasSearchTerm = value ?? '';
+        this.applyFinalizadasFilter();
         this.cdr.detectChanges();
     }
 
@@ -1722,6 +1960,53 @@ export class EntrevistasPage implements OnInit {
 
     isDirectRegistration(item: PersonaElegible): boolean {
         return (item.loteNombre || '').toLowerCase().startsWith('registro directo');
+    }
+
+    openFinalizadaDetalle(item: EntrevistaFinalizadaResumen): void {
+        if (this.loadingFinalizadaDetalleId !== null) return;
+
+        this.loadingFinalizadaDetalleId = item.entrevistaId;
+        this.ciesService.getEntrevista(item.entrevistaId).subscribe({
+            next: (response) => {
+                this.loadingFinalizadaDetalleId = null;
+                this.selectedFinalizadaDetail = response;
+                this.finalizadaDetailVisible = true;
+                this.cdr.detectChanges();
+            },
+            error: (err) => {
+                this.loadingFinalizadaDetalleId = null;
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: this.extractErrorMessage(err, 'No se pudo cargar el detalle de la entrevista finalizada.')
+                });
+                console.error('Error loading finalizada detail:', err);
+            }
+        });
+    }
+
+    private applyFinalizadasFilter(): void {
+        const search = this.normalizeText(this.finalizadasSearchTerm);
+        const tokens = search.split(' ').filter(Boolean);
+        this.filteredFinalizadas = this.finalizadas
+            .filter((item) => {
+                if (!tokens.length) return true;
+                const haystack = this.normalizeText([
+                    item.personaNombre,
+                    item.documento,
+                    item.codigoEntrevista,
+                    item.clinica,
+                    item.regional,
+                    item.encuestador,
+                    item.loteNombre
+                ].filter(Boolean).join(' '));
+                return tokens.every((token) => haystack.includes(token));
+            })
+            .sort((a, b) => {
+                const fechaA = a.fechaFin ? new Date(a.fechaFin).getTime() : 0;
+                const fechaB = b.fechaFin ? new Date(b.fechaFin).getTime() : 0;
+                return fechaB - fechaA;
+            });
     }
 
     private normalizeIdentityDocument(value: unknown): string {

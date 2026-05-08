@@ -1415,7 +1415,7 @@ export class ReporteriaPage implements OnInit {
     downloading = false;
     excelDialogVisible = false;
     activeTab = '0';
-    filtersExpanded = true;
+    filtersExpanded = false;
 
     exportFilters: ReportFilters = {
         anio: '',

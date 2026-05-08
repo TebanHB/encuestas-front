@@ -725,7 +725,7 @@ export class AuditoriaPage implements OnInit {
     selectedPayloadJson = '';
     busquedaRealizada = false;
     loading = false;
-    filtersExpanded = true;
+    filtersExpanded = false;
     pageIndex = 0;
     pageSize = 15;
     totalRegistros = 0;

@@ -96,6 +96,22 @@ export interface PendientesEntrevistaResumen {
     items: PersonaElegible[];
 }
 
+export interface EntrevistaFinalizadaResumen {
+    entrevistaId: number;
+    codigoEntrevista: string;
+    personaNombre: string;
+    documento?: string;
+    clinica: string;
+    regional: string;
+    fechaConsulta?: string;
+    fechaFin?: string;
+    encuestador: string;
+    loteNombre?: string;
+    pobre: boolean;
+    excluido: boolean;
+    subatendido: boolean;
+}
+
 export interface LoteMedicare {
     id: number;
     nombre: string;
@@ -561,6 +577,10 @@ export class CiesService {
         }
 
         return this.pendientesResumenRequests.get(safeLimit)!;
+    }
+
+    getFinalizadasEntrevista(): Observable<EntrevistaFinalizadaResumen[]> {
+        return this.http.get<EntrevistaFinalizadaResumen[]>(`${this.apiBase}/entrevistas/finalizadas`);
     }
 
     iniciarEntrevista(personaId: number): Observable<Entrevista> {
