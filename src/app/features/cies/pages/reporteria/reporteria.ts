@@ -99,19 +99,23 @@ interface SelectOption {
 
             <!-- FILTROS -->
             <section class="card cies-filter-card">
-                <div class="cies-section-head">
+                <div class="cies-section-head cies-section-head--clickable" (click)="filtersExpanded = !filtersExpanded">
                     <div class="cies-section-head__content">
                         <div>
                             <h3>Filtros de análisis</h3>
                             <p>Acota la reportería por tiempo, sede, versión metodológica, clasificación y variable.</p>
                         </div>
-                        <app-cies-info-hint text="Los filtros afectan los indicadores, gráficos, comparativos y archivos exportados."></app-cies-info-hint>
+                        <div style="display:flex;align-items:center;gap:0.5rem">
+                            <app-cies-info-hint text="Los filtros afectan los indicadores, gráficos, comparativos y archivos exportados." (click)="$event.stopPropagation()"></app-cies-info-hint>
+                            <span class="cies-filter-count" *ngIf="activeFilterCount" (click)="$event.stopPropagation()">
+                                {{ activeFilterCount }} {{ activeFilterCount === 1 ? 'filtro activo' : 'filtros activos' }}
+                            </span>
+                            <i class="pi" [class.pi-chevron-down]="!filtersExpanded" [class.pi-chevron-up]="filtersExpanded"
+                                style="font-size:1rem;color:var(--text-color-secondary);transition:transform 0.2s"></i>
+                        </div>
                     </div>
-                    <span class="cies-filter-count" *ngIf="activeFilterCount">
-                        {{ activeFilterCount }} {{ activeFilterCount === 1 ? 'filtro activo' : 'filtros activos' }}
-                    </span>
                 </div>
-                <div class="cies-filter-grid">
+                <div class="cies-filter-grid" *ngIf="filtersExpanded">
                     <div class="cies-filter-field cies-filter-field--short">
                         <label>Año</label>
                         <input pInputText [(ngModel)]="filters.anio" class="w-full" placeholder="Ej: 2026"
@@ -1218,6 +1222,17 @@ interface SelectOption {
             border-bottom: 1px solid var(--surface-border);
         }
 
+        .cies-section-head--clickable {
+            cursor: pointer;
+            user-select: none;
+            border-radius: 0.5rem;
+            transition: background 0.15s ease;
+        }
+
+        .cies-section-head--clickable:hover {
+            background: color-mix(in srgb, var(--surface-ground) 60%, transparent);
+        }
+
         .cies-filter-count {
             flex: 0 0 auto;
             display: inline-flex;
@@ -1400,6 +1415,7 @@ export class ReporteriaPage implements OnInit {
     downloading = false;
     excelDialogVisible = false;
     activeTab = '0';
+    filtersExpanded = true;
 
     exportFilters: ReportFilters = {
         anio: '',

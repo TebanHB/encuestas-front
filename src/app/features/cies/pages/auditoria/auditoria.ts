@@ -64,17 +64,21 @@ interface FiltrosAuditoria {
                     <p-tabpanel value="0">
                     <!-- Filtros -->
                     <div class="card">
-                        <div class="cies-section-head">
+                        <div class="cies-section-head cies-section-head--clickable" (click)="filtersExpanded = !filtersExpanded">
                             <div class="cies-section-head__content">
                                 <div>
                                     <h3>Filtros de búsqueda</h3>
                                     <p>Refina los resultados por tipo de evento, usuario, resultado o rango de fechas.</p>
                                 </div>
-                                <app-cies-info-hint text="Cada registro muestra quién hizo qué, cuándo y con qué resultado."></app-cies-info-hint>
+                                <div style="display:flex;align-items:center;gap:0.5rem">
+                                    <app-cies-info-hint text="Cada registro muestra quién hizo qué, cuándo y con qué resultado." (click)="$event.stopPropagation()"></app-cies-info-hint>
+                                    <i class="pi" [class.pi-chevron-down]="!filtersExpanded" [class.pi-chevron-up]="filtersExpanded"
+                                        style="font-size:1rem;color:var(--text-color-secondary);transition:transform 0.2s"></i>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="cies-form-grid cies-form-grid--three">
+                        <div class="cies-form-grid cies-form-grid--three" *ngIf="filtersExpanded">
                             <div>
                                 <label>Tipo de Evento</label>
                                 <p-select [options]="tipoEventos" [(ngModel)]="filtros.tipo"
@@ -108,6 +112,14 @@ interface FiltrosAuditoria {
                                 <button pButton type="button" label="Limpiar filtros" icon="pi pi-eraser"
                                     severity="secondary" [outlined]="true" (click)="limpiarFiltros()"></button>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Cargando inicial -->
+                    <div class="card" *ngIf="loading && !registros.length">
+                        <div class="cies-empty-state">
+                            <div class="cies-empty-state__icon"><i class="pi pi-spin pi-spinner"></i></div>
+                            <h3>Cargando registros de auditoría...</h3>
                         </div>
                     </div>
 
@@ -177,24 +189,12 @@ interface FiltrosAuditoria {
                         </p-table>
                     </div>
 
-                    <!-- Empty states -->
-                    <div class="card" *ngIf="!registros.length && busquedaRealizada">
+                    <!-- Empty state -->
+                    <div class="card" *ngIf="!registros.length && busquedaRealizada && !loading">
                         <div class="cies-empty-state">
                             <div class="cies-empty-state__icon"><i class="pi pi-search"></i></div>
                             <h3>No se encontraron registros</h3>
                             <p>Intenta ajustar los filtros de búsqueda para ver más resultados.</p>
-                        </div>
-                    </div>
-
-                    <div class="card" *ngIf="!busquedaRealizada && !loading">
-                        <div class="cies-empty-state">
-                            <div class="cies-empty-state__icon"><i class="pi pi-clock"></i></div>
-                            <h3>Selecciona filtros y presiona Buscar</h3>
-                            <p>Puedes filtrar por tipo de evento, usuario, resultado y rango de fechas.</p>
-                            <div class="cies-empty-state__actions">
-                                <button pButton type="button" label="Buscar todos" icon="pi pi-search"
-                                    (click)="buscar(true)"></button>
-                            </div>
                         </div>
                     </div>
                 </p-tabpanel>
@@ -518,6 +518,17 @@ interface FiltrosAuditoria {
             color: var(--primary-color);
         }
 
+        .cies-section-head--clickable {
+            cursor: pointer;
+            user-select: none;
+            border-radius: 0.5rem;
+            transition: background 0.15s ease;
+        }
+
+        .cies-section-head--clickable:hover {
+            background: color-mix(in srgb, var(--surface-ground) 60%, transparent);
+        }
+
         .cies-filters-actions {
             display: flex;
             flex-wrap: wrap;
@@ -714,6 +725,7 @@ export class AuditoriaPage implements OnInit {
     selectedPayloadJson = '';
     busquedaRealizada = false;
     loading = false;
+    filtersExpanded = true;
     pageIndex = 0;
     pageSize = 15;
     totalRegistros = 0;
@@ -753,6 +765,7 @@ export class AuditoriaPage implements OnInit {
     ];
 
     ngOnInit(): void {
+        this.buscar(true);
         this.cargarOutbox();
         this.cargarMetodologias();
     }
@@ -909,9 +922,7 @@ export class AuditoriaPage implements OnInit {
             fechaInicio: null,
             fechaFin: null
         };
-        this.busquedaRealizada = false;
-        this.registros = [];
-        this.cdr.detectChanges();
+        this.buscar(true);
     }
 
     verDetalle(registro: AuditoriaRegistro): void {
