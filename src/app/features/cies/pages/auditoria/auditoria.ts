@@ -14,7 +14,7 @@ import { Toast } from 'primeng/toast';
 import { TabsModule } from 'primeng/tabs';
 import { TooltipModule } from 'primeng/tooltip';
 import { BadgeModule } from 'primeng/badge';
-import { FechaCortaPipe, FechaHoraPipe } from '../../../../shared/pipes/formato.pipe';
+import { FechaHoraPipe } from '../../../../shared/pipes/formato.pipe';
 import { CiesInfoHintComponent } from '../../components/cies-info-hint';
 import { CiesService, AuditoriaRegistro, MedicareOutboxItem, Metodologia } from '../../services/cies.service';
 
@@ -32,7 +32,7 @@ interface FiltrosAuditoria {
     imports: [
         CommonModule, FormsModule, ButtonModule, DatePickerModule, DialogModule, InputTextModule,
         SelectModule, TableModule, TagModule, TextareaModule, Toast, TabsModule, TooltipModule, BadgeModule,
-        FechaCortaPipe, FechaHoraPipe, CiesInfoHintComponent
+        FechaHoraPipe, CiesInfoHintComponent
     ],
     providers: [MessageService],
     template: `

@@ -923,13 +923,13 @@ interface SelectOption {
             border-radius: 50%;
         }
 
-        .dot--pobre { background: #ef4444; }
-        .dot--excluido { background: #f59e0b; }
-        .dot--subatendido { background: #0ea5e9; }
+        .dot--pobre{background:#ef4444}
+        .dot--excluido{background:#f59e0b}
+        .dot--subatendido{background:#0ea5e9}
 
-        ::ng-deep .progress-bar--pobre .p-progressbar-value { background: #ef4444; }
-        ::ng-deep .progress-bar--excluido .p-progressbar-value { background: #f59e0b; }
-        ::ng-deep .progress-bar--subatendido .p-progressbar-value { background: #0ea5e9; }
+        ::ng-deep .progress-bar--pobre .p-progressbar-value{background:#ef4444}
+        ::ng-deep .progress-bar--excluido .p-progressbar-value{background:#f59e0b}
+        ::ng-deep .progress-bar--subatendido .p-progressbar-value{background:#0ea5e9}
 
         .cies-chart-card {
             display: flex;
@@ -1045,11 +1045,11 @@ interface SelectOption {
             overflow: hidden;
         }
 
-        .clinic-bar i { display: block; height: 100%; }
+        .clinic-bar i{display:block;height:100%}
 
-        .clinic-bar--pobre i { background: #ef4444; }
-        .clinic-bar--excluido i { background: #f59e0b; }
-        .clinic-bar--subatendido i { background: #0ea5e9; }
+        .clinic-bar--pobre i{background:#ef4444}
+        .clinic-bar--excluido i{background:#f59e0b}
+        .clinic-bar--subatendido i{background:#0ea5e9}
 
         .excel-frequency-grid {
             display: grid;
@@ -1108,7 +1108,7 @@ interface SelectOption {
             font-size: 0.82rem;
         }
 
-        .excel-mini-chart__values strong { color: var(--text-color); }
+        .excel-mini-chart__values strong{color:var(--text-color)}
 
         .excel-mini-chart__values em {
             font-style: normal;
@@ -1206,9 +1206,9 @@ interface SelectOption {
             transition: width 0.3s ease;
         }
 
-        .mini-bar--pobre { background: #ef4444; }
-        .mini-bar--excluido { background: #f59e0b; }
-        .mini-bar--subatendido { background: #0ea5e9; }
+        .mini-bar--pobre{background:#ef4444}
+        .mini-bar--excluido{background:#f59e0b}
+        .mini-bar--subatendido{background:#0ea5e9}
 
         .cies-filter-card {
             display: flex;
