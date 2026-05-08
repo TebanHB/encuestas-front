@@ -580,7 +580,7 @@ export class CiesService {
     }
 
     getFinalizadasEntrevista(): Observable<EntrevistaFinalizadaResumen[]> {
-        return this.http.get<EntrevistaFinalizadaResumen[]>(`${this.apiBase}/entrevistas/finalizadas`);
+        return this.http.get<EntrevistaFinalizadaResumen[]>(`${this.apiBase}/entrevistas-finalizadas`);
     }
 
     iniciarEntrevista(personaId: number): Observable<Entrevista> {
