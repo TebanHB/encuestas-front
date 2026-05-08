@@ -18,7 +18,7 @@ export default [
             {
                 path: 'seleccion',
                 loadComponent: () => import('./pages/seleccion/seleccion').then((m) => m.SeleccionPage),
-                canActivate: [encuestadorGuard]
+                canActivate: [adminGuard]
             },
             {
                 path: 'entrevistas',
