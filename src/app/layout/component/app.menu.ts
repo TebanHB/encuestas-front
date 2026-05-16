@@ -61,6 +61,7 @@ export class AppMenu implements OnInit {
                 {
                     label: 'Trabajo diario',
                     items: [
+                        { label: 'Registrar personas', icon: 'pi pi-fw pi-user-plus', routerLink: ['/pages/seleccion'] },
                         { label: 'Entrevistar ahora', icon: 'pi pi-fw pi-file-edit', routerLink: ['/pages/entrevistas'] }
                     ]
                 }

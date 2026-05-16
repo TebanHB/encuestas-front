@@ -38,6 +38,18 @@ interface SelectOption {
     value: string;
 }
 
+interface ChartTableColumn {
+    field: string;
+    header: string;
+    type?: 'text' | 'number' | 'percent';
+}
+
+interface ChartTableSection {
+    title: string;
+    columns: ChartTableColumn[];
+    rows: Array<Record<string, unknown>>;
+}
+
 @Component({
     selector: 'app-reporteria-page',
     standalone: true,
@@ -514,6 +526,11 @@ interface SelectOption {
                             <div class="chart-container chart-container--compact">
                                 <p-chart type="doughnut" [data]="excelFactoresChartData" [options]="doughnutOptions"></p-chart>
                             </div>
+                            <div class="chart-card-actions" *ngIf="graficosExcel.cantidadFactores.length">
+                                <button pButton type="button" label="Ver tablas" icon="pi pi-table"
+                                    styleClass="chart-table-button"
+                                    (click)="openChartTables('factores')"></button>
+                            </div>
                             <div class="associated-summary" *ngIf="graficosExcel.cantidadFactores.length">
                                 <span *ngFor="let item of graficosExcel.cantidadFactores">
                                     <strong>{{ item.porcentaje }}%</strong>
@@ -532,6 +549,11 @@ interface SelectOption {
                             </div>
                             <div class="chart-container chart-container--compact">
                                 <p-chart type="pie" [data]="excelPobreChartData" [options]="pieChartOptions"></p-chart>
+                            </div>
+                            <div class="chart-card-actions" *ngIf="graficosExcel.vulnerabilidadPobre.length">
+                                <button pButton type="button" label="Ver tablas" icon="pi pi-table"
+                                    styleClass="chart-table-button"
+                                    (click)="openChartTables('pobreza-resumen')"></button>
                             </div>
                             <div class="associated-summary" *ngIf="graficosExcel.vulnerabilidadPobre.length">
                                 <span *ngFor="let item of graficosExcel.vulnerabilidadPobre">
@@ -552,6 +574,11 @@ interface SelectOption {
                             <div class="chart-container">
                                 <p-chart type="bar" [data]="excelPobrezaRegionalChartData" [options]="percentByRegionalChartOptions"></p-chart>
                             </div>
+                            <div class="chart-card-actions" *ngIf="graficosExcel.regionales.length">
+                                <button pButton type="button" label="Ver tablas" icon="pi pi-table"
+                                    styleClass="chart-table-button"
+                                    (click)="openChartTables('pobreza-regional')"></button>
+                            </div>
                         </article>
 
                         <article class="card cies-chart-card cies-chart-card--wide">
@@ -564,6 +591,11 @@ interface SelectOption {
                             </div>
                             <div class="chart-container">
                                 <p-chart type="bar" [data]="excelExclusionRegionalChartData" [options]="percentByRegionalChartOptions"></p-chart>
+                            </div>
+                            <div class="chart-card-actions" *ngIf="graficosExcel.regionales.length">
+                                <button pButton type="button" label="Ver tablas" icon="pi pi-table"
+                                    styleClass="chart-table-button"
+                                    (click)="openChartTables('exclusion-regional')"></button>
                             </div>
                         </article>
 
@@ -578,6 +610,11 @@ interface SelectOption {
                             <div class="chart-container">
                                 <p-chart type="bar" [data]="excelSubatencionRegionalChartData" [options]="percentByRegionalChartOptions"></p-chart>
                             </div>
+                            <div class="chart-card-actions" *ngIf="graficosExcel.regionales.length">
+                                <button pButton type="button" label="Ver tablas" icon="pi pi-table"
+                                    styleClass="chart-table-button"
+                                    (click)="openChartTables('subatencion-regional')"></button>
+                            </div>
                         </article>
 
                         <article class="card cies-chart-card cies-chart-card--wide">
@@ -591,6 +628,11 @@ interface SelectOption {
                             <div class="chart-container">
                                 <p-chart type="bar" [data]="excelRegionalChartData" [options]="barChartOptions"></p-chart>
                             </div>
+                            <div class="chart-card-actions" *ngIf="graficosExcel.regionales.length">
+                                <button pButton type="button" label="Ver tablas" icon="pi pi-table"
+                                    styleClass="chart-table-button"
+                                    (click)="openChartTables('vulnerabilidad-regional')"></button>
+                            </div>
                         </article>
 
                         <article class="card cies-chart-card cies-chart-card--wide">
@@ -603,6 +645,11 @@ interface SelectOption {
                             </div>
                             <div class="chart-container">
                                 <p-chart type="bar" [data]="excelCombinacionesChartData" [options]="associatedChartOptions"></p-chart>
+                            </div>
+                            <div class="chart-card-actions" *ngIf="graficosExcel.combinaciones.length">
+                                <button pButton type="button" label="Ver tablas" icon="pi pi-table"
+                                    styleClass="chart-table-button"
+                                    (click)="openChartTables('combinaciones-regional')"></button>
                             </div>
                             <div class="associated-summary" *ngIf="associatedSummary.length">
                                 <span *ngFor="let item of associatedSummary">
@@ -626,6 +673,11 @@ interface SelectOption {
                                 <h4>{{ chart.title }}</h4>
                                 <div class="excel-mini-chart__body">
                                     <p-chart type="bar" [data]="chart.data" [options]="frequencyChartOptions"></p-chart>
+                                </div>
+                                <div class="chart-card-actions" *ngIf="chart.items.length">
+                                    <button pButton type="button" label="Ver tablas" icon="pi pi-table"
+                                        styleClass="chart-table-button"
+                                        (click)="openChartTables('frecuencia', chart)"></button>
                                 </div>
                                 <div class="excel-mini-chart__values">
                                     <span *ngFor="let item of chart.items">
@@ -753,6 +805,42 @@ interface SelectOption {
                     [loading]="downloading" [disabled]="downloading" (click)="downloadExcelFromDialog(false)"></button>
                 <button pButton type="button" label="Exportar todos los datos" icon="pi pi-database"
                     severity="success" [loading]="downloading" [disabled]="downloading" (click)="downloadExcelFromDialog(true)"></button>
+            </ng-template>
+        </p-dialog>
+
+        <p-dialog [(visible)]="chartTablesVisible" [modal]="true" [draggable]="false" [resizable]="false"
+            [style]="{ width: '72rem', 'max-width': '96vw' }"
+            [contentStyle]="{ overflow: 'auto', 'max-height': 'calc(92vh - 8rem)' }"
+            [header]="chartTablesTitle" styleClass="cies-dialog cies-chart-tables-dialog">
+            <div class="chart-tables-layout" *ngIf="chartTableSections.length; else noChartTableData">
+                <section class="chart-table-section" *ngFor="let section of chartTableSections">
+                    <div class="cies-section-head cies-section-head--stack">
+                        <div>
+                            <h3>{{ section.title }}</h3>
+                            <p>{{ section.rows.length | numeroFormato }} fila{{ section.rows.length === 1 ? '' : 's' }}</p>
+                        </div>
+                    </div>
+                    <p-table [value]="section.rows" responsiveLayout="scroll" styleClass="cies-table chart-table"
+                        [tableStyle]="{ 'min-width': '42rem' }">
+                        <ng-template pTemplate="header">
+                            <tr>
+                                <th *ngFor="let column of section.columns">{{ column.header }}</th>
+                            </tr>
+                        </ng-template>
+                        <ng-template pTemplate="body" let-row>
+                            <tr>
+                                <td *ngFor="let column of section.columns">{{ formatChartTableCell(row, column) }}</td>
+                            </tr>
+                        </ng-template>
+                    </p-table>
+                </section>
+            </div>
+            <ng-template #noChartTableData>
+                <div class="cies-empty-state cies-empty-state--compact">
+                    <div class="cies-empty-state__icon"><i class="pi pi-table"></i></div>
+                    <h3>Sin tablas para mostrar</h3>
+                    <p>No hay datos disponibles con los filtros actuales para este gráfico.</p>
+                </div>
             </ng-template>
         </p-dialog>
 
@@ -936,6 +1024,37 @@ interface SelectOption {
             flex-direction: column;
         }
 
+        .chart-card-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 0.35rem;
+        }
+
+        :host ::ng-deep .chart-table-button.p-button {
+            border: none;
+            color: #ffffff;
+            background: linear-gradient(135deg, #0f766e 0%, #14b8a6 48%, #2563eb 100%);
+            box-shadow: 0 10px 24px rgba(37, 99, 235, 0.18);
+            font-weight: 700;
+            padding: 0.6rem 0.95rem;
+            border-radius: 999px;
+            transition:
+                transform 0.2s ease,
+                box-shadow 0.25s ease,
+                filter 0.25s ease;
+        }
+
+        :host ::ng-deep .chart-table-button.p-button:not(:disabled):hover {
+            transform: translateY(-1px);
+            filter: saturate(1.05);
+            box-shadow: 0 14px 28px rgba(20, 184, 166, 0.24);
+        }
+
+        :host ::ng-deep .chart-table-button.p-button:focus-visible {
+            outline: 2px solid rgba(37, 99, 235, 0.28);
+            outline-offset: 2px;
+        }
+
         .chart-container--compact {
             height: 20rem;
             min-height: 20rem;
@@ -1078,6 +1197,127 @@ interface SelectOption {
         .excel-mini-chart__body {
             height: 16rem;
             min-height: 16rem;
+        }
+
+        .chart-tables-layout {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .chart-table-section {
+            display: grid;
+            gap: 0.75rem;
+            padding: 1rem;
+            border: 1px solid var(--surface-border);
+            border-radius: 14px;
+            background:
+                linear-gradient(180deg, color-mix(in srgb, var(--surface-card) 92%, white 8%), var(--surface-card));
+            box-shadow: 0 14px 28px rgba(15, 23, 42, 0.05);
+        }
+
+        .cies-section-head--stack {
+            align-items: flex-start;
+        }
+
+        .cies-empty-state--compact {
+            min-height: 16rem;
+        }
+
+        ::ng-deep .cies-chart-tables-dialog .p-dialog-header {
+            border-bottom: 1px solid var(--surface-border);
+        }
+
+        ::ng-deep .cies-chart-tables-dialog .p-dialog-content {
+            background:
+                linear-gradient(180deg, color-mix(in srgb, var(--surface-ground) 88%, white 12%), var(--surface-card));
+        }
+
+        ::ng-deep .cies-chart-tables-dialog .chart-table .p-datatable-table-container {
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--surface-border);
+            background:
+                linear-gradient(180deg,
+                    color-mix(in srgb, var(--surface-card) 94%, white 6%),
+                    color-mix(in srgb, var(--surface-ground) 70%, var(--surface-card) 30%));
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.35),
+                0 10px 24px rgba(15, 23, 42, 0.05);
+        }
+
+        ::ng-deep .cies-chart-tables-dialog .chart-table .p-datatable-thead > tr > th {
+            background:
+                linear-gradient(180deg,
+                    color-mix(in srgb, var(--primary-color) 16%, var(--surface-card)),
+                    color-mix(in srgb, var(--primary-color) 8%, var(--surface-card)));
+            color: var(--text-color);
+            font-weight: 700;
+            border-color: var(--surface-border);
+            padding-top: 0.85rem;
+            padding-bottom: 0.85rem;
+            position: relative;
+            letter-spacing: 0.01em;
+            box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--primary-color) 18%, transparent);
+        }
+
+        ::ng-deep .cies-chart-tables-dialog .chart-table .p-datatable-tbody > tr > td {
+            border-color: color-mix(in srgb, var(--surface-border) 82%, transparent);
+            padding-top: 0.8rem;
+            padding-bottom: 0.8rem;
+            vertical-align: middle;
+            transition:
+                background-color 0.18s ease,
+                transform 0.18s ease,
+                box-shadow 0.18s ease,
+                color 0.18s ease;
+        }
+
+        ::ng-deep .cies-chart-tables-dialog .chart-table .p-datatable-tbody > tr:nth-child(even) {
+            background:
+                linear-gradient(180deg,
+                    color-mix(in srgb, var(--surface-ground) 62%, transparent),
+                    color-mix(in srgb, var(--surface-ground) 38%, transparent));
+        }
+
+        ::ng-deep .cies-chart-tables-dialog .chart-table .p-datatable-tbody > tr:hover {
+            background: color-mix(in srgb, var(--primary-color) 9%, var(--surface-card));
+        }
+
+        ::ng-deep .cies-chart-tables-dialog .chart-table .p-datatable-tbody > tr:hover > td {
+            background: transparent;
+            transform: translateY(-1px);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        ::ng-deep .cies-chart-tables-dialog .chart-table .p-datatable-tbody > tr > td:not(:last-child) {
+            position: relative;
+        }
+
+        ::ng-deep .cies-chart-tables-dialog .chart-table .p-datatable-tbody > tr > td:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            top: 18%;
+            right: 0;
+            width: 1px;
+            height: 64%;
+            background: color-mix(in srgb, var(--surface-border) 55%, transparent);
+            pointer-events: none;
+        }
+
+        ::ng-deep .cies-chart-tables-dialog .chart-table .p-datatable-tbody > tr:hover > td:first-child {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        ::ng-deep .cies-chart-tables-dialog .chart-table .p-datatable-thead > tr > th:first-child,
+        ::ng-deep .cies-chart-tables-dialog .chart-table .p-datatable-tbody > tr > td:first-child {
+            border-left: 3px solid color-mix(in srgb, var(--primary-color) 22%, transparent);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            ::ng-deep .cies-chart-tables-dialog .chart-table .p-datatable-tbody > tr > td {
+                transition: none;
+            }
         }
 
         .excel-mini-chart__body p-chart,
@@ -1414,6 +1654,9 @@ export class ReporteriaPage implements OnInit {
     loading = false;
     downloading = false;
     excelDialogVisible = false;
+    chartTablesVisible = false;
+    chartTablesTitle = '';
+    chartTableSections: ChartTableSection[] = [];
     activeTab = '0';
     filtersExpanded = false;
 
@@ -1928,7 +2171,19 @@ export class ReporteriaPage implements OnInit {
             ZONA_RESIDENCIA: '% Residencia actual',
             ACCESO_SALUD: '% Últimos 12 meses que acudió a algún hospital'
         };
-        return titles[codigoVariable?.toUpperCase()] || fallback;
+        const normalizedCode = codigoVariable?.toUpperCase?.() || '';
+        const configuredTitle = titles[normalizedCode];
+        if (configuredTitle) {
+            return configuredTitle;
+        }
+
+        const cleanFallback = (fallback || '')
+            .replace(/\s+/g, ' ')
+            .replace(/^¿\s*/, '')
+            .replace(/\?\s*$/, '')
+            .trim();
+
+        return cleanFallback ? `% ${cleanFallback}` : (fallback || codigoVariable || '');
     }
 
     private buildCharts(): void {
@@ -2082,6 +2337,175 @@ export class ReporteriaPage implements OnInit {
                     }
                 }));
         }
+    }
+
+    openChartTables(
+        kind: 'factores' | 'pobreza-resumen' | 'pobreza-regional' | 'exclusion-regional' | 'subatencion-regional' | 'vulnerabilidad-regional' | 'combinaciones-regional' | 'frecuencia',
+        chart?: { title: string; items: Array<{ etiqueta: string; total: number; porcentaje: number }> }
+    ): void {
+        if (!this.graficosExcel) {
+            return;
+        }
+
+        const config = this.buildChartTableConfig(kind, chart);
+        this.chartTablesTitle = config.title;
+        this.chartTableSections = config.sections;
+        this.chartTablesVisible = true;
+    }
+
+    formatChartTableCell(row: Record<string, unknown>, column: ChartTableColumn): string {
+        const value = row[column.field];
+        if (value == null) {
+            return '—';
+        }
+        if (column.type === 'percent') {
+            return `${Number(value).toLocaleString('es-BO', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}%`;
+        }
+        if (column.type === 'number') {
+            return Number(value).toLocaleString('es-BO');
+        }
+        return String(value);
+    }
+
+    private buildChartTableConfig(
+        kind: 'factores' | 'pobreza-resumen' | 'pobreza-regional' | 'exclusion-regional' | 'subatencion-regional' | 'vulnerabilidad-regional' | 'combinaciones-regional' | 'frecuencia',
+        chart?: { title: string; items: Array<{ etiqueta: string; total: number; porcentaje: number }> }
+    ): { title: string; sections: ChartTableSection[] } {
+        const graficos = this.graficosExcel;
+        if (!graficos) {
+            return { title: 'Tablas del gráfico', sections: [] };
+        }
+
+        if (kind === 'factores') {
+            return {
+                title: 'Tablas · Distribución por número de condiciones de vulnerabilidad',
+                sections: [{
+                    title: 'Distribución general',
+                    columns: [
+                        { field: 'etiqueta', header: 'Condición', type: 'text' },
+                        { field: 'total', header: 'Total', type: 'number' },
+                        { field: 'porcentaje', header: '%', type: 'percent' }
+                    ],
+                    rows: graficos.cantidadFactores
+                }]
+            };
+        }
+
+        if (kind === 'pobreza-resumen') {
+            return {
+                title: 'Tablas · % de usuarias pobres y no pobres',
+                sections: [{
+                    title: 'Resumen pobreza',
+                    columns: [
+                        { field: 'etiqueta', header: 'Clasificación', type: 'text' },
+                        { field: 'total', header: 'Total', type: 'number' },
+                        { field: 'porcentaje', header: '%', type: 'percent' }
+                    ],
+                    rows: graficos.vulnerabilidadPobre
+                }]
+            };
+        }
+
+        if (kind === 'pobreza-regional') {
+            return {
+                title: 'Tablas · % de usuarias clasificadas como pobres por regional',
+                sections: [{
+                    title: 'Pobreza por regional',
+                    columns: [
+                        { field: 'regional', header: 'Regional' },
+                        { field: 'total', header: 'Entrevistas', type: 'number' },
+                        { field: 'pobres', header: 'Pobres', type: 'number' },
+                        { field: 'porcentajePobres', header: '% Pobreza', type: 'percent' }
+                    ],
+                    rows: graficos.regionales
+                }]
+            };
+        }
+
+        if (kind === 'exclusion-regional') {
+            return {
+                title: 'Tablas · % de usuarias clasificadas como excluidas por regional',
+                sections: [{
+                    title: 'Exclusión por regional',
+                    columns: [
+                        { field: 'regional', header: 'Regional' },
+                        { field: 'total', header: 'Entrevistas', type: 'number' },
+                        { field: 'excluidas', header: 'Excluidas', type: 'number' },
+                        { field: 'porcentajeExcluidas', header: '% Exclusión', type: 'percent' }
+                    ],
+                    rows: graficos.regionales
+                }]
+            };
+        }
+
+        if (kind === 'subatencion-regional') {
+            return {
+                title: 'Tablas · % de usuarias sub-atendidas por regional',
+                sections: [{
+                    title: 'Sub-atención por regional',
+                    columns: [
+                        { field: 'regional', header: 'Regional' },
+                        { field: 'total', header: 'Entrevistas', type: 'number' },
+                        { field: 'subatendidas', header: 'Sub-atendidas', type: 'number' },
+                        { field: 'porcentajeSubatendidas', header: '% Sub-atención', type: 'percent' }
+                    ],
+                    rows: graficos.regionales
+                }]
+            };
+        }
+
+        if (kind === 'vulnerabilidad-regional') {
+            return {
+                title: 'Tablas · % de vulnerabilidad por regional',
+                sections: [{
+                    title: 'Vulnerabilidad por factores',
+                    columns: [
+                        { field: 'regional', header: 'Regional' },
+                        { field: 'total', header: 'Entrevistas', type: 'number' },
+                        { field: 'pobres', header: 'Pobres', type: 'number' },
+                        { field: 'porcentajePobres', header: '% Pobreza', type: 'percent' },
+                        { field: 'excluidas', header: 'Excluidas', type: 'number' },
+                        { field: 'porcentajeExcluidas', header: '% Exclusión', type: 'percent' },
+                        { field: 'subatendidas', header: 'Sub-atendidas', type: 'number' },
+                        { field: 'porcentajeSubatendidas', header: '% Sub-atención', type: 'percent' }
+                    ],
+                    rows: graficos.regionales
+                }]
+            };
+        }
+
+        if (kind === 'combinaciones-regional') {
+            return {
+                title: 'Tablas · Combinaciones de condiciones por regional',
+                sections: [{
+                    title: 'Factores asociados por regional',
+                    columns: [
+                        { field: 'regional', header: 'Regional' },
+                        { field: 'total', header: 'Entrevistas', type: 'number' },
+                        { field: 'pobrezaExclusionAsociada', header: 'Pobreza + Exclusión', type: 'number' },
+                        { field: 'porcentajePobrezaExclusionAsociada', header: '% Pobreza + Exclusión', type: 'percent' },
+                        { field: 'pobrezaSubatencionAsociada', header: 'Pobreza + Sub-atención', type: 'number' },
+                        { field: 'porcentajePobrezaSubatencionAsociada', header: '% Pobreza + Sub-atención', type: 'percent' },
+                        { field: 'exclusionSubatencionAsociada', header: 'Exclusión + Sub-atención', type: 'number' },
+                        { field: 'porcentajeExclusionSubatencionAsociada', header: '% Exclusión + Sub-atención', type: 'percent' }
+                    ],
+                    rows: graficos.combinaciones
+                }]
+            };
+        }
+
+        return {
+            title: `Tablas · ${chart?.title || 'Frecuencias generales'}`,
+            sections: [{
+                title: chart?.title || 'Frecuencias generales',
+                columns: [
+                    { field: 'etiqueta', header: 'Respuesta' },
+                    { field: 'total', header: 'Total', type: 'number' },
+                    { field: 'porcentaje', header: '%', type: 'percent' }
+                ],
+                rows: chart?.items || []
+            }]
+        };
     }
 
     private validateFilters(filters: ReportFilters = this.filters): boolean {

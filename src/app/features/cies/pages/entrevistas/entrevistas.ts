@@ -32,6 +32,14 @@ interface ValidationError {
     mensaje: string;
 }
 
+interface InterviewDraftSnapshot {
+    interviewId: number;
+    userId: number | string;
+    currentStep: number;
+    answers: Record<number, AnswerValue>;
+    updatedAt: string;
+}
+
 @Component({
     selector: 'app-entrevistas-page',
     standalone: true,
@@ -67,15 +75,16 @@ interface ValidationError {
                 </div>
             </section>
 
-            <section *ngIf="!currentInterview" class="card cies-list-tabs">
+            <section *ngIf="!currentInterview" class="card cies-list-tabs" [attr.data-active-tab]="activeListTab">
+                <span class="cies-list-tabs__indicator" aria-hidden="true"></span>
                 <button pButton type="button" class="cies-list-tab"
                     [class.cies-list-tab--active]="activeListTab === 'pendientes'"
-                    [text]="activeListTab !== 'pendientes'"
+                    [text]="true"
                     label="Pendientes" icon="pi pi-clock"
                     (click)="setActiveListTab('pendientes')"></button>
                 <button pButton type="button" class="cies-list-tab"
                     [class.cies-list-tab--active]="activeListTab === 'finalizadas'"
-                    [text]="activeListTab !== 'finalizadas'"
+                    [text]="true"
                     label="Finalizado" icon="pi pi-check-circle"
                     (click)="setActiveListTab('finalizadas')"></button>
             </section>
@@ -276,12 +285,15 @@ interface ValidationError {
                             <td>{{ item.regional }}</td>
                             <td>{{ item.fechaFin | fechaCorta }}</td>
                             <td>
-                                <div class="cies-flag-list">
-                                    <p-tag *ngIf="item.pobre" value="Pobre" severity="danger"></p-tag>
+                                <div class="cies-flag-list" *ngIf="canViewSensitiveResults; else restrictedFinalizadaResult">
+                                    <p-tag *ngIf="item.pobre" value="Pobreza" severity="danger"></p-tag>
                                     <p-tag *ngIf="item.excluido" value="Excluida" severity="warn"></p-tag>
                                     <p-tag *ngIf="item.subatendido" value="Subatendida" severity="info"></p-tag>
                                     <span *ngIf="!item.pobre && !item.excluido && !item.subatendido" class="text-muted">Sin condiciones</span>
                                 </div>
+                                <ng-template #restrictedFinalizadaResult>
+                                    <span class="text-muted">Resultado reservado</span>
+                                </ng-template>
                             </td>
                             <td>
                                 <button pButton type="button" label="Ver" icon="pi pi-eye" size="small"
@@ -314,7 +326,13 @@ interface ValidationError {
                         <div class="progress-container">
                             <p-progressBar [value]="progressPercent" [style]="{ height: '8px' }"
                                 [class]="progressPercent === 100 ? 'progress-complete' : ''"></p-progressBar>
-                            <span class="progress-label">{{ answeredCount }} / {{ answerableQuestions.length }} respondidas</span>
+                            <span class="progress-label">
+                                <ng-container *ngIf="currentQuestion; else noQuestionProgress">
+                                    Pregunta {{ stepProgress }} de {{ totalSteps }} · {{ progressPercent }}%
+                                </ng-container>
+                                <ng-template #noQuestionProgress>Sin preguntas disponibles</ng-template>
+                            </span>
+                            <span class="draft-status" [class.draft-status--error]="draftStatus === 'error'">{{ draftStatusLabel }}</span>
                         </div>
                         <button pButton type="button" label="Cerrar" icon="pi pi-times" severity="secondary" [text]="true"
                             (click)="confirmClose()"></button>
@@ -334,7 +352,7 @@ interface ValidationError {
                     <i class="pi pi-exclamation-triangle"></i>
                     <div>
                         <strong>Entrevista termina aquí</strong>
-                        <p>La consulta fue registrada para otra persona. Según la regla del instrumento, la entrevista finaliza en esta pregunta.</p>
+                        <p>{{ terminationMessage }}</p>
                     </div>
                 </div>
 
@@ -354,8 +372,12 @@ interface ValidationError {
                 </div>
 
                 <!-- PREGUNTAS -->
-                <div class="preguntas-container">
-                    <div *ngFor="let question of visibleQuestions; let i = index"
+                <div class="preguntas-container" *ngIf="currentQuestion as question; else noQuestionsState">
+                    <div class="question-step">
+                        <div class="question-step__eyebrow">Pregunta {{ stepProgress }} de {{ totalSteps }}</div>
+                        <div class="question-step__title">{{ question.numeroVisible }}. {{ question.etiqueta }}</div>
+                    </div>
+                    <div
                         class="question-card"
                         [class.question-answered]="isQuestionAnswered(question)"
                         [class.question-invalid]="showValidation && isQuestionInvalid(question)"
@@ -402,7 +424,7 @@ interface ValidationError {
                             </div>
 
                             <!-- Input cuando se selecciona "Otro" -->
-                            <div *ngIf="isCurrentSelectedOtro(question) && !shouldSkipQuestion(question)" class="otro-input-wrapper">
+                            <div *ngIf="isCurrentSelectedOtro(question) && !shouldSkipQuestion(question) && !isTerminationQuestion(question)" class="otro-input-wrapper">
                                 <label class="otro-label">{{ getOtroLabel(question) }}</label>
                                 <input pInputText [ngModel]="answers[question.id].valorOtro || ''"
                                     class="w-full input-texto"
@@ -460,16 +482,31 @@ interface ValidationError {
                         </small>
                     </div>
                 </div>
+                <ng-template #noQuestionsState>
+                    <div class="cies-note cies-note--warning">
+                        <i class="pi pi-info-circle"></i>
+                        <span>No hay preguntas disponibles para esta entrevista.</span>
+                    </div>
+                </ng-template>
 
                 <!-- Acciones finales -->
                 <div class="entrevista-footer">
-                    <div class="footer-left"></div>
+                    <div class="footer-left">
+                        <button pButton type="button" label="Anterior" icon="pi pi-arrow-left"
+                            severity="secondary" [outlined]="true"
+                            [disabled]="submitting || currentStep === 0 || !currentQuestion"
+                            (click)="goToPrevStep()"></button>
+                    </div>
                     <div class="footer-right">
-                        <button pButton type="button"
+                        <button *ngIf="!terminatesInterview && !isLastStep" pButton type="button"
+                            label="Siguiente" icon="pi pi-arrow-right" iconPos="right"
+                            [disabled]="submitting || !currentQuestion"
+                            (click)="goToNextStep()"></button>
+                        <button *ngIf="terminatesInterview || isLastStep" pButton type="button"
                             [label]="terminatesInterview ? 'Finalizar (terminación temprana)' : 'Finalizar entrevista'"
                             [severity]="terminatesInterview ? 'warn' : 'success'"
                             [loading]="submitting"
-                            [disabled]="submitting"
+                            [disabled]="submitting || !currentQuestion"
                             icon="pi pi-check-circle"
                             (click)="submit()"></button>
                     </div>
@@ -562,11 +599,11 @@ interface ValidationError {
                 header="¿Cerrar entrevista?"
                 styleClass="cies-dialog">
                 <div class="close-confirm-content">
-                    <p>Si cierras ahora, <strong>las respuestas no guardadas se perderán</strong>.</p>
+                    <p>Estás saliendo de la entrevista. Tus cambios se han guardado y podrás <strong>retomarla desde el mismo punto</strong> al abrirla nuevamente en este dispositivo.</p>
                     <div class="close-confirm-actions">
                         <button pButton type="button" label="Continuar entrevista" icon="pi pi-arrow-left"
                             (click)="showCloseConfirm = false"></button>
-                        <button pButton type="button" label="Cerrar sin guardar" severity="danger"
+                        <button pButton type="button" label="Cerrar entrevista" severity="secondary"
                             [outlined]="true" (click)="closeInterview()"></button>
                     </div>
                 </div>
@@ -588,8 +625,8 @@ interface ValidationError {
                         </div>
                     </div>
 
-                    <div class="cies-detail-flags" *ngIf="selectedFinalizadaDetail.resultado">
-                        <p-tag [value]="selectedFinalizadaDetail.resultado.pobre ? 'Pobre' : 'No pobre'"
+                    <div class="cies-detail-flags" *ngIf="canViewSensitiveResults && selectedFinalizadaDetail.resultado">
+                        <p-tag [value]="selectedFinalizadaDetail.resultado.pobre ? 'Pobreza' : 'No pobreza'"
                             [severity]="selectedFinalizadaDetail.resultado.pobre ? 'danger' : 'secondary'"></p-tag>
                         <p-tag [value]="selectedFinalizadaDetail.resultado.excluido ? 'Excluida' : 'No excluida'"
                             [severity]="selectedFinalizadaDetail.resultado.excluido ? 'warn' : 'secondary'"></p-tag>
@@ -622,7 +659,7 @@ interface ValidationError {
         ::ng-deep .direct-registration-button.p-button {
             border: none !important;
             color: #ffffff !important;
-            background: linear-gradient(135deg, #0f766e, #f97316) !important;
+            background: linear-gradient(135deg, var(--primary-color), #f97316) !important;
             box-shadow: 0 12px 24px rgba(249, 115, 22, 0.24) !important;
             font-weight: 800 !important;
         }
@@ -707,19 +744,123 @@ interface ValidationError {
             text-align: right;
         }
 
+        .draft-status {
+            display: block;
+            font-size: 0.72rem;
+            color: var(--text-color-secondary);
+            margin-top: 0.2rem;
+            text-align: right;
+        }
+
+        .draft-status--error {
+            color: #dc2626;
+            font-weight: 600;
+        }
+
         .progress-complete + .progress-label {
-            color: #22c55e;
+            color: var(--primary-color);
             font-weight: 600;
         }
 
         .cies-list-tabs {
+            position: relative;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.35rem;
+            align-items: stretch;
+            padding: 0.35rem;
+            border-radius: 1.25rem;
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.9));
+            border: 1px solid color-mix(in srgb, var(--primary-color), transparent 88%);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.92),
+                0 16px 32px rgba(15, 23, 42, 0.06);
+            overflow: hidden;
+        }
+
+        .cies-list-tabs__indicator {
+            position: absolute;
+            top: 0.35rem;
+            left: 0.35rem;
+            width: calc(50% - 0.35rem);
+            height: calc(100% - 0.7rem);
+            border-radius: 1rem;
+            background: var(--primary-color);
+            box-shadow:
+                0 10px 24px color-mix(in srgb, var(--primary-color), transparent 70%),
+                inset 0 1px 0 rgba(255, 255, 255, 0.35);
+            transition:
+                transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+                box-shadow 0.25s ease;
+            will-change: transform;
+            pointer-events: none;
+        }
+
+        .cies-list-tabs[data-active-tab='finalizadas'] .cies-list-tabs__indicator {
+            transform: translateX(100%);
+        }
+
+        .cies-list-tab {
+            position: relative;
+            z-index: 1;
             display: flex;
-            gap: 0.75rem;
+            justify-content: center;
             align-items: center;
+            min-height: 3rem;
+            border-radius: 1rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            transition:
+                color 0.25s ease,
+                transform 0.2s ease,
+                opacity 0.2s ease;
+        }
+
+        .cies-list-tab:hover {
+            transform: translateY(-1px);
         }
 
         .cies-list-tab--active {
             font-weight: 700;
+            color: #ffffff;
+        }
+
+        :host ::ng-deep .cies-list-tab.p-button {
+            width: 100%;
+            border: 0;
+            background: transparent;
+            box-shadow: none;
+            padding: 0.8rem 1rem;
+        }
+
+        :host ::ng-deep .cies-list-tab.p-button:not(:disabled):hover {
+            background: transparent;
+            border: 0;
+        }
+
+        :host ::ng-deep .cies-list-tab.p-button:focus-visible {
+            box-shadow: none;
+            outline: none;
+        }
+
+        :host ::ng-deep .cies-list-tab .p-button-label,
+        :host ::ng-deep .cies-list-tab .p-button-icon {
+            position: relative;
+            z-index: 1;
+        }
+
+        :host ::ng-deep .cies-list-tab .p-button-icon {
+            font-size: 0.95rem;
+        }
+
+        :host ::ng-deep .cies-list-tab .p-button-label {
+            font-weight: inherit;
+        }
+
+        :host ::ng-deep .cies-list-tab.cies-list-tab--active .p-button-label,
+        :host ::ng-deep .cies-list-tab.cies-list-tab--active .p-button-icon {
+            color: #ffffff;
         }
 
         .cies-flag-list {
@@ -776,6 +917,27 @@ interface ValidationError {
             margin: 1rem 0;
         }
 
+        .question-step {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .question-step__eyebrow {
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: var(--primary-color);
+        }
+
+        .question-step__title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-color);
+            line-height: 1.4;
+        }
+
         .question-card {
             padding: 1rem 1.25rem;
             background: var(--surface-card);
@@ -790,8 +952,8 @@ interface ValidationError {
         }
 
         .question-card.question-answered {
-            border-color: #22c55e;
-            background: rgba(34, 197, 94, 0.04);
+            border-color: var(--primary-color);
+            background: color-mix(in srgb, var(--primary-color), transparent 96%);
         }
 
         .question-card.question-invalid {
@@ -857,7 +1019,7 @@ interface ValidationError {
         }
 
         .question-card.question-answered .question-number {
-            background: #22c55e;
+            background: var(--primary-color);
         }
 
         .question-card.question-invalid .question-number {
@@ -991,14 +1153,14 @@ interface ValidationError {
 
         .opcion-card:hover {
             border-color: var(--primary-color);
-            background: rgba(16, 185, 129, 0.08);
-            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.12);
+            background: color-mix(in srgb, var(--primary-color), transparent 92%);
+            box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color), transparent 88%);
         }
 
         .opcion-card.opcion-selected {
             border-color: var(--primary-color);
-            background: rgba(16, 185, 129, 0.14);
-            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.18);
+            background: color-mix(in srgb, var(--primary-color), transparent 86%);
+            box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color), transparent 82%);
         }
 
         .opcion-card.opcion-invalid {
@@ -1058,7 +1220,7 @@ interface ValidationError {
         .input-texto:focus, .input-texto-largo:focus {
             border-color: var(--primary-color);
             outline: none;
-            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color), transparent 85%);
         }
 
         .input-texto.input-invalid, .input-texto-largo.input-invalid {
@@ -1092,10 +1254,10 @@ interface ValidationError {
             align-items: center;
             gap: 0.5rem;
             padding: 0.65rem 0.85rem;
-            background: rgba(34, 197, 94, 0.08);
-            border: 1px solid rgba(34, 197, 94, 0.3);
+            background: color-mix(in srgb, var(--primary-color), transparent 92%);
+            border: 1px solid color-mix(in srgb, var(--primary-color), transparent 70%);
             border-radius: 0.5rem;
-            color: #16a34a;
+            color: var(--primary-color);
             font-size: 0.88rem;
             margin-bottom: 1rem;
         }
@@ -1190,7 +1352,7 @@ interface ValidationError {
         .registro-field input:focus {
             border-color: var(--primary-color);
             outline: none;
-            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color), transparent 82%);
         }
 
         .dialog-footer-actions {
@@ -1223,7 +1385,16 @@ interface ValidationError {
 
         @media (max-width: 768px) {
             .cies-list-tabs {
-                flex-wrap: wrap;
+                grid-template-columns: 1fr;
+            }
+
+            .cies-list-tabs__indicator {
+                width: calc(100% - 0.7rem);
+                height: calc(50% - 0.35rem);
+            }
+
+            .cies-list-tabs[data-active-tab='finalizadas'] .cies-list-tabs__indicator {
+                transform: translateY(100%);
             }
 
             .cies-detail-summary {
@@ -1303,11 +1474,13 @@ interface ValidationError {
 })
 export class EntrevistasPage implements OnInit {
     readonly OTRO_MAX_LENGTH = 120;
+    readonly DRAFT_STORAGE_PREFIX = 'cies-interview-draft';
 
     private authService = inject(AuthService);
     private ciesService = inject(CiesService);
     private cdr = inject(ChangeDetectorRef);
     private messageService = inject(MessageService);
+    private draftSaveTimer: ReturnType<typeof setTimeout> | null = null;
 
     pendientes: PersonaElegible[] = [];
     currentStep = 0;
@@ -1334,6 +1507,8 @@ export class EntrevistasPage implements OnInit {
     loadingFinalizadaDetalleId: number | null = null;
     finalizadaDetailVisible = false;
     selectedFinalizadaDetail: Entrevista | null = null;
+    draftStatus: 'idle' | 'saved' | 'error' = 'idle';
+    draftUpdatedAt: string | null = null;
 
     readonly estadoOptions = [
         { label: 'Todos', value: '' },
@@ -1383,6 +1558,21 @@ export class EntrevistasPage implements OnInit {
         return this.authService.isEncuestador();
     }
 
+    get canViewSensitiveResults(): boolean {
+        return !this.isEncuestador;
+    }
+
+    get draftStatusLabel(): string {
+        if (this.draftStatus === 'error') {
+            return 'No se pudo guardar el borrador';
+        }
+        if (this.draftStatus === 'saved') {
+            const suffix = this.draftUpdatedAt ? ` · ${this.draftUpdatedAt}` : '';
+            return `Guardado parcial${suffix}`;
+        }
+        return 'Los cambios se guardan automáticamente en este dispositivo';
+    }
+
     get isInterviewActionBusy(): boolean {
         return this.loadingPendientes || this.startingPersonaId !== null || this.directRegistrationLoading || this.submitting;
     }
@@ -1392,8 +1582,21 @@ export class EntrevistasPage implements OnInit {
     }
 
     get terminatesInterview(): boolean {
-        const question = this.currentInterview?.preguntas.find((item) => item.codigoVariable === 'CONSULTA_PARA');
-        return !!question && this.answers[question.id]?.codigoOpcion === '2';
+        return !!this.getTerminationRule();
+    }
+
+    get terminationMessage(): string {
+        const rule = this.getTerminationRule();
+        if (!rule) {
+            return 'Según la regla del instrumento, la entrevista finaliza en esta pregunta.';
+        }
+        if (rule.codigoVariable === 'CONSULTA_PARA') {
+            return 'La consulta fue registrada para otra persona. Según la regla del instrumento, la entrevista finaliza en esta pregunta.';
+        }
+        if (rule.codigoVariable === 'SERVICIO') {
+            return 'Se seleccionó "Otro" en el servicio de consulta. Según la regla del instrumento, la entrevista finaliza en esta pregunta.';
+        }
+        return 'Según la regla del instrumento, la entrevista finaliza en esta pregunta.';
     }
 
     get validationErrors(): ValidationError[] {
@@ -1417,9 +1620,7 @@ export class EntrevistasPage implements OnInit {
     }
 
     get progressPercent(): number {
-        const total = this.answerableQuestions.length;
-        if (!total) return 0;
-        return Math.round((this.answeredCount / total) * 100);
+        return this.totalSteps > 0 ? Math.round((this.stepProgress / this.totalSteps) * 100) : 0;
     }
 
     get selectedFinalizadaAnswers(): Array<{ etiqueta: string; respuesta: string }> {
@@ -1543,6 +1744,8 @@ export class EntrevistasPage implements OnInit {
                         };
                     });
 
+                this.restoreDraftFromLocalStorage(response);
+
                 this.cdr.detectChanges();
                 setTimeout(() => {
                     document.querySelector('.entrevista-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1570,6 +1773,10 @@ export class EntrevistasPage implements OnInit {
     }
 
     closeInterview(): void {
+        if (this.draftSaveTimer) {
+            clearTimeout(this.draftSaveTimer);
+            this.draftSaveTimer = null;
+        }
         this.currentInterview = null;
         this.currentStep = 0;
         this.showValidation = false;
@@ -1577,6 +1784,8 @@ export class EntrevistasPage implements OnInit {
         this.showCloseConfirm = false;
         this.submitting = false;
         this.startingPersonaId = null;
+        this.draftStatus = 'idle';
+        this.draftUpdatedAt = null;
         this.cdr.detectChanges();
     }
 
@@ -1596,6 +1805,14 @@ export class EntrevistasPage implements OnInit {
     isCurrentSelectedOtro(question: PreguntaInstrumento): boolean {
         const answer = this.answers[question.id];
         return !!answer && this.isOtroOption(question, answer.codigoOpcion);
+    }
+
+    isTerminationOption(question: PreguntaInstrumento, codigoOpcion: string | undefined): boolean {
+        if (!codigoOpcion) {
+            return false;
+        }
+        return (question.codigoVariable === 'CONSULTA_PARA' && codigoOpcion === '2')
+            || (question.codigoVariable === 'SERVICIO' && codigoOpcion === '7');
     }
 
     getOtroLabel(question: PreguntaInstrumento): string {
@@ -1627,7 +1844,9 @@ export class EntrevistasPage implements OnInit {
         if (!answer) return false;
         if (this.isOptionQuestion(question)) {
             if (!answer.codigoOpcion) return false;
-            if (this.isOtroOption(question, answer.codigoOpcion) && !answer.valorOtro?.trim()) {
+            if (this.isOtroOption(question, answer.codigoOpcion)
+                && !this.isTerminationOption(question, answer.codigoOpcion)
+                && !answer.valorOtro?.trim()) {
                 return false;
             }
             return true;
@@ -1645,7 +1864,8 @@ export class EntrevistasPage implements OnInit {
     }
 
     isTerminationQuestion(question: PreguntaInstrumento): boolean {
-        return question.codigoVariable === 'CONSULTA_PARA' && this.terminatesInterview;
+        const rule = this.getTerminationRule();
+        return !!rule && question.codigoVariable === rule.codigoVariable;
     }
 
     getSkipLogic(question: PreguntaInstrumento): string | null {
@@ -1676,7 +1896,8 @@ export class EntrevistasPage implements OnInit {
         if (!this.terminatesInterview) {
             return questions;
         }
-        const pivot = questions.find((item) => item.codigoVariable === 'CONSULTA_PARA');
+        const rule = this.getTerminationRule();
+        const pivot = !rule ? null : questions.find((item) => item.codigoVariable === rule.codigoVariable);
         return pivot ? questions.filter((item) => item.orden <= pivot.orden) : questions;
     }
 
@@ -1690,6 +1911,10 @@ export class EntrevistasPage implements OnInit {
         return this.visibleQuestions.length;
     }
 
+    get isLastStep(): boolean {
+        return this.totalSteps > 0 && this.currentStep >= this.totalSteps - 1;
+    }
+
     get stepProgress(): number {
         return this.totalSteps > 0 ? this.currentStep + 1 : 0;
     }
@@ -1699,8 +1924,24 @@ export class EntrevistasPage implements OnInit {
     }
 
     goToNextStep(): void {
+        const question = this.currentQuestion;
+        if (!question) {
+            return;
+        }
+
+        this.showValidation = true;
+        if (question.obligatoria && this.isQuestionInvalid(question)) {
+            this.cdr.detectChanges();
+            setTimeout(() => {
+                document.querySelector('.question-step')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+            return;
+        }
+
         if (this.currentStep < this.totalSteps - 1) {
             this.currentStep++;
+            this.showValidation = false;
+            this.scheduleDraftSave();
             this.cdr.detectChanges();
             setTimeout(() => {
                 document.querySelector('.question-step')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1711,6 +1952,7 @@ export class EntrevistasPage implements OnInit {
     goToPrevStep(): void {
         if (this.currentStep > 0) {
             this.currentStep--;
+            this.scheduleDraftSave();
             this.cdr.detectChanges();
             setTimeout(() => {
                 document.querySelector('.question-step')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1734,7 +1976,7 @@ export class EntrevistasPage implements OnInit {
         } else {
             this.answers[preguntaId].codigoOpcion = codigo;
             const question = this.currentInterview?.preguntas.find((q) => q.id === preguntaId);
-            if (question && !this.isOtroOption(question, codigo)) {
+            if (question && (!this.isOtroOption(question, codigo) || this.isTerminationOption(question, codigo))) {
                 this.answers[preguntaId].valorOtro = '';
             }
         }
@@ -1742,7 +1984,122 @@ export class EntrevistasPage implements OnInit {
     }
 
     onAnswerChange(): void {
+        const lastIndex = Math.max(this.visibleQuestions.length - 1, 0);
+        if (this.currentStep > lastIndex) {
+            this.currentStep = lastIndex;
+        }
+        this.scheduleDraftSave();
         this.cdr.detectChanges();
+    }
+
+    private scheduleDraftSave(): void {
+        if (!this.currentInterview) {
+            return;
+        }
+        if (this.draftSaveTimer) {
+            clearTimeout(this.draftSaveTimer);
+        }
+        this.draftSaveTimer = setTimeout(() => {
+            this.persistDraftToLocalStorage();
+        }, 400);
+    }
+
+    private persistDraftToLocalStorage(): void {
+        if (!this.currentInterview) {
+            return;
+        }
+
+        try {
+            const snapshot: InterviewDraftSnapshot = {
+                interviewId: this.currentInterview.id,
+                userId: this.getCurrentUserDraftId(),
+                currentStep: this.currentStep,
+                answers: this.answers,
+                updatedAt: new Date().toISOString()
+            };
+            localStorage.setItem(this.getDraftStorageKey(this.currentInterview.id), JSON.stringify(snapshot));
+            this.draftStatus = 'saved';
+            this.draftUpdatedAt = this.formatDraftTimestamp(snapshot.updatedAt);
+        } catch (error) {
+            this.draftStatus = 'error';
+            console.error('Error saving interview draft locally:', error);
+        } finally {
+            this.draftSaveTimer = null;
+        }
+    }
+
+    private restoreDraftFromLocalStorage(interview: Entrevista): void {
+        const raw = localStorage.getItem(this.getDraftStorageKey(interview.id));
+        if (!raw) {
+            this.draftStatus = 'idle';
+            this.draftUpdatedAt = null;
+            return;
+        }
+
+        try {
+            const snapshot = JSON.parse(raw) as InterviewDraftSnapshot;
+            if (String(snapshot.userId) !== String(this.getCurrentUserDraftId()) || snapshot.interviewId !== interview.id) {
+                return;
+            }
+
+            this.answers = {
+                ...this.answers,
+                ...(snapshot.answers || {})
+            };
+            const maxStep = Math.max(this.visibleQuestions.length - 1, 0);
+            this.currentStep = Math.max(0, Math.min(snapshot.currentStep ?? 0, maxStep));
+            this.draftStatus = 'saved';
+            this.draftUpdatedAt = this.formatDraftTimestamp(snapshot.updatedAt);
+        } catch (error) {
+            this.draftStatus = 'error';
+            console.error('Error restoring interview draft locally:', error);
+        }
+    }
+
+    private clearDraftFromLocalStorage(interviewId: number): void {
+        localStorage.removeItem(this.getDraftStorageKey(interviewId));
+        this.draftStatus = 'idle';
+        this.draftUpdatedAt = null;
+        if (this.draftSaveTimer) {
+            clearTimeout(this.draftSaveTimer);
+            this.draftSaveTimer = null;
+        }
+    }
+
+    private getDraftStorageKey(interviewId: number): string {
+        return `${this.DRAFT_STORAGE_PREFIX}:${this.getCurrentUserDraftId()}:${interviewId}`;
+    }
+
+    private getCurrentUserDraftId(): string {
+        const user = this.authService.getUser();
+        return user?.id != null ? String(user.id) : String(user?.email || 'anon');
+    }
+
+    private formatDraftTimestamp(value: string | null | undefined): string | null {
+        if (!value) {
+            return null;
+        }
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) {
+            return null;
+        }
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    private getTerminationRule(): { codigoVariable: string; codigoOpcion: string } | null {
+        const rules = [
+            { codigoVariable: 'CONSULTA_PARA', codigoOpcion: '2' },
+            { codigoVariable: 'SERVICIO', codigoOpcion: '7' }
+        ];
+
+        for (const rule of rules) {
+            const question = this.currentInterview?.preguntas.find((item) => item.codigoVariable === rule.codigoVariable);
+            if (question && this.answers[question.id]?.codigoOpcion === rule.codigoOpcion) {
+                return rule;
+            }
+        }
+
+        return null;
     }
 
     buildPayload(): RespuestaPayload[] {
@@ -1754,7 +2111,7 @@ export class EntrevistasPage implements OnInit {
                     preguntaId: q.id,
                     codigoOpcion: answer.codigoOpcion,
                     valorTexto: answer.valorTexto,
-                    valorOtro: this.isOtroOption(q, answer.codigoOpcion)
+                    valorOtro: this.isOtroOption(q, answer.codigoOpcion) && !this.isTerminationOption(q, answer.codigoOpcion)
                         ? (answer.valorOtro || '').trim().slice(0, this.OTRO_MAX_LENGTH)
                         : undefined
                 };
@@ -1783,6 +2140,7 @@ export class EntrevistasPage implements OnInit {
         this.ciesService.finalizarEntrevista(this.currentInterview.id, this.buildPayload()).subscribe({
             next: () => {
                 this.submitting = false;
+                this.clearDraftFromLocalStorage(this.currentInterview!.id);
                 this.messageService.add({
                     severity: 'success',
                     summary: 'Entrevista finalizada',

@@ -33,6 +33,7 @@ interface QuickStartCard {
                 <div class="cies-hero__actions">
                     <a *ngIf="isAdmin" routerLink="/pages/seleccion"><button pButton type="button" label="Registrar personas" icon="pi pi-user-plus"></button></a>
                     <a *ngIf="isAdmin" routerLink="/pages/metodologia"><button pButton type="button" label="Configurar preguntas" icon="pi pi-sliders-h" severity="secondary"></button></a>
+                    <a *ngIf="isEncuestador" routerLink="/pages/seleccion"><button pButton type="button" label="Registrar personas" icon="pi pi-user-plus"></button></a>
                     <a *ngIf="isEncuestador" routerLink="/pages/entrevistas"><button pButton type="button" label="Empezar a entrevistar" icon="pi pi-file-edit"></button></a>
                     <a *ngIf="isAnalista" routerLink="/pages/reporteria"><button pButton type="button" label="Ver resultados" icon="pi pi-chart-bar"></button></a>
                     <button *ngIf="isAdmin || isAnalista" pButton type="button" label="Actualizar" icon="pi pi-refresh"
@@ -270,9 +271,9 @@ export class Dashboard implements OnInit {
                 {
                     paso: '2',
                     titulo: 'Si es una persona nueva',
-                    descripcion: 'Usa el botón Entrevistar a una persona para registrarla y empezar en el mismo paso.',
-                    actionLabel: 'Registrar y entrevistar',
-                    routerLink: '/pages/entrevistas'
+                    descripcion: 'Entra a Registrar personas si necesitas cargarla al sistema antes de entrevistarla.',
+                    actionLabel: 'Registrar personas',
+                    routerLink: '/pages/seleccion'
                 },
                 {
                     paso: '3',

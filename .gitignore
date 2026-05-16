@@ -48,3 +48,6 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
+md/analisis_proyecto.md
+md/guia_auditoria_modulo_encuestas_cies.md
+md/plan_desarrollo_frontend.md

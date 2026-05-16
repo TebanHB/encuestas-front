@@ -284,8 +284,8 @@ interface PersonaForm {
                                 <td>
                                     <div class="cies-inline-actions">
                                         <button pButton type="button" label="Preparar" icon="pi pi-play" size="small" (click)="ejecutar(item)"></button>
-                                        <button pButton type="button" icon="pi pi-pencil" text rounded severity="info" (click)="editarLote(item)"></button>
-                                        <button pButton type="button" icon="pi pi-trash" text rounded severity="danger" (click)="eliminarLote(item)"></button>
+                                        <button *ngIf="canManageLoteDetails" pButton type="button" icon="pi pi-pencil" text rounded severity="info" (click)="editarLote(item)"></button>
+                                        <button *ngIf="canManageLoteDetails" pButton type="button" icon="pi pi-trash" text rounded severity="danger" (click)="eliminarLote(item)"></button>
                                     </div>
                                 </td>
                             </tr>
@@ -369,7 +369,7 @@ interface PersonaForm {
         </div>
 
         <!-- ===================== SECCIÓN: Personas pendientes de entrevista ===================== -->
-        <section class="card" *ngIf="isAdmin">
+        <section class="card" *ngIf="canManageDirectPeople">
             <div class="cies-section-head">
                 <div class="cies-section-head__content">
                     <div>
@@ -969,6 +969,18 @@ export class SeleccionPage implements OnInit {
         return this.authService.isAdministrador();
     }
 
+    get isEncuestador(): boolean {
+        return this.authService.isEncuestador();
+    }
+
+    get canManageDirectPeople(): boolean {
+        return this.isAdmin || this.isEncuestador;
+    }
+
+    get canManageLoteDetails(): boolean {
+        return this.isAdmin;
+    }
+
     // ── Personas pendientes CRUD ────────────────────────────────────────────────
     personasPendientes: PersonaElegible[] = [];
     filteredPersonas: PersonaElegible[] = [];
@@ -1045,7 +1057,7 @@ export class SeleccionPage implements OnInit {
 
     ngOnInit(): void {
         this.load();
-        if (this.isAdmin) {
+        if (this.canManageDirectPeople) {
             this.loadPersonasPendientes();
         }
     }

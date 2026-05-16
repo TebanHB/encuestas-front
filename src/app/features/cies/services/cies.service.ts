@@ -107,9 +107,9 @@ export interface EntrevistaFinalizadaResumen {
     fechaFin?: string;
     encuestador: string;
     loteNombre?: string;
-    pobre: boolean;
-    excluido: boolean;
-    subatendido: boolean;
+    pobre?: boolean | null;
+    excluido?: boolean | null;
+    subatendido?: boolean | null;
 }
 
 export interface LoteMedicare {
@@ -164,12 +164,12 @@ export interface Entrevista {
     resultado?: {
         puntajeTotal: number;
         puntajeNormalizado: number;
-        pobre: boolean;
-        excluido: boolean;
-        subatendido: boolean;
+        pobre?: boolean | null;
+        excluido?: boolean | null;
+        subatendido?: boolean | null;
         versionMetodologica: string;
         fechaCalculo: string;
-    };
+    } | null;
 }
 
 export interface ReporteResumen {
