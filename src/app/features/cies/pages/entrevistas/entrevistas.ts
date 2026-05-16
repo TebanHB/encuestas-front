@@ -770,12 +770,11 @@ interface InterviewDraftSnapshot {
             align-items: stretch;
             padding: 0.35rem;
             border-radius: 1.25rem;
-            background:
-                linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.9));
-            border: 1px solid color-mix(in srgb, var(--primary-color), transparent 88%);
+            background: var(--layout-panel-soft-background);
+            border: 1px solid var(--layout-border-soft);
             box-shadow:
-                inset 0 1px 0 rgba(255, 255, 255, 0.92),
-                0 16px 32px rgba(15, 23, 42, 0.06);
+                inset 0 1px 0 var(--layout-subtle-overlay),
+                var(--layout-shadow-soft);
             overflow: hidden;
         }
 
