@@ -50,6 +50,21 @@ interface ChartTableSection {
     rows: Array<Record<string, unknown>>;
 }
 
+type ChartGroupId =
+    | 'vulnerabilidad-general'
+    | 'pobreza'
+    | 'exclusion'
+    | 'subatencion'
+    | 'vulnerabilidad-combinaciones'
+    | 'frecuencias-generales';
+
+interface ChartGroupTab {
+    id: ChartGroupId;
+    label: string;
+}
+
+type ActiveChartGroup = ChartGroupId | 'all';
+
 @Component({
     selector: 'app-reporteria-page',
     standalone: true,
@@ -77,10 +92,6 @@ interface ChartTableSection {
                 <div class="cies-hero__actions">
                     <button pButton type="button" label="Excel" icon="pi pi-file-excel"
                         severity="success" [loading]="downloading" [disabled]="loading || downloading || !resumen" (click)="openExportDialog()"></button>
-                    <button pButton type="button" label="CSV" icon="pi pi-download"
-                        severity="secondary" [loading]="downloading" [disabled]="loading || downloading || !resumen" (click)="download('csv')"></button>
-                    <button pButton type="button" label="SPSS" icon="pi pi-database"
-                        severity="contrast" [loading]="downloading" [disabled]="loading || downloading || !resumen" (click)="download('sps')"></button>
                 </div>
             </section>
 
@@ -127,7 +138,7 @@ interface ChartTableSection {
                         </div>
                     </div>
                 </div>
-                <div class="cies-filter-grid" *ngIf="filtersExpanded">
+                <div class="cies-filter-grid" [class.cies-filter-grid--collapsed]="!filtersExpanded" [attr.aria-hidden]="!filtersExpanded">
                     <div class="cies-filter-field cies-filter-field--short">
                         <label>Año</label>
                         <input pInputText [(ngModel)]="filters.anio" class="w-full" placeholder="Ej: 2026"
@@ -514,8 +525,33 @@ interface ChartTableSection {
 
                 <!-- TAB 5: Gráficos del Excel de referencia -->
                 <p-tabpanel value="4">
-                    <section class="excel-charts-grid" *ngIf="graficosExcel">
-                        <article class="card cies-chart-card cies-chart-card--compact">
+                    <section class="chart-group-shell" *ngIf="graficosExcel">
+                        <nav class="chart-group-tabs" role="tablist" aria-label="Grupos de gráficos del Excel"
+                            (mousedown)="startChartTabDrag($event)"
+                            (mousemove)="onChartTabDrag($event)"
+                            (mouseup)="stopChartTabDrag()"
+                            (mouseleave)="stopChartTabDrag()">
+                            <button
+                                *ngFor="let tab of chartTabs; let i = index"
+                                type="button"
+                                class="chart-group-tab"
+                                [class.chart-group-tab--active]="activeChartTab === tab.id"
+                                role="tab"
+                                [attr.id]="'chart-tab-' + tab.id"
+                                [attr.aria-selected]="activeChartTab === tab.id"
+                                [attr.aria-controls]="tab.id === 'frecuencias-generales' ? 'chart-panel-frequency' : 'chart-panel-main'"
+                                [attr.tabindex]="activeChartTab === tab.id || (activeChartTab === 'all' && i === 0) ? 0 : -1"
+                                (click)="setActiveChartTab(tab.id)"
+                                (keydown)="onChartGroupKeydown($event, i)">
+                                <span class="chart-group-tab__label">{{ tab.label }}</span>
+                            </button>
+                        </nav>
+                    </section>
+                    <section class="excel-charts-grid chart-filter-panel" *ngIf="graficosExcel && activeChartTab !== 'frecuencias-generales'"
+                        role="tabpanel"
+                        id="chart-panel-main"
+                        [attr.aria-labelledby]="activeChartTab !== 'all' ? 'chart-tab-' + activeChartTab : null">
+                        <article class="card cies-chart-card cies-chart-card--compact" *ngIf="activeChartTab === 'all' || activeChartTab === 'vulnerabilidad-general'">
                             <div class="cies-section-head">
                                 <div>
                                     <h3>Distribución por número de condiciones de vulnerabilidad</h3>
@@ -539,7 +575,7 @@ interface ChartTableSection {
                             </div>
                         </article>
 
-                        <article class="card cies-chart-card cies-chart-card--compact">
+                        <article class="card cies-chart-card cies-chart-card--compact" *ngIf="activeChartTab === 'all' || activeChartTab === 'vulnerabilidad-general'">
                             <div class="cies-section-head">
                                 <div>
                                     <h3>% de usuarias pobres y no pobres</h3>
@@ -563,7 +599,7 @@ interface ChartTableSection {
                             </div>
                         </article>
 
-                        <article class="card cies-chart-card cies-chart-card--wide">
+                        <article class="card cies-chart-card cies-chart-card--wide" *ngIf="activeChartTab === 'all' || activeChartTab === 'pobreza'">
                             <div class="cies-section-head">
                                 <div>
                                     <h3>% de usuarias clasificadas como pobres por regional</h3>
@@ -581,7 +617,7 @@ interface ChartTableSection {
                             </div>
                         </article>
 
-                        <article class="card cies-chart-card cies-chart-card--wide">
+                        <article class="card cies-chart-card cies-chart-card--wide" *ngIf="activeChartTab === 'all' || activeChartTab === 'exclusion'">
                             <div class="cies-section-head">
                                 <div>
                                     <h3>% de usuarias clasificadas como excluidas por regional</h3>
@@ -599,7 +635,7 @@ interface ChartTableSection {
                             </div>
                         </article>
 
-                        <article class="card cies-chart-card cies-chart-card--wide">
+                        <article class="card cies-chart-card cies-chart-card--wide" *ngIf="activeChartTab === 'all' || activeChartTab === 'subatencion'">
                             <div class="cies-section-head">
                                 <div>
                                     <h3>% de usuarias sub-atendidas por regional</h3>
@@ -617,7 +653,7 @@ interface ChartTableSection {
                             </div>
                         </article>
 
-                        <article class="card cies-chart-card cies-chart-card--wide">
+                        <article class="card cies-chart-card cies-chart-card--wide" *ngIf="activeChartTab === 'all' || activeChartTab === 'vulnerabilidad-combinaciones'">
                             <div class="cies-section-head">
                                 <div>
                                     <h3>% de vulnerabilidad por regional (las 3 condiciones)</h3>
@@ -635,7 +671,7 @@ interface ChartTableSection {
                             </div>
                         </article>
 
-                        <article class="card cies-chart-card cies-chart-card--wide">
+                        <article class="card cies-chart-card cies-chart-card--wide" *ngIf="activeChartTab === 'all' || activeChartTab === 'vulnerabilidad-combinaciones'">
                             <div class="cies-section-head">
                                 <div>
                                     <h3>Combinaciones de condiciones por regional</h3>
@@ -660,7 +696,10 @@ interface ChartTableSection {
                         </article>
                     </section>
 
-                    <section class="card excel-frequency-panel" *ngIf="frequencyPreviewCharts.length">
+                    <section class="card excel-frequency-panel chart-filter-panel" *ngIf="(activeChartTab === 'all' || activeChartTab === 'frecuencias-generales') && frequencyPreviewCharts.length"
+                        role="tabpanel"
+                        id="chart-panel-frequency"
+                        [attr.aria-labelledby]="activeChartTab === 'frecuencias-generales' ? 'chart-tab-' + activeChartTab : null">
                         <div class="cies-section-head">
                             <div>
                                 <h3>Frecuencias generales</h3>
@@ -1102,6 +1141,121 @@ interface ChartTableSection {
             gap: 1rem;
         }
 
+        .chart-group-shell {
+            margin-bottom: 1rem;
+            position: relative;
+        }
+
+        .chart-group-tabs {
+            display: flex;
+            gap: 0.75rem;
+            overflow-x: scroll;
+            overflow-y: hidden;
+            padding: 0.2rem 0 0.45rem;
+            scroll-behavior: smooth;
+            scrollbar-width: thin;
+            scrollbar-color: color-mix(in srgb, var(--text-color-secondary) 42%, transparent) color-mix(in srgb, var(--surface-ground) 78%, transparent);
+            -webkit-mask-image: linear-gradient(to right, transparent 0, black 18px, black calc(100% - 18px), transparent 100%);
+            mask-image: linear-gradient(to right, transparent 0, black 18px, black calc(100% - 18px), transparent 100%);
+            cursor: grab;
+        }
+
+        .chart-group-tabs::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .chart-group-tabs::-webkit-scrollbar-track {
+            background: color-mix(in srgb, var(--surface-ground) 78%, transparent);
+            border-radius: 999px;
+        }
+
+        .chart-group-tabs::-webkit-scrollbar-thumb {
+            background: color-mix(in srgb, var(--text-color-secondary) 42%, transparent);
+            border-radius: 999px;
+        }
+
+        .chart-group-tabs::-webkit-scrollbar-thumb:hover {
+            background: color-mix(in srgb, var(--primary-color) 48%, var(--text-color-secondary) 52%);
+        }
+
+        .chart-group-tabs--dragging {
+            cursor: grabbing;
+            user-select: none;
+            scroll-behavior: auto;
+        }
+
+        .chart-group-tab {
+            appearance: none;
+            border: 1px solid var(--surface-border);
+            background:
+                linear-gradient(180deg,
+                    color-mix(in srgb, var(--surface-card) 92%, white 8%),
+                    color-mix(in srgb, var(--surface-ground) 78%, var(--surface-card) 22%));
+            color: var(--text-color);
+            border-radius: 16px;
+            padding: 0.6rem 0.72rem;
+            width: clamp(8.1rem, 11vw, 9.4rem);
+            min-width: 8.1rem;
+            display: inline-flex;
+            flex-direction: row;
+            align-items: flex-start;
+            justify-content: center;
+            min-height: 2.55rem;
+            white-space: normal;
+            cursor: pointer;
+            transition:
+                transform 0.18s ease,
+                border-color 0.18s ease,
+                background-color 0.18s ease,
+                box-shadow 0.18s ease,
+                color 0.18s ease;
+        }
+
+        .chart-group-tab:hover {
+            transform: translateY(-1px);
+            border-color: color-mix(in srgb, var(--primary-color) 42%, var(--surface-border) 58%);
+            box-shadow: 0 12px 22px rgba(15, 23, 42, 0.08);
+        }
+
+        .chart-group-tab:focus-visible {
+            outline: 3px solid color-mix(in srgb, var(--primary-color) 30%, transparent 70%);
+            outline-offset: 2px;
+        }
+
+        .chart-group-tab--active {
+            border-color: var(--primary-color);
+            background:
+                linear-gradient(180deg,
+                    color-mix(in srgb, var(--primary-color) 22%, var(--surface-card) 78%),
+                    color-mix(in srgb, var(--primary-color) 10%, var(--surface-ground) 90%));
+            box-shadow: 0 14px 28px rgba(15, 23, 42, 0.12);
+        }
+
+        .chart-group-tab__label {
+            font-weight: 700;
+            font-size: 0.82rem;
+            line-height: 1.05;
+            white-space: normal;
+            overflow-wrap: anywhere;
+            text-wrap: balance;
+            text-align: center;
+        }
+
+        .chart-filter-panel {
+            animation: chartFadeIn 0.22s ease;
+        }
+
+        @keyframes chartFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(6px) scale(0.99);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
         .cies-chart-card--wide {
             grid-column: 1 / -1;
         }
@@ -1492,6 +1646,23 @@ interface ChartTableSection {
             grid-template-columns: repeat(12, minmax(0, 1fr));
             gap: 1rem;
             align-items: end;
+            overflow: hidden;
+            max-height: 32rem;
+            opacity: 1;
+            transform: translateY(0);
+            transition:
+                max-height 0.28s ease,
+                opacity 0.22s ease,
+                transform 0.22s ease,
+                margin-top 0.22s ease;
+        }
+
+        .cies-filter-grid--collapsed {
+            max-height: 0;
+            opacity: 0;
+            transform: translateY(-6px);
+            pointer-events: none;
+            margin-top: 0;
         }
 
         .cies-filter-field {
@@ -1542,6 +1713,22 @@ interface ChartTableSection {
 
         :host ::ng-deep .cies-filter-field .p-select-label {
             min-width: 0;
+        }
+
+        :host ::ng-deep .p-tabs-tablist,
+        :host ::ng-deep .p-tabs-tablist-content,
+        :host ::ng-deep .p-tablist,
+        :host ::ng-deep .p-tablist-content {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            overflow-y: hidden;
+        }
+
+        :host ::ng-deep .p-tabs-tablist::-webkit-scrollbar,
+        :host ::ng-deep .p-tabs-tablist-content::-webkit-scrollbar,
+        :host ::ng-deep .p-tablist::-webkit-scrollbar,
+        :host ::ng-deep .p-tablist-content::-webkit-scrollbar {
+            display: none;
         }
 
         @media (max-width: 1200px) {
@@ -1601,6 +1788,16 @@ interface ChartTableSection {
                 height: 18rem;
             }
 
+            .chart-group-tab {
+                min-width: 7.8rem;
+                width: clamp(7.8rem, 38vw, 8.8rem);
+                padding: 0.56rem 0.7rem;
+            }
+
+            .chart-group-tab__label {
+                font-size: 0.76rem;
+            }
+
             .clinic-bar {
                 grid-template-columns: 1fr;
             }
@@ -1641,6 +1838,14 @@ interface ChartTableSection {
                 grid-template-columns: 1fr;
             }
         }
+
+        @media (prefers-reduced-motion: reduce) {
+            .chart-group-tab,
+            .chart-filter-panel {
+                transition: none;
+                animation: none;
+            }
+        }
     `]
 })
 export class ReporteriaPage implements OnInit {
@@ -1658,7 +1863,19 @@ export class ReporteriaPage implements OnInit {
     chartTablesTitle = '';
     chartTableSections: ChartTableSection[] = [];
     activeTab = '0';
+    activeChartTab: ActiveChartGroup = 'vulnerabilidad-general';
     filtersExpanded = false;
+    private isDraggingChartTabs = false;
+    private chartTabsDragStartX = 0;
+    private chartTabsScrollLeft = 0;
+    readonly chartTabs: ChartGroupTab[] = [
+        { id: 'frecuencias-generales', label: 'Frecuencias Generales' },
+        { id: 'vulnerabilidad-general', label: 'Vulnerabilidad General' },
+        { id: 'pobreza', label: '%Pobreza' },
+        { id: 'exclusion', label: '%Exclusión' },
+        { id: 'subatencion', label: '%Sub-atención' },
+        { id: 'vulnerabilidad-combinaciones', label: 'Vulnerabilidad Combinaciones' }
+    ];
 
     exportFilters: ReportFilters = {
         anio: '',
@@ -1725,6 +1942,86 @@ export class ReporteriaPage implements OnInit {
     }
 
     // Mantener aspect ratio razonable para doughnut/pie evita que la legend ocupe demasiado y la dona quede minúscula.
+
+    setActiveChartTab(tabId: ChartGroupId): void {
+        this.activeChartTab = this.activeChartTab === tabId ? 'all' : tabId;
+    }
+
+    onChartGroupKeydown(event: KeyboardEvent, index: number): void {
+        const lastIndex = this.chartTabs.length - 1;
+        let nextIndex: number | null = null;
+
+        switch (event.key) {
+            case 'ArrowRight':
+            case 'ArrowDown':
+                nextIndex = index === lastIndex ? 0 : index + 1;
+                break;
+            case 'ArrowLeft':
+            case 'ArrowUp':
+                nextIndex = index === 0 ? lastIndex : index - 1;
+                break;
+            case 'Home':
+                nextIndex = 0;
+                break;
+            case 'End':
+                nextIndex = lastIndex;
+                break;
+            case 'Enter':
+            case ' ':
+                this.setActiveChartTab(this.chartTabs[index].id);
+                event.preventDefault();
+                return;
+            default:
+                return;
+        }
+
+        if (nextIndex === null) {
+            return;
+        }
+
+        event.preventDefault();
+        const nextTab = this.chartTabs[nextIndex];
+        this.setActiveChartTab(nextTab.id);
+
+        setTimeout(() => {
+            const element = document.getElementById(`chart-tab-${nextTab.id}`);
+            element?.focus();
+            element?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        });
+    }
+
+    startChartTabDrag(event: MouseEvent): void {
+        const container = event.currentTarget as HTMLElement | null;
+        if (!container) {
+            return;
+        }
+
+        this.isDraggingChartTabs = true;
+        this.chartTabsDragStartX = event.pageX - container.offsetLeft;
+        this.chartTabsScrollLeft = container.scrollLeft;
+        container.classList.add('chart-group-tabs--dragging');
+    }
+
+    onChartTabDrag(event: MouseEvent): void {
+        if (!this.isDraggingChartTabs) {
+            return;
+        }
+
+        const container = event.currentTarget as HTMLElement | null;
+        if (!container) {
+            return;
+        }
+
+        event.preventDefault();
+        const x = event.pageX - container.offsetLeft;
+        const walk = x - this.chartTabsDragStartX;
+        container.scrollLeft = this.chartTabsScrollLeft - walk;
+    }
+
+    stopChartTabDrag(): void {
+        this.isDraggingChartTabs = false;
+        document.querySelector('.chart-group-tabs--dragging')?.classList.remove('chart-group-tabs--dragging');
+    }
 
     private tooltipNumeroPorcentaje = (ctx: any): string => {
         const dsLabel = ctx.dataset?.label || ctx.label || '';
@@ -2150,40 +2447,11 @@ export class ReporteriaPage implements OnInit {
     }
 
     private getExcelFrequencyTitle(codigoVariable: string, fallback: string): string {
-        const titles: Record<string, string> = {
-            CLINICA: '% Clientes mujeres encuestadas por clínica',
-            MIEMBROS_HOGAR: '% hogares según Nº de personas integrantes',
-            JEFE_TRABAJO: '% Trabajo jefe del hogar',
-            IDIOMA_NINEZ: '% Idioma o lengua que la jefa del hogar aprendió en su niñez',
-            CUARTOS: '% Habitaciones de esta vivienda',
-            MATERIAL_PISO: '% Materiales de construcción de la vivienda',
-            TIPO_BANO: '% Tipo de baño o servicio higiénico en el hogar',
-            COMBUSTIBLE: '% Tipo combustible que se utiliza para cocinar',
-            REFRIGERADOR: '% Tiene o posee refrigerador o freezer',
-            TELEVISOR: '% hogares que cuentan con un Televisor',
-            VEHICULO: '% hogares que tienen una motocicleta o vehículo',
-            IDIOMA_HOGAR: '% hogares según idioma que utilizan normalmente',
-            EDUCACION: '% Último curso aprobado',
-            METODO_AC: '% Uso de método anticonceptivo moderno',
-            COMPUTADORA: '% Tiene o posee una computadora en el hogar',
-            CELULAR: '% Tiene, posee o dispone de un celular',
-            LUGAR_PARTO: '% lugar atención último parto',
-            ZONA_RESIDENCIA: '% Residencia actual',
-            ACCESO_SALUD: '% Últimos 12 meses que acudió a algún hospital'
-        };
-        const normalizedCode = codigoVariable?.toUpperCase?.() || '';
-        const configuredTitle = titles[normalizedCode];
-        if (configuredTitle) {
-            return configuredTitle;
-        }
-
         const cleanFallback = (fallback || '')
             .replace(/\s+/g, ' ')
-            .replace(/^¿\s*/, '')
-            .replace(/\?\s*$/, '')
             .trim();
 
-        return cleanFallback ? `% ${cleanFallback}` : (fallback || codigoVariable || '');
+        return cleanFallback || fallback || codigoVariable || '';
     }
 
     private buildCharts(): void {
