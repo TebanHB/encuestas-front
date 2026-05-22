@@ -429,17 +429,11 @@ interface CreateMetodologiaForm {
                                             <span *ngIf="q.metadato" class="badge-metadato">No clasifica</span>
                                         </td>
                                         <td>
-                                            <p-inputnumber
-                                                [(ngModel)]="q.ponderacion"
-                                                [min]="0"
-                                                [max]="100"
-                                                [minFractionDigits]="0"
-                                                [maxFractionDigits]="0"
-                                                prefix="x"
-                                                [useGrouping]="false"
-                                                [disabled]="q.metadato"
-                                                class="w-full"
-                                            ></p-inputnumber>
+                                            <div class="ponderacion-stepper" [class.stepper-disabled]="q.metadato">
+                                                <button class="stepper-btn" (click)="!q.metadato && q.ponderacion > 0 && (q.ponderacion = q.ponderacion - 1)" [disabled]="q.metadato || q.ponderacion <= 0">−</button>
+                                                <span class="stepper-value">{{ q.ponderacion }}</span>
+                                                <button class="stepper-btn" (click)="!q.metadato && q.ponderacion < 100 && (q.ponderacion = q.ponderacion + 1)" [disabled]="q.metadato || q.ponderacion >= 100">+</button>
+                                            </div>
                                         </td>
                                         <td>
                                             <div class="obligatoria-check-cell"
@@ -864,6 +858,58 @@ interface CreateMetodologiaForm {
 
         .oblig-label.text-muted {
             color: var(--text-color-secondary);
+        }
+
+        .ponderacion-stepper {
+            display: inline-flex;
+            align-items: center;
+            gap: 0;
+            border: 1px solid var(--surface-border);
+            border-radius: 0.5rem;
+            overflow: hidden;
+            background: var(--surface-card);
+        }
+
+        .ponderacion-stepper.stepper-disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .stepper-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 2rem;
+            height: 2rem;
+            border: none;
+            background: var(--surface-ground);
+            color: var(--text-color);
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: background 0.15s;
+            line-height: 1;
+            padding: 0;
+            flex-shrink: 0;
+        }
+
+        .stepper-btn:hover:not(:disabled) {
+            background: var(--primary-color);
+            color: var(--primary-color-text);
+        }
+
+        .stepper-btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+
+        .stepper-value {
+            min-width: 2.2rem;
+            text-align: center;
+            font-size: 0.92rem;
+            font-weight: 600;
+            color: var(--text-color);
+            padding: 0 0.3rem;
+            user-select: none;
         }
 
         .cies-actions-row {
