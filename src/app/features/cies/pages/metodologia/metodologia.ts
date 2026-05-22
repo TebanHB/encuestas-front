@@ -168,7 +168,7 @@ interface CreateMetodologiaForm {
                                                 </div>
                                             </div>
                                             <div class="pregunta-ponderacion" *ngIf="!q.metadato">
-                                                <span class="ponderacion-badge">Importancia: {{ q.ponderacion }}%</span>
+                                                <span class="ponderacion-badge">Importancia: x{{ q.ponderacion }}</span>
                                             </div>
                                         </div>
                                     }
@@ -381,11 +381,17 @@ interface CreateMetodologiaForm {
 
                 <!-- Sección 2: Importancia de preguntas -->
                 <div class="editor-section">
-                    <h3>Importancia de cada pregunta</h3>
+                    <h3>
+                        Importancia de cada pregunta
+                        <i class="pi pi-question-circle field-help-icon"
+                            pTooltip="La importancia funciona como multiplicador del puntaje base de la pregunta. x0 anula su aporte, x1 mantiene el valor normal y valores mayores aumentan su efecto."
+                            tooltipPosition="right"></i>
+                    </h3>
                     <p class="section-desc">
-                        La <strong>importancia</strong> indica cuánto influye cada pregunta en el resultado final.
-                        Si pones <strong>0</strong>, esa pregunta no suma ni resta.
-                        Si pones <strong>100</strong>, tiene el máximo peso.
+                        La <strong>importancia</strong> funciona como un multiplicador del puntaje base de la pregunta.
+                        Si pones <strong>x0</strong>, la pregunta no aporta puntos.
+                        Si dejas <strong>x1</strong>, mantiene su valor normal.
+                        Si usas <strong>x2</strong> o más, aumenta proporcionalmente su efecto en el factor.
                     </p>
 
                     <div class="obligatoria-note">
@@ -405,7 +411,11 @@ interface CreateMetodologiaForm {
                                     <tr>
                                         <th style="width: 3rem">#</th>
                                         <th>Pregunta</th>
-                                        <th style="width: 10rem">Importancia (0-100)</th>
+                                        <th style="width: 10rem"
+                                            pTooltip="La importancia funciona como multiplicador del puntaje base de la pregunta. x0 anula su aporte, x1 mantiene el valor normal y valores mayores aumentan su efecto."
+                                            tooltipPosition="top">
+                                            Importancia
+                                        </th>
                                         <th style="width: 9rem" pTooltip="Marca si esta pregunta debe responderse obligatoriamente. Si está desmarcada, el encuestador puede dejarla sin responder." tooltipPosition="top">
                                             Obligatoria
                                         </th>
@@ -423,6 +433,10 @@ interface CreateMetodologiaForm {
                                                 [(ngModel)]="q.ponderacion"
                                                 [min]="0"
                                                 [max]="100"
+                                                [minFractionDigits]="0"
+                                                [maxFractionDigits]="0"
+                                                prefix="x"
+                                                [useGrouping]="false"
                                                 [disabled]="q.metadato"
                                                 class="w-full"
                                             ></p-inputnumber>
