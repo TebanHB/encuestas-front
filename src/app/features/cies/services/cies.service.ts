@@ -188,6 +188,7 @@ export interface ReporteResumen {
     porcentajeConVulnerabilidad: number;
     porcentajeSinVulnerabilidad: number;
     tendencias: { etiqueta: string; total: number; pobres: number; excluidas: number; subatendidas: number }[];
+    comparacionAnual?: { etiqueta: string; total: number; pobres: number; excluidas: number; subatendidas: number }[];
     comparativoClinicas: {
         clinica: string;
         regional: string;

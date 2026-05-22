@@ -1892,12 +1892,14 @@ export class EntrevistasPage implements OnInit {
         const questions = (this.currentInterview?.preguntas || [])
             .filter((item) => !item.metadato);
 
+        const questionsWithoutSkipped = questions.filter((item) => !this.shouldSkipQuestion(item));
+
         if (!this.terminatesInterview) {
-            return questions;
+            return questionsWithoutSkipped;
         }
         const rule = this.getTerminationRule();
-        const pivot = !rule ? null : questions.find((item) => item.codigoVariable === rule.codigoVariable);
-        return pivot ? questions.filter((item) => item.orden <= pivot.orden) : questions;
+        const pivot = !rule ? null : questionsWithoutSkipped.find((item) => item.codigoVariable === rule.codigoVariable);
+        return pivot ? questionsWithoutSkipped.filter((item) => item.orden <= pivot.orden) : questionsWithoutSkipped;
     }
 
     get currentQuestion(): PreguntaInstrumento | null {

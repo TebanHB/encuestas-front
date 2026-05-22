@@ -335,6 +335,45 @@ type ActiveChartGroup = ChartGroupId | 'all';
 
                 <!-- TAB 2: Tendencias -->
                 <p-tabpanel value="1">
+                    <section class="card cies-chart-card" *ngIf="(resumen.comparacionAnual || []).length">
+                        <div class="cies-section-head">
+                            <div>
+                                <h3>Comparación por año</h3>
+                                <p>Evolución anual de entrevistas y condiciones de vulnerabilidad.</p>
+                            </div>
+                            <app-cies-info-hint text="Compara años entre sí con los filtros actuales. Si seleccionas un año específico, se mostrará solo ese periodo."></app-cies-info-hint>
+                        </div>
+                        <div class="chart-container">
+                            <p-chart type="bar" [data]="comparacionAnualChartData" [options]="barChartOptions"></p-chart>
+                        </div>
+                    </section>
+
+                    <section class="card" style="margin-top: 1rem;" *ngIf="(resumen.comparacionAnual || []).length">
+                        <h4 style="margin: 0 0 1rem; font-size: 0.95rem;">Tabla comparativa anual</h4>
+                        <p-table [value]="resumen.comparacionAnual || []" [tableStyle]="{ 'min-width': '48rem' }"
+                            responsiveLayout="scroll" [paginator]="true" [rows]="5"
+                            [rowsPerPageOptions]="[5, 10, 20]" class="cies-table">
+                            <ng-template pTemplate="header">
+                                <tr>
+                                    <th>Año</th>
+                                    <th>Total</th>
+                                    <th>Pobreza</th>
+                                    <th>Excluidas</th>
+                                    <th>Subatendidas</th>
+                                </tr>
+                            </ng-template>
+                            <ng-template pTemplate="body" let-item>
+                                <tr>
+                                    <td><strong>{{ item.etiqueta }}</strong></td>
+                                    <td>{{ item.total | numeroFormato }}</td>
+                                    <td style="color: #ef4444;">{{ item.pobres | numeroFormato }}</td>
+                                    <td style="color: #f59e0b;">{{ item.excluidas | numeroFormato }}</td>
+                                    <td style="color: #0ea5e9;">{{ item.subatendidas | numeroFormato }}</td>
+                                </tr>
+                            </ng-template>
+                        </p-table>
+                    </section>
+
                     <section class="card cies-chart-card" *ngIf="resumen.tendencias.length">
                         <div class="cies-section-head">
                             <div>
@@ -1923,6 +1962,7 @@ export class ReporteriaPage implements OnInit {
 
     classificationChartData: any = null;
     tendenciasChartData: any = null;
+    comparacionAnualChartData: any = null;
     clinicasChartData: any = null;
     distributionChartData: any = null;
     excelFactoresChartData: any = null;
@@ -2456,6 +2496,8 @@ export class ReporteriaPage implements OnInit {
 
     private buildCharts(): void {
         if (this.resumen) {
+            const comparacionAnual = this.resumen.comparacionAnual || [];
+
             this.classificationChartData = {
                 labels: ['Sin condiciones', '1 condición', '2 condiciones', '3 condiciones'],
                 datasets: [{
@@ -2463,6 +2505,16 @@ export class ReporteriaPage implements OnInit {
                     backgroundColor: ['#64748b', '#10b981', '#f59e0b', '#ef4444'],
                     hoverOffset: 8
                 }]
+            };
+
+            this.comparacionAnualChartData = {
+                labels: comparacionAnual.map((item) => item.etiqueta),
+                datasets: [
+                    { label: 'Total', data: comparacionAnual.map((i) => i.total), backgroundColor: '#6366f1', borderRadius: 4, _items: comparacionAnual.map((i) => ({ total: i.total, porcentaje: i.total ? 100 : 0, base: i.total })) },
+                    { label: 'Pobreza', data: comparacionAnual.map((i) => i.pobres), backgroundColor: '#ef4444', borderRadius: 4, _items: comparacionAnual.map((i) => ({ total: i.pobres, porcentaje: i.total ? (i.pobres * 100) / i.total : 0, base: i.total })) },
+                    { label: 'Excluidas', data: comparacionAnual.map((i) => i.excluidas), backgroundColor: '#f59e0b', borderRadius: 4, _items: comparacionAnual.map((i) => ({ total: i.excluidas, porcentaje: i.total ? (i.excluidas * 100) / i.total : 0, base: i.total })) },
+                    { label: 'Subatendidas', data: comparacionAnual.map((i) => i.subatendidas), backgroundColor: '#0ea5e9', borderRadius: 4, _items: comparacionAnual.map((i) => ({ total: i.subatendidas, porcentaje: i.total ? (i.subatendidas * 100) / i.total : 0, base: i.total })) }
+                ]
             };
 
             this.tendenciasChartData = {

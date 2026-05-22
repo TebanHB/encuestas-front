@@ -312,6 +312,7 @@ interface PersonaForm {
                                 <th>Nombre</th>
                                 <th>Estado</th>
                                 <th>Total</th>
+                                <th>Seguimiento</th>
                                 <th>Creado por</th>
                                 <th>Fecha</th>
                             </tr>
@@ -322,6 +323,12 @@ interface PersonaForm {
                                 <td class="font-medium">{{ item.nombre }}</td>
                                 <td><p-tag [value]="item.estado | estadoTexto" severity="success"></p-tag></td>
                                 <td>{{ item.totalPersonas }}</td>
+                                <td>
+                                    <div class="text-muted text-sm">
+                                        <div><strong>{{ getSelectedCount(item) }}</strong> listas para entrevista</div>
+                                        <div>{{ getProcessedInterviewStatusSummary(item) }}</div>
+                                    </div>
+                                </td>
                                 <td class="text-muted">{{ item.creadoPor }}</td>
                                 <td class="text-muted">{{ item.fechaCreacion | fechaCorta }}</td>
                             </tr>
@@ -351,6 +358,7 @@ interface PersonaForm {
                             <th>Listado</th>
                             <th>Semilla</th>
                             <th>Seleccionadas</th>
+                            <th>Siguiente paso</th>
                             <th>Ejecutado por</th>
                             <th>Fecha</th>
                         </tr>
@@ -360,6 +368,7 @@ interface PersonaForm {
                             <td class="font-medium">#{{ item.loteId }}</td>
                             <td class="font-mono text-sm">{{ item.semilla }}</td>
                             <td>{{ item.totalSeleccionadas }}</td>
+                            <td class="text-muted">{{ getExecutionNextStep(item) }}</td>
                             <td class="text-muted">{{ item.ejecutadoPor }}</td>
                             <td class="text-muted">{{ item.fechaEjecucion | fechaCorta }}</td>
                         </tr>
@@ -424,7 +433,8 @@ interface PersonaForm {
                         <th pSortableColumn="clinica">Clínica <p-sortIcon field="clinica"></p-sortIcon></th>
                         <th>Regional</th>
                         <th>Fecha consulta</th>
-                        <th>Estado</th>
+                        <th>Código entrevista</th>
+                        <th>Estado operativo</th>
                         <th style="width:9rem">Acciones</th>
                     </tr>
                 </ng-template>
@@ -436,8 +446,14 @@ interface PersonaForm {
                         <td>{{ item.regional }}</td>
                         <td class="text-muted">{{ item.fechaConsulta | fechaCorta }}</td>
                         <td>
-                            <p-tag [value]="item.estadoEntrevista"
-                                [severity]="item.estadoEntrevista === 'PENDIENTE' ? 'warn' : 'info'"></p-tag>
+                            <span class="font-mono text-sm">{{ item.codigoEntrevista || '—' }}</span>
+                        </td>
+                        <td>
+                            <div class="cies-stack-xs">
+                                <p-tag [value]="getOperationalStatusLabel(item)"
+                                    [severity]="getOperationalStatusSeverity(item)"></p-tag>
+                                <small class="text-muted">{{ getOperationalStatusHint(item) }}</small>
+                            </div>
                         </td>
                         <td>
                             <div class="cies-inline-actions">
@@ -864,6 +880,12 @@ interface PersonaForm {
                 gap: 0.5rem;
                 margin-top: 1.5rem;
                 justify-content: flex-end;
+            }
+
+            .cies-stack-xs {
+                display: flex;
+                flex-direction: column;
+                gap: 0.25rem;
             }
 
             .registro-form-grid {
@@ -1510,12 +1532,12 @@ export class SeleccionPage implements OnInit {
     ejecutar(item: LoteMedicare): void {
         this.cargaError = '';
         this.ciesService.executeSeleccion(item.id).subscribe({
-            next: () => {
+            next: (result) => {
                 this.load();
                 this.messageService.add({
                     severity: 'success',
                     summary: 'Selección ejecutada',
-                    detail: 'Proceso de selección aleatoria completado'
+                    detail: `Proceso completado: ${result.totalSeleccionadas} persona(s) quedaron listas para entrevista.`
                 });
             },
             error: (error) => {
@@ -1601,6 +1623,65 @@ export class SeleccionPage implements OnInit {
         }
 
         return personas;
+    }
+
+    getSelectedCount(lote: LoteMedicare): number {
+        return (lote.personas || []).filter((persona) => persona.seleccionada).length;
+    }
+
+    getProcessedInterviewStatusSummary(lote: LoteMedicare): string {
+        const personas = (lote.personas || []).filter((persona) => persona.seleccionada);
+        const pendientes = personas.filter((persona) => persona.estadoEntrevista === 'PENDIENTE').length;
+        const enCurso = personas.filter((persona) => persona.estadoEntrevista === 'EN_CURSO').length;
+        const finalizadas = personas.filter((persona) => persona.estadoEntrevista === 'FINALIZADA').length;
+        return `${pendientes} pendientes · ${enCurso} en curso · ${finalizadas} finalizadas`;
+    }
+
+    getExecutionNextStep(item: EjecucionSeleccion): string {
+        const pendientes = (item.seleccionadas || []).filter((persona) => persona.estadoEntrevista === 'PENDIENTE').length;
+        if (pendientes > 0) {
+            return `${pendientes} pendiente(s) de derivación/entrevista`;
+        }
+        return 'Seguimiento operativo en curso';
+    }
+
+    getOperationalStatusLabel(item: PersonaElegible): string {
+        if (item.estadoEntrevista === 'FINALIZADA') {
+            return 'Entrevista finalizada';
+        }
+        if (item.estadoEntrevista === 'EN_CURSO') {
+            return 'Entrevista en curso';
+        }
+        if (item.seleccionada) {
+            return 'Lista para entrevista';
+        }
+        return item.estadoEntrevista || 'Pendiente';
+    }
+
+    getOperationalStatusSeverity(item: PersonaElegible): 'success' | 'info' | 'warn' | 'secondary' {
+        if (item.estadoEntrevista === 'FINALIZADA') {
+            return 'success';
+        }
+        if (item.estadoEntrevista === 'EN_CURSO') {
+            return 'info';
+        }
+        if (item.seleccionada) {
+            return 'warn';
+        }
+        return 'secondary';
+    }
+
+    getOperationalStatusHint(item: PersonaElegible): string {
+        if (item.estadoEntrevista === 'FINALIZADA') {
+            return 'Ya no requiere acción operativa.';
+        }
+        if (item.estadoEntrevista === 'EN_CURSO') {
+            return 'La entrevista ya fue iniciada.';
+        }
+        if (item.seleccionada) {
+            return 'Debe pasar a la bandeja operativa de entrevista.';
+        }
+        return 'Pendiente de preparación.';
     }
 
     private parseJson(raw: string): Array<Record<string, unknown>> {

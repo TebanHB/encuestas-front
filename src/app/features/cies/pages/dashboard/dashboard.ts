@@ -355,6 +355,7 @@ export class Dashboard implements OnInit {
                         porcentajeConVulnerabilidad: 0,
                         porcentajeSinVulnerabilidad: 0,
                         tendencias: [],
+                        comparacionAnual: [],
                         comparativoClinicas: []
                     };
                     this.cdr.detectChanges();

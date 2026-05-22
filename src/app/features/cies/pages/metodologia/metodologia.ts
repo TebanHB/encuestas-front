@@ -135,12 +135,12 @@ interface CreateMetodologiaForm {
                 <div class="config-explanation">
                     <h4><i class="pi pi-info-circle" style="color:var(--primary-color);margin-right:0.4rem"></i>¿Qué es el "Punto de corte"?</h4>
                     <p style="font-size:0.88rem;color:var(--text-color-secondary);margin:0 0 0.75rem;">
-                        El <strong>punto de corte</strong> es el puntaje mínimo de referencia que el sistema usa para determinar si una persona cae dentro de una categoría de vulnerabilidad.
-                        Si el puntaje total alcanza o supera este valor, el sistema considera que la condición está presente. Si no lo alcanza, se clasifica como vulnerable en ese factor.
+                        El <strong>punto de corte</strong> es el valor de referencia que el sistema usa para clasificar cada factor por separado.
+                        En este instrumento, <strong>más puntos significan menor vulnerabilidad</strong>, por lo que cada categoría se evalúa con su propia regla y no con un puntaje total único.
                     </p>
                     <ul>
                         <li><strong>Pobreza:</strong> Si el puntaje del factor pobreza es <strong>menor a {{ active.umbralPobre }}</strong>, se marca como pobre. (Corte actual: {{ active.umbralPobre }} puntos)</li>
-                        <li><strong>Exclusión:</strong> Si V16, V17 y V19 suman <strong>{{ active.umbralExcluido }} o menos</strong>, se marca como excluida. (Corte actual: {{ active.umbralExcluido }} puntos)</li>
+                        <li><strong>Exclusión:</strong> Si el puntaje del factor exclusión basado en V15, V16 y V17 es <strong>{{ active.umbralExcluido }} o menos</strong>, se marca como excluida. (Corte actual: {{ active.umbralExcluido }} puntos)</li>
                         <li><strong>Subatención:</strong> Si el puntaje del factor subatención es <strong>{{ active.umbralSubatendido }} o menos</strong>, se marca como subatendida. (Corte actual: {{ active.umbralSubatendido }} puntos)</li>
                     </ul>
                 </div>
@@ -336,7 +336,7 @@ interface CreateMetodologiaForm {
                     <h3>
                         Puntos de corte
                         <i class="pi pi-question-circle corte-help-icon"
-                            pTooltip="El punto de corte es el puntaje mínimo usado para determinar si el resultado cumple una condición o clasificación. Si el puntaje total no alcanza el corte, la persona se clasifica como vulnerable en ese factor."
+                            pTooltip="El punto de corte se aplica al puntaje de cada factor por separado. Si el puntaje del factor evaluado no alcanza el corte correspondiente, la persona se clasifica como vulnerable en ese factor."
                             tooltipPosition="right"></i>
                     </h3>
                     <p class="section-desc">
@@ -360,11 +360,11 @@ interface CreateMetodologiaForm {
                             <label>
                                 Punto de corte «Excluido»
                                 <i class="pi pi-question-circle field-help-icon"
-                                    pTooltip="Puntaje de referencia para exclusión (calculado con V16, V17 y V19). Si el resultado es menor o igual a este valor, se considera excluido."
+                                    pTooltip="Puntaje de referencia para exclusión (calculado con V15, V16 y V17). Si el resultado es menor o igual a este valor, se considera excluido."
                                     tooltipPosition="top"></i>
                             </label>
                             <p-inputnumber [(ngModel)]="editor.umbralExcluido" [min]="0" [max]="100" class="w-full"></p-inputnumber>
-                            <small class="field-help">Se calcula con V16, V17 y V19. Si el resultado es <strong>≤ este valor</strong>, se considera excluido</small>
+                            <small class="field-help">Se calcula con V15, V16 y V17. Si el resultado es <strong>≤ este valor</strong>, se considera excluido</small>
                         </div>
                         <div>
                             <label>
