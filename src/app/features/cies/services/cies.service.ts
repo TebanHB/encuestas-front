@@ -140,6 +140,11 @@ export interface RespuestaPayload {
     valorOtro?: string;
 }
 
+export interface FinalizarEntrevistaPayload {
+    consentimientoAceptado: boolean;
+    respuestas: RespuestaPayload[];
+}
+
 export interface Entrevista {
     id: number;
     codigo: string;
@@ -151,6 +156,8 @@ export interface Entrevista {
     encuestador: string;
     personaNombre: string;
     metodologia: string;
+    consentimientoAceptado?: boolean;
+    fechaConsentimiento?: string | null;
     preguntas: PreguntaInstrumento[];
     respuestas: {
         preguntaId: number;
@@ -588,8 +595,8 @@ export class CiesService {
         return this.http.post<Entrevista>(`${this.apiBase}/entrevistas/${personaId}/iniciar`, {}).pipe(tap(() => this.resetOperacionCache()));
     }
 
-    finalizarEntrevista(entrevistaId: number, respuestas: RespuestaPayload[]): Observable<Entrevista> {
-        return this.http.post<Entrevista>(`${this.apiBase}/entrevistas/${entrevistaId}/finalizar`, { respuestas }).pipe(tap(() => this.resetAllCaches()));
+    finalizarEntrevista(entrevistaId: number, payload: FinalizarEntrevistaPayload): Observable<Entrevista> {
+        return this.http.post<Entrevista>(`${this.apiBase}/entrevistas/${entrevistaId}/finalizar`, payload).pipe(tap(() => this.resetAllCaches()));
     }
 
     getEntrevista(id: number): Observable<Entrevista> {

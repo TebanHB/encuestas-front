@@ -17,7 +17,7 @@ import { firstValueFrom } from 'rxjs';
 import { FechaCortaPipe } from '../../../../shared/pipes/formato.pipe';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { CiesInfoHintComponent } from '../../components/cies-info-hint';
-import { CiesService, Entrevista, EntrevistaFinalizadaResumen, PersonaElegible, PreguntaInstrumento, RespuestaPayload } from '../../services/cies.service';
+import { CiesService, Entrevista, EntrevistaFinalizadaResumen, FinalizarEntrevistaPayload, PersonaElegible, PreguntaInstrumento, RespuestaPayload } from '../../services/cies.service';
 
 interface AnswerValue {
     codigoOpcion?: string;
@@ -36,6 +36,7 @@ interface InterviewDraftSnapshot {
     interviewId: number;
     userId: number | string;
     currentStep: number;
+    consentimientoAceptado: boolean;
     answers: Record<number, AnswerValue>;
     updatedAt: string;
 }
@@ -371,8 +372,27 @@ interface InterviewDraftSnapshot {
                     <span>Todas las respuestas obligatorias están completas. Puedes finalizar la entrevista.</span>
                 </div>
 
+                <div class="consent-card" *ngIf="!hasConsentimientoAprobado">
+                    <div class="consent-card__icon">
+                        <i class="pi pi-shield"></i>
+                    </div>
+                    <div class="consent-card__content">
+                        <h4>Consentimiento informado</h4>
+                        <p>
+                            Antes de continuar, confirma que la persona fue informada sobre la encuesta y acepto responderla.
+                            Sin este registro no se puede finalizar la entrevista.
+                        </p>
+                        <div class="consent-card__actions">
+                            <button pButton type="button" label="Acepta y continuar" icon="pi pi-check"
+                                [disabled]="submitting" (click)="acceptConsent()"></button>
+                            <button pButton type="button" label="No acepta" severity="secondary" [outlined]="true"
+                                icon="pi pi-times" [disabled]="submitting" (click)="rejectConsent()"></button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- PREGUNTAS -->
-                <div class="preguntas-container" *ngIf="currentQuestion as question; else noQuestionsState">
+                <div class="preguntas-container" *ngIf="hasConsentimientoAprobado && currentQuestion as question; else noQuestionsState">
                     <div class="question-step">
                         <div class="question-step__eyebrow">Pregunta {{ stepProgress }} de {{ totalSteps }}</div>
                         <div class="question-step__title">{{ question.numeroVisible }}. {{ question.etiqueta }}</div>
@@ -483,14 +503,14 @@ interface InterviewDraftSnapshot {
                     </div>
                 </div>
                 <ng-template #noQuestionsState>
-                    <div class="cies-note cies-note--warning">
+                    <div class="cies-note cies-note--warning" *ngIf="hasConsentimientoAprobado">
                         <i class="pi pi-info-circle"></i>
                         <span>No hay preguntas disponibles para esta entrevista.</span>
                     </div>
                 </ng-template>
 
                 <!-- Acciones finales -->
-                <div class="entrevista-footer">
+                <div class="entrevista-footer" *ngIf="hasConsentimientoAprobado">
                     <div class="footer-left">
                         <button pButton type="button" label="Anterior" icon="pi pi-arrow-left"
                             severity="secondary" [outlined]="true"
@@ -907,6 +927,52 @@ interface InterviewDraftSnapshot {
         .entrevista-guide-note i {
             color: var(--primary-color);
             margin-top: 0.1rem;
+        }
+
+        .consent-card {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+            padding: 1rem 1.1rem;
+            margin-bottom: 1rem;
+            border: 1px solid color-mix(in srgb, var(--primary-color), transparent 70%);
+            border-radius: 0.85rem;
+            background: color-mix(in srgb, var(--primary-color), transparent 94%);
+        }
+
+        .consent-card__icon {
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--primary-color);
+            color: var(--primary-color-text);
+            flex-shrink: 0;
+        }
+
+        .consent-card__content {
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+        }
+
+        .consent-card__content h4 {
+            margin: 0;
+            font-size: 1rem;
+        }
+
+        .consent-card__content p {
+            margin: 0;
+            color: var(--text-color-secondary);
+            line-height: 1.5;
+        }
+
+        .consent-card__actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
         }
 
         .preguntas-container {
@@ -1508,6 +1574,7 @@ export class EntrevistasPage implements OnInit {
     selectedFinalizadaDetail: Entrevista | null = null;
     draftStatus: 'idle' | 'saved' | 'error' = 'idle';
     draftUpdatedAt: string | null = null;
+    consentimientoAceptado = false;
 
     readonly estadoOptions = [
         { label: 'Todos', value: '' },
@@ -1574,6 +1641,10 @@ export class EntrevistasPage implements OnInit {
 
     get isInterviewActionBusy(): boolean {
         return this.loadingPendientes || this.startingPersonaId !== null || this.directRegistrationLoading || this.submitting;
+    }
+
+    get hasConsentimientoAprobado(): boolean {
+        return this.consentimientoAceptado;
     }
 
     get visibleQuestions(): PreguntaInstrumento[] {
@@ -1730,6 +1801,7 @@ export class EntrevistasPage implements OnInit {
                 this.currentStep = 0;
                 this.showValidation = false;
                 this.answers = {};
+                this.consentimientoAceptado = !!response.consentimientoAceptado;
                 this.submitting = false;
 
                 response.preguntas
@@ -1780,6 +1852,7 @@ export class EntrevistasPage implements OnInit {
         this.currentStep = 0;
         this.showValidation = false;
         this.answers = {};
+        this.consentimientoAceptado = false;
         this.showCloseConfirm = false;
         this.submitting = false;
         this.startingPersonaId = null;
@@ -1993,6 +2066,25 @@ export class EntrevistasPage implements OnInit {
         this.cdr.detectChanges();
     }
 
+    acceptConsent(): void {
+        this.consentimientoAceptado = true;
+        this.showValidation = false;
+        this.scheduleDraftSave();
+        this.cdr.detectChanges();
+    }
+
+    rejectConsent(): void {
+        this.consentimientoAceptado = false;
+        this.showValidation = false;
+        this.scheduleDraftSave();
+        this.messageService.add({
+            severity: 'info',
+            summary: 'Entrevista detenida',
+            detail: 'La entrevista no puede continuar sin consentimiento informado.'
+        });
+        this.cdr.detectChanges();
+    }
+
     private scheduleDraftSave(): void {
         if (!this.currentInterview) {
             return;
@@ -2015,6 +2107,7 @@ export class EntrevistasPage implements OnInit {
                 interviewId: this.currentInterview.id,
                 userId: this.getCurrentUserDraftId(),
                 currentStep: this.currentStep,
+                consentimientoAceptado: this.consentimientoAceptado,
                 answers: this.answers,
                 updatedAt: new Date().toISOString()
             };
@@ -2047,6 +2140,7 @@ export class EntrevistasPage implements OnInit {
                 ...this.answers,
                 ...(snapshot.answers || {})
             };
+            this.consentimientoAceptado = !!snapshot.consentimientoAceptado;
             const maxStep = Math.max(this.visibleQuestions.length - 1, 0);
             this.currentStep = Math.max(0, Math.min(snapshot.currentStep ?? 0, maxStep));
             this.draftStatus = 'saved';
@@ -2103,8 +2197,8 @@ export class EntrevistasPage implements OnInit {
         return null;
     }
 
-    buildPayload(): RespuestaPayload[] {
-        return this.visibleQuestions
+    buildPayload(): FinalizarEntrevistaPayload {
+        const respuestas: RespuestaPayload[] = this.visibleQuestions
             .filter((q) => !this.shouldSkipQuestion(q))
             .map((q) => {
                 const answer = this.answers[q.id] || {};
@@ -2117,10 +2211,24 @@ export class EntrevistasPage implements OnInit {
                         : undefined
                 };
             });
+
+        return {
+            consentimientoAceptado: this.consentimientoAceptado,
+            respuestas
+        };
     }
 
     submit(): void {
         if (!this.currentInterview || this.submitting) return;
+
+        if (!this.hasConsentimientoAprobado) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Falta consentimiento',
+                detail: 'Debes registrar el consentimiento informado antes de finalizar la entrevista.'
+            });
+            return;
+        }
 
         this.showValidation = true;
         if (this.validationErrors.length) {
@@ -2422,4 +2530,3 @@ export class EntrevistasPage implements OnInit {
             || fallback;
     }
 }
-
