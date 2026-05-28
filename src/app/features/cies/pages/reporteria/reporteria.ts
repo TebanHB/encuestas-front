@@ -64,6 +64,7 @@ interface ChartGroupTab {
 }
 
 type ActiveChartGroup = ChartGroupId | 'all';
+type ReporteSerieAnual = { etiqueta: string; total: number; pobres: number; excluidas: number; subatendidas: number };
 
 @Component({
     selector: 'app-reporteria-page',
@@ -343,6 +344,36 @@ type ActiveChartGroup = ChartGroupId | 'all';
                             </div>
                             <app-cies-info-hint text="Compara años entre sí con los filtros actuales. Si seleccionas un año específico, se mostrará solo ese periodo."></app-cies-info-hint>
                         </div>
+                        <div class="year-compare-panel" [class.year-compare-panel--active]="isYearComparisonActive" [class.year-compare-panel--pulse]="yearComparisonPulse">
+                            <div class="year-compare-panel__copy">
+                                <strong>{{ isYearComparisonActive ? 'Comparación focalizada' : 'Vista general anual' }}</strong>
+                                <span>
+                                    {{ isYearComparisonActive
+                                        ? ('Comparando ' + appliedYearCompareLeft + ' vs ' + appliedYearCompareRight + ' sin alterar el filtro de análisis.')
+                                        : 'Selecciona dos años y pulsa Comparar para aislarlos. Si no aplicas comparación, se muestra el panorama completo.' }}
+                                </span>
+                            </div>
+                            <div class="year-compare-panel__controls">
+                                <div class="year-compare-field">
+                                    <label>Año 1</label>
+                                    <p-select [options]="yearComparisonOptions" [(ngModel)]="draftYearCompareLeft"
+                                        optionLabel="label" optionValue="value" placeholder="Selecciona un año"></p-select>
+                                </div>
+                                <div class="year-compare-field">
+                                    <label>Año 2</label>
+                                    <p-select [options]="yearComparisonOptions" [(ngModel)]="draftYearCompareRight"
+                                        optionLabel="label" optionValue="value" placeholder="Selecciona otro año"></p-select>
+                                </div>
+                                <div class="year-compare-actions">
+                                    <button pButton type="button" label="Comparar" icon="pi pi-sync"
+                                        [disabled]="!canApplyYearComparison" (click)="applyYearComparison()"></button>
+                                    <button pButton type="button" label="Limpiar" icon="pi pi-filter-slash"
+                                        severity="secondary" [outlined]="true"
+                                        [disabled]="!isYearComparisonDirty && !isYearComparisonActive"
+                                        (click)="clearYearComparison()"></button>
+                                </div>
+                            </div>
+                        </div>
                         <div class="chart-container">
                             <p-chart type="bar" [data]="comparacionAnualChartData" [options]="barChartOptions"></p-chart>
                         </div>
@@ -350,7 +381,7 @@ type ActiveChartGroup = ChartGroupId | 'all';
 
                     <section class="card" style="margin-top: 1rem;" *ngIf="(resumen.comparacionAnual || []).length">
                         <h4 style="margin: 0 0 1rem; font-size: 0.95rem;">Tabla comparativa anual</h4>
-                        <p-table [value]="resumen.comparacionAnual || []" [tableStyle]="{ 'min-width': '48rem' }"
+                        <p-table [value]="filteredComparacionAnual" [tableStyle]="{ 'min-width': '48rem' }"
                             responsiveLayout="scroll" [paginator]="true" [rows]="5"
                             [rowsPerPageOptions]="[5, 10, 20]" class="cies-table">
                             <ng-template pTemplate="header">
@@ -1743,6 +1774,97 @@ type ActiveChartGroup = ChartGroupId | 'all';
             min-width: 0;
         }
 
+        .year-compare-panel {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 1rem;
+            margin: 1rem 0 0.5rem;
+            padding: 1rem 1.1rem;
+            border-radius: 1rem;
+            border: 1px solid color-mix(in srgb, var(--primary-color), transparent 72%);
+            background:
+                linear-gradient(135deg,
+                    color-mix(in srgb, var(--primary-color), transparent 92%),
+                    color-mix(in srgb, var(--surface-card), transparent 6%));
+            box-shadow: 0 12px 28px color-mix(in srgb, var(--primary-color), transparent 92%);
+            transition:
+                transform 220ms ease,
+                box-shadow 220ms ease,
+                border-color 220ms ease,
+                background 220ms ease;
+        }
+
+        .year-compare-panel--active {
+            border-color: color-mix(in srgb, var(--primary-color), transparent 45%);
+            box-shadow: 0 16px 34px color-mix(in srgb, var(--primary-color), transparent 86%);
+            transform: translateY(-1px);
+        }
+
+        .year-compare-panel--pulse {
+            animation: yearComparePulse 520ms cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .year-compare-panel__copy {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+            max-width: 34rem;
+        }
+
+        .year-compare-panel__copy strong {
+            color: var(--cies-ink);
+            font-size: 0.98rem;
+        }
+
+        .year-compare-panel__copy span {
+            color: var(--text-color-secondary);
+            line-height: 1.5;
+            font-size: 0.88rem;
+        }
+
+        .year-compare-panel__controls {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(10rem, auto));
+            gap: 0.85rem;
+            align-items: end;
+            flex: 1;
+            min-width: min(100%, 34rem);
+        }
+
+        .year-compare-field label {
+            display: block;
+            margin-bottom: 0.45rem;
+            font-weight: 700;
+            color: var(--cies-ink);
+        }
+
+        .year-compare-actions {
+            display: flex;
+            gap: 0.75rem;
+            align-items: end;
+            justify-content: flex-end;
+        }
+
+        :host ::ng-deep .year-compare-field .p-select {
+            width: 100%;
+        }
+
+        @keyframes yearComparePulse {
+            0% {
+                transform: translateY(0) scale(0.995);
+                box-shadow: 0 10px 22px color-mix(in srgb, var(--primary-color), transparent 94%);
+            }
+            65% {
+                transform: translateY(-1px) scale(1.005);
+                box-shadow: 0 20px 42px color-mix(in srgb, var(--primary-color), transparent 82%);
+            }
+            100% {
+                transform: translateY(0) scale(1);
+                box-shadow: 0 16px 34px color-mix(in srgb, var(--primary-color), transparent 86%);
+            }
+        }
+
         :host ::ng-deep .cies-filter-field .p-select,
         :host ::ng-deep .cies-filter-field .p-datepicker,
         :host ::ng-deep .cies-filter-field .p-inputtext {
@@ -1791,6 +1913,19 @@ type ActiveChartGroup = ChartGroupId | 'all';
         @media (max-width: 768px) {
             .cies-stats-grid {
                 grid-template-columns: 1fr;
+            }
+
+            .year-compare-panel__controls {
+                grid-template-columns: 1fr;
+            }
+
+            .year-compare-actions {
+                justify-content: stretch;
+                flex-wrap: wrap;
+            }
+
+            .year-compare-actions button {
+                width: 100%;
             }
 
             .cies-filter-card .cies-section-head {
@@ -1974,6 +2109,12 @@ export class ReporteriaPage implements OnInit {
     excelCombinacionesChartData: any = null;
     frequencyPreviewCharts: Array<{ title: string; data: any; items: Array<{ etiqueta: string; total: number; porcentaje: number }> }> = [];
     associatedSummary: Array<{ label: string; total: number }> = [];
+    yearComparisonOptions: SelectOption[] = [];
+    draftYearCompareLeft = '';
+    draftYearCompareRight = '';
+    appliedYearCompareLeft = '';
+    appliedYearCompareRight = '';
+    yearComparisonPulse = false;
 
     private formatPct = (n: number) => `${(Math.round(n * 10) / 10).toLocaleString('es-BO')}%`;
 
@@ -2334,6 +2475,32 @@ export class ReporteriaPage implements OnInit {
         return this.filters.codigoVariable !== previousVariable;
     }
 
+    private syncYearComparisonOptions(): void {
+        const yearOptions = (this.resumen?.comparacionAnual || []).map((item) => ({
+            label: item.etiqueta,
+            value: item.etiqueta
+        }));
+        this.yearComparisonOptions = yearOptions;
+        const availableYears = new Set(yearOptions.map((item) => item.value));
+
+        if (!availableYears.has(this.draftYearCompareLeft)) this.draftYearCompareLeft = '';
+        if (!availableYears.has(this.draftYearCompareRight)) this.draftYearCompareRight = '';
+        if (!availableYears.has(this.appliedYearCompareLeft)) this.appliedYearCompareLeft = '';
+        if (!availableYears.has(this.appliedYearCompareRight)) this.appliedYearCompareRight = '';
+    }
+
+    private triggerYearComparisonFeedback(): void {
+        this.yearComparisonPulse = false;
+        setTimeout(() => {
+            this.yearComparisonPulse = true;
+            this.cdr.detectChanges();
+            setTimeout(() => {
+                this.yearComparisonPulse = false;
+                this.cdr.detectChanges();
+            }, 520);
+        });
+    }
+
     get hasResults(): boolean {
         return (this.resumen?.totalEntrevistas || 0) > 0;
     }
@@ -2349,6 +2516,31 @@ export class ReporteriaPage implements OnInit {
         if (this.filters.clasificacion) count++;
         if (this.filters.codigoVariable && this.filters.codigoVariable !== 'SERVICIO') count++;
         return count;
+    }
+
+    get filteredComparacionAnual(): ReporteSerieAnual[] {
+        const items = this.resumen?.comparacionAnual || [];
+        if (!this.isYearComparisonActive) {
+            return items;
+        }
+        const selectedYears = new Set([this.appliedYearCompareLeft, this.appliedYearCompareRight].filter(Boolean));
+        return items.filter((item) => selectedYears.has(item.etiqueta));
+    }
+
+    get isYearComparisonActive(): boolean {
+        return !!this.appliedYearCompareLeft && !!this.appliedYearCompareRight;
+    }
+
+    get isYearComparisonDirty(): boolean {
+        return this.draftYearCompareLeft !== this.appliedYearCompareLeft
+            || this.draftYearCompareRight !== this.appliedYearCompareRight;
+    }
+
+    get canApplyYearComparison(): boolean {
+        return !!this.draftYearCompareLeft
+            && !!this.draftYearCompareRight
+            && this.draftYearCompareLeft !== this.draftYearCompareRight
+            && this.isYearComparisonDirty;
     }
 
     load(): void {
@@ -2370,6 +2562,7 @@ export class ReporteriaPage implements OnInit {
                 this.resumen = resumen;
                 this.distribucion = distribucion;
                 this.graficosExcel = graficosExcel;
+                this.syncYearComparisonOptions();
                 this.buildCharts();
                 this.loadFilterOptions();
                 this.loading = false;
@@ -2414,6 +2607,30 @@ export class ReporteriaPage implements OnInit {
         this.regionalOptions = [{ label: 'Todas', value: '' }];
         this.clinicaOptions = [{ label: 'Todas', value: '' }];
         this.load();
+    }
+
+    applyYearComparison(): void {
+        if (!this.canApplyYearComparison) {
+            return;
+        }
+        this.appliedYearCompareLeft = this.draftYearCompareLeft;
+        this.appliedYearCompareRight = this.draftYearCompareRight;
+        this.triggerYearComparisonFeedback();
+        this.buildCharts();
+        this.cdr.detectChanges();
+    }
+
+    clearYearComparison(): void {
+        if (!this.isYearComparisonDirty && !this.isYearComparisonActive) {
+            return;
+        }
+        this.draftYearCompareLeft = '';
+        this.draftYearCompareRight = '';
+        this.appliedYearCompareLeft = '';
+        this.appliedYearCompareRight = '';
+        this.triggerYearComparisonFeedback();
+        this.buildCharts();
+        this.cdr.detectChanges();
     }
 
     openExportDialog(): void {
@@ -2496,7 +2713,7 @@ export class ReporteriaPage implements OnInit {
 
     private buildCharts(): void {
         if (this.resumen) {
-            const comparacionAnual = this.resumen.comparacionAnual || [];
+            const comparacionAnual = this.filteredComparacionAnual;
 
             this.classificationChartData = {
                 labels: ['Sin condiciones', '1 condición', '2 condiciones', '3 condiciones'],
