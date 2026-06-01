@@ -17,7 +17,7 @@ import { firstValueFrom } from 'rxjs';
 import { FechaCortaPipe } from '../../../../shared/pipes/formato.pipe';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { CiesInfoHintComponent } from '../../components/cies-info-hint';
-import { CiesService, Entrevista, EntrevistaFinalizadaResumen, FinalizarEntrevistaPayload, PersonaElegible, PreguntaInstrumento, RespuestaPayload } from '../../services/cies.service';
+import { CiesService, Entrevista, EntrevistaFinalizadaResumen, FinalizarEntrevistaPayload, PersonaBusquedaCiResponse, PersonaElegible, PreguntaInstrumento, RespuestaPayload } from '../../services/cies.service';
 
 interface AnswerValue {
     codigoOpcion?: string;
@@ -39,6 +39,27 @@ interface InterviewDraftSnapshot {
     consentimientoAceptado: boolean;
     answers: Record<number, AnswerValue>;
     updatedAt: string;
+}
+
+interface DirectRegistrationLookupNotice {
+    severity: 'info' | 'error';
+    message: string;
+}
+
+type DirectRegistrationStep = 'search' | 'form' | 'not-found';
+
+interface DirectRegistrationLockedFields {
+    nombre: boolean;
+    apellido: boolean;
+    documento: boolean;
+    medicarePersonId: boolean;
+}
+
+interface DirectRegistrationLockedSnapshot {
+    nombre: string;
+    apellido: string;
+    documento: string;
+    medicarePersonId: string;
 }
 
 @Component({
@@ -540,31 +561,77 @@ interface InterviewDraftSnapshot {
                 header="Registrar persona y empezar entrevista"
                 styleClass="cies-dialog dialog-registro-directo">
                 <div class="dialog-registro-content">
-                    <p class="dialog-intro-text">
+                    <ng-container *ngIf="directRegistrationStep === 'search'">
+                        <p class="dialog-intro-text registro-state-panel registro-state-panel--search">
+                            Busca primero a la persona por su CI. Si no existe, podr&aacute;s registrarla manualmente.
+                        </p>
+
+                        <div class="registro-search-panel registro-state-panel registro-state-panel--search">
+                            <label>Documento de identidad</label>
+                            <p class="registro-search-help">Ingresa el CI de la persona usando solo n&uacute;meros.</p>
+                            <div class="registro-documento-row">
+                                <input pInputText [(ngModel)]="directRegistrationForm.documento" class="w-full"
+                                    inputmode="numeric" pattern="[0-9]*" maxlength="12"
+                                    placeholder="Ejemplo: 12345678"
+                                    (ngModelChange)="onDirectDocumentChange($event)"
+                                    (keydown)="onNumericIdentityKeydown($event)"
+                                    (paste)="onNumericIdentityPaste($event)" />
+                                <button pButton type="button" label="Buscar" icon="pi pi-search"
+                                    class="registro-documento-buscar"
+                                    [loading]="directRegistrationSearchingByCi"
+                                    [disabled]="directRegistrationLoading || directRegistrationSearchingByCi"
+                                    (click)="buscarPersonaDirectaPorCi()"></button>
+                            </div>
+                        </div>
+                    </ng-container>
+
+                    <ng-container *ngIf="directRegistrationStep === 'not-found'">
+                        <div class="registro-empty-search-state registro-state-panel registro-state-panel--not-found">
+                            <div class="registro-empty-search-icon">
+                                <i class="pi pi-search"></i>
+                            </div>
+                            <h3>No se encontr&oacute; una persona con ese CI</h3>
+                            <p>Revisa el n&uacute;mero ingresado o registra manualmente a la persona con un formulario vac&iacute;o.</p>
+                            <div class="registro-empty-search-actions">
+                                <button pButton type="button" label="Registrar manualmente" icon="pi pi-user-plus"
+                                    (click)="openManualDirectRegistrationForm()"></button>
+                                <button pButton type="button" label="Cerrar" severity="secondary" [outlined]="true"
+                                    (click)="closeDirectRegistration()"></button>
+                            </div>
+                        </div>
+                    </ng-container>
+
+                    <p class="dialog-intro-text" *ngIf="directRegistrationStep === 'form'">
                         Registra los datos de la persona y el sistema abrirá la entrevista automáticamente.
                     </p>
 
-                    <div class="registro-form-grid">
+                    <div class="registro-form-grid" *ngIf="directRegistrationStep === 'form'">
                         <div class="registro-field">
                             <label>Nombre <span class="required-star">*</span></label>
                             <input pInputText [(ngModel)]="directRegistrationForm.nombre" class="w-full"
+                                [disabled]="directRegistrationLockedFields.nombre"
                                 placeholder="Ejemplo: María" />
                         </div>
                         <div class="registro-field">
                             <label>Apellido <span class="required-star">*</span></label>
                             <input pInputText [(ngModel)]="directRegistrationForm.apellido" class="w-full"
+                                [disabled]="directRegistrationLockedFields.apellido"
                                 placeholder="Ejemplo: López García" />
                         </div>
                         <div class="registro-field">
                             <label>Documento de identidad</label>
                             <input pInputText [(ngModel)]="directRegistrationForm.documento" class="w-full"
+                                [disabled]="directRegistrationLockedFields.documento"
                                 inputmode="numeric" pattern="[0-9]*" maxlength="12"
                                 placeholder="Ejemplo: 12345678"
-                                (ngModelChange)="onDirectDocumentChange($event)" />
+                                (ngModelChange)="onDirectDocumentChange($event)"
+                                (keydown)="onNumericIdentityKeydown($event)"
+                                (paste)="onNumericIdentityPaste($event)" />
                         </div>
                         <div class="registro-field">
                             <label>ID Medicare</label>
                             <input pInputText [(ngModel)]="directRegistrationForm.medicarePersonId" class="w-full"
+                                [disabled]="directRegistrationLockedFields.medicarePersonId"
                                 placeholder="Opcional, se genera automático si se deja vacío" />
                         </div>
                         <div class="registro-field">
@@ -596,19 +663,35 @@ interface InterviewDraftSnapshot {
                         </div>
                     </div>
 
+                    <div class="cies-note" [ngClass]="directRegistrationLookupNotice.severity === 'error' ? 'cies-note--error' : 'cies-note--warning'"
+                        *ngIf="directRegistrationLookupNotice">
+                        <div class="registro-lookup-note">
+                            <span><i class="pi" [ngClass]="directRegistrationLookupNotice.severity === 'error' ? 'pi-exclamation-triangle' : 'pi-info-circle'"></i> {{ directRegistrationLookupNotice.message }}</span>
+                            <button pButton type="button" label="Cerrar" size="small" severity="secondary" text
+                                (click)="closeDirectRegistrationLookupNotice()"></button>
+                        </div>
+                    </div>
+
                     <div class="cies-note cies-note--error" *ngIf="directRegistrationError">
                         <i class="pi pi-exclamation-triangle"></i> {{ directRegistrationError }}
                     </div>
                 </div>
 
             <ng-template pTemplate="footer">
-                <div class="dialog-footer-actions">
+                <div class="dialog-footer-actions" *ngIf="directRegistrationStep === 'form'; else directRegistrationSearchFooter">
                     <button pButton type="button" label="Cancelar" severity="secondary" [outlined]="true"
                             [disabled]="directRegistrationLoading" (click)="closeDirectRegistration()"></button>
                     <button pButton type="button" label="Crear y abrir entrevista"
                         icon="pi pi-arrow-right" [loading]="directRegistrationLoading"
-                        [disabled]="directRegistrationLoading"
+                        [disabled]="directRegistrationLoading || directRegistrationStep !== 'form'"
                         (click)="registerDirectInterview()"></button>
+                </div>
+            </ng-template>
+            <ng-template #directRegistrationSearchFooter>
+                <div class="dialog-footer-actions">
+                    <button pButton type="button" label="Cancelar" severity="secondary" [outlined]="true"
+                        [disabled]="directRegistrationLoading || directRegistrationSearchingByCi"
+                        (click)="closeDirectRegistration()"></button>
                 </div>
             </ng-template>
             </p-dialog>
@@ -1381,6 +1464,99 @@ interface InterviewDraftSnapshot {
             gap: 1.25rem 1.5rem;
         }
 
+        .registro-state-panel {
+            animation: registro-state-enter 220ms ease-out;
+            will-change: transform, opacity;
+        }
+
+        .registro-state-panel--not-found {
+            animation: registro-state-enter 240ms ease-out;
+        }
+
+        .registro-documento-row {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        .registro-documento-row .w-full {
+            min-width: 0;
+            flex: 1 1 auto;
+        }
+
+        .registro-documento-buscar {
+            flex: 0 0 auto;
+            white-space: nowrap;
+        }
+
+        .registro-search-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+            padding: 1rem;
+            border: 1px solid color-mix(in srgb, var(--primary-color) 20%, transparent);
+            border-radius: 1rem;
+            background: color-mix(in srgb, var(--surface-card) 88%, var(--primary-color) 12%);
+        }
+
+        .registro-search-help {
+            margin: 0;
+            color: var(--text-color-secondary);
+            font-size: 0.92rem;
+        }
+
+        .registro-empty-search-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 0.9rem;
+            padding: 1.25rem 0.5rem;
+        }
+
+        .registro-empty-search-state h3,
+        .registro-empty-search-state p {
+            margin: 0;
+        }
+
+        .registro-empty-search-state p {
+            color: var(--text-color-secondary);
+            max-width: 32rem;
+        }
+
+        .registro-empty-search-icon {
+            width: 3.5rem;
+            height: 3.5rem;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            color: var(--primary-color);
+            background: color-mix(in srgb, var(--primary-color) 14%, transparent);
+        }
+
+        .registro-empty-search-actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.75rem;
+        }
+
+        .registro-lookup-note {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+        }
+
+        .registro-lookup-note span {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            line-height: 1.5;
+        }
+
         .registro-field {
             display: flex;
             flex-direction: column;
@@ -1430,6 +1606,18 @@ interface InterviewDraftSnapshot {
         .dialog-footer-actions button {
             min-width: 10rem;
             padding: 0.6rem 1.25rem;
+        }
+
+        @keyframes registro-state-enter {
+            from {
+                opacity: 0;
+                transform: translateY(8px) scale(0.985);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
         }
 
         .close-confirm-content {
@@ -1558,6 +1746,11 @@ export class EntrevistasPage implements OnInit {
     directRegistrationVisible = false;
     directRegistrationLoading = false;
     directRegistrationError = '';
+    directRegistrationSearchingByCi = false;
+    directRegistrationLookupNotice: DirectRegistrationLookupNotice | null = null;
+    directRegistrationStep: DirectRegistrationStep = 'search';
+    directRegistrationLockedFields: DirectRegistrationLockedFields = this.createDirectRegistrationLockedFields();
+    directRegistrationLockedSnapshot: DirectRegistrationLockedSnapshot = this.createDirectRegistrationLockedSnapshot();
     showCloseConfirm = false;
     searchTerm = '';
     selectedEstado = '';
@@ -2323,6 +2516,44 @@ export class EntrevistasPage implements OnInit {
         if (this.directRegistrationForm.documento !== normalizado) {
             this.directRegistrationForm.documento = normalizado;
         }
+        if (this.directRegistrationLookupNotice && this.directRegistrationStep === 'search') {
+            this.directRegistrationLookupNotice = null;
+        }
+    }
+
+    onNumericIdentityKeydown(event: KeyboardEvent): void {
+        if (event.ctrlKey || event.metaKey || event.altKey) {
+            return;
+        }
+
+        const allowedKeys = new Set([
+            'Backspace',
+            'Delete',
+            'Tab',
+            'Escape',
+            'Enter',
+            'ArrowLeft',
+            'ArrowRight',
+            'ArrowUp',
+            'ArrowDown',
+            'Home',
+            'End'
+        ]);
+
+        if (allowedKeys.has(event.key) || /^\d$/.test(event.key)) {
+            return;
+        }
+
+        event.preventDefault();
+    }
+
+    onNumericIdentityPaste(event: ClipboardEvent): void {
+        const pastedText = event.clipboardData?.getData('text') ?? '';
+        if (/^\d*$/.test(pastedText)) {
+            return;
+        }
+
+        event.preventDefault();
     }
 
     onDirectClinicChange(value: string): void {
@@ -2332,11 +2563,72 @@ export class EntrevistasPage implements OnInit {
         }
     }
 
+    buscarPersonaDirectaPorCi(): void {
+        if (this.directRegistrationSearchingByCi) return;
+
+        const documento = (this.directRegistrationForm.documento || '').trim();
+        if (!/^\d+$/.test(documento)) {
+            this.directRegistrationLookupNotice = {
+                severity: 'error',
+                message: 'Ingrese un CI valido. El CI debe contener solo numeros, sin espacios, guiones ni letras de extension.'
+            };
+            this.cdr.detectChanges();
+            return;
+        }
+
+        this.directRegistrationSearchingByCi = true;
+        this.directRegistrationLookupNotice = null;
+        this.directRegistrationError = '';
+
+        this.ciesService.buscarPersonaPorCi(documento).subscribe({
+            next: (response) => {
+                this.directRegistrationSearchingByCi = false;
+                this.directRegistrationForm.documento = response.documento || documento;
+
+                if (!response.encontrado) {
+                    this.directRegistrationStep = 'not-found';
+                    this.directRegistrationLookupNotice = null;
+                    this.cdr.detectChanges();
+                    return;
+                }
+
+                this.applyDirectRegistrationLookup(response);
+                this.cdr.detectChanges();
+            },
+            error: () => {
+                this.directRegistrationSearchingByCi = false;
+                this.directRegistrationLookupNotice = {
+                    severity: 'error',
+                    message: 'No se pudo realizar la busqueda en este momento. Intente nuevamente.'
+                };
+                this.cdr.detectChanges();
+            }
+        });
+    }
+
+    closeDirectRegistrationLookupNotice(): void {
+        this.directRegistrationLookupNotice = null;
+        this.cdr.detectChanges();
+    }
+
+    openManualDirectRegistrationForm(): void {
+        this.directRegistrationStep = 'form';
+        this.directRegistrationLookupNotice = null;
+        this.directRegistrationLockedFields = this.createDirectRegistrationLockedFields();
+        this.directRegistrationLockedSnapshot = this.createDirectRegistrationLockedSnapshot();
+        this.cdr.detectChanges();
+    }
+
     closeDirectRegistration(): void {
         if (this.directRegistrationLoading) return;
 
         this.directRegistrationVisible = false;
         this.directRegistrationError = '';
+        this.directRegistrationSearchingByCi = false;
+        this.directRegistrationLookupNotice = null;
+        this.directRegistrationStep = 'search';
+        this.directRegistrationLockedFields = this.createDirectRegistrationLockedFields();
+        this.directRegistrationLockedSnapshot = this.createDirectRegistrationLockedSnapshot();
         this.directRegistrationForm = this.createDirectRegistrationForm();
         this.cdr.detectChanges();
     }
@@ -2346,11 +2638,23 @@ export class EntrevistasPage implements OnInit {
 
         this.directRegistrationError = '';
 
+        if (this.directRegistrationStep !== 'form') {
+            this.directRegistrationError = 'Busca primero a la persona por CI o abre el registro manual antes de continuar.';
+            this.cdr.detectChanges();
+            return;
+        }
+
         const nombre = this.directRegistrationForm.nombre.trim();
         const apellido = this.directRegistrationForm.apellido.trim();
         const clinica = this.directRegistrationForm.clinica.trim();
         const regional = this.directRegistrationForm.regional.trim();
         const documento = this.normalizeIdentityDocument(this.directRegistrationForm.documento);
+
+        if (!this.hasValidDirectRegistrationLockedValues()) {
+            this.directRegistrationError = 'Los campos recuperados desde la base de datos no pueden modificarse.';
+            this.cdr.detectChanges();
+            return;
+        }
 
         if (!nombre || !apellido || !clinica || !regional || !this.directRegistrationForm.fechaConsulta) {
             this.directRegistrationError = 'Completa nombre, apellido, clínica, regional y fecha de consulta.';
@@ -2382,6 +2686,9 @@ export class EntrevistasPage implements OnInit {
             this.directRegistrationLoading = false;
             this.directRegistrationVisible = false;
             this.directRegistrationError = '';
+            this.directRegistrationStep = 'search';
+            this.directRegistrationLockedFields = this.createDirectRegistrationLockedFields();
+            this.directRegistrationLockedSnapshot = this.createDirectRegistrationLockedSnapshot();
             this.directRegistrationForm = this.createDirectRegistrationForm();
             this.messageService.add({
                 severity: 'success',
@@ -2480,6 +2787,30 @@ export class EntrevistasPage implements OnInit {
         return String(value ?? '').replace(/\D/g, '');
     }
 
+    private applyDirectRegistrationLookup(response: PersonaBusquedaCiResponse): void {
+        this.directRegistrationForm.nombre = (response.nombres || '').trim();
+        this.directRegistrationForm.apellido = [response.paterno, response.materno]
+            .filter((item) => !!item && item.trim().length > 0)
+            .join(' ')
+            .trim();
+        this.directRegistrationForm.documento = response.documento || this.directRegistrationForm.documento;
+        this.directRegistrationForm.medicarePersonId = response.idAfiliado ? String(response.idAfiliado) : '';
+        this.directRegistrationLockedFields = {
+            nombre: this.directRegistrationForm.nombre.length > 0,
+            apellido: this.directRegistrationForm.apellido.length > 0,
+            documento: this.directRegistrationForm.documento.length > 0,
+            medicarePersonId: this.directRegistrationForm.medicarePersonId.length > 0
+        };
+        this.directRegistrationLockedSnapshot = {
+            nombre: this.directRegistrationForm.nombre,
+            apellido: this.directRegistrationForm.apellido,
+            documento: this.directRegistrationForm.documento,
+            medicarePersonId: this.directRegistrationForm.medicarePersonId
+        };
+        this.directRegistrationStep = 'form';
+        this.directRegistrationLookupNotice = null;
+    }
+
     private createDirectRegistrationForm() {
         return {
             nombre: '',
@@ -2491,6 +2822,31 @@ export class EntrevistasPage implements OnInit {
             fechaConsulta: this.todayLocalIsoDate(),
             tipoConsulta: 'PRIMERA_CONSULTA_SSR'
         };
+    }
+
+    private createDirectRegistrationLockedFields(): DirectRegistrationLockedFields {
+        return {
+            nombre: false,
+            apellido: false,
+            documento: false,
+            medicarePersonId: false
+        };
+    }
+
+    private createDirectRegistrationLockedSnapshot(): DirectRegistrationLockedSnapshot {
+        return {
+            nombre: '',
+            apellido: '',
+            documento: '',
+            medicarePersonId: ''
+        };
+    }
+
+    private hasValidDirectRegistrationLockedValues(): boolean {
+        return (!this.directRegistrationLockedFields.nombre || this.directRegistrationForm.nombre === this.directRegistrationLockedSnapshot.nombre)
+            && (!this.directRegistrationLockedFields.apellido || this.directRegistrationForm.apellido === this.directRegistrationLockedSnapshot.apellido)
+            && (!this.directRegistrationLockedFields.documento || this.directRegistrationForm.documento === this.directRegistrationLockedSnapshot.documento)
+            && (!this.directRegistrationLockedFields.medicarePersonId || this.directRegistrationForm.medicarePersonId === this.directRegistrationLockedSnapshot.medicarePersonId);
     }
 
     private todayLocalIsoDate(): string {

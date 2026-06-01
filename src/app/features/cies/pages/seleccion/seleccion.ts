@@ -15,7 +15,7 @@ import { Toast } from 'primeng/toast';
 import { FechaCortaPipe, EstadoTextoPipe } from '../../../../shared/pipes/formato.pipe';
 import { CiesInfoHintComponent } from '../../components/cies-info-hint';
 import { AuthService } from '../../../../core/auth/auth.service';
-import { CiesService, EjecucionSeleccion, LoteMedicare, PersonaElegible, PersonaUpsertRequest } from '../../services/cies.service';
+import { CiesService, EjecucionSeleccion, LoteMedicare, PersonaBusquedaCiResponse, PersonaElegible, PersonaUpsertRequest } from '../../services/cies.service';
 
 interface PersonaForm {
     nombre: string;
@@ -26,6 +26,11 @@ interface PersonaForm {
     regional: string;
     fechaConsulta: string;
     tipoConsulta: string;
+}
+
+interface PersonaLookupNotice {
+    severity: 'info' | 'error';
+    message: string;
 }
 
 @Component({
@@ -496,9 +501,20 @@ interface PersonaForm {
                     </div>
                     <div class="registro-field">
                         <label>Documento de identidad</label>
-                        <input pInputText [(ngModel)]="personaForm.documento" class="w-full"
-                            inputmode="numeric" pattern="[0-9]*" maxlength="12"
-                            placeholder="Opcional" />
+                        <div class="registro-documento-row">
+                            <input pInputText [(ngModel)]="personaForm.documento" class="w-full"
+                                inputmode="numeric" pattern="[0-9]*" maxlength="12"
+                                placeholder="Opcional"
+                                (ngModelChange)="onPersonaDocumentoChange($event)"
+                                (keydown)="onNumericIdentityKeydown($event)"
+                                (paste)="onNumericIdentityPaste($event)" />
+                            <button pButton type="button" label="Buscar" icon="pi pi-search"
+                                class="registro-documento-buscar"
+                                severity="secondary" [outlined]="true"
+                                [loading]="searchingPersonaByCi"
+                                [disabled]="savingPersona || searchingPersonaByCi"
+                                (click)="buscarPersonaPorCi()"></button>
+                        </div>
                     </div>
                     <div class="registro-field">
                         <label>ID Medicare</label>
@@ -530,6 +546,15 @@ interface PersonaForm {
                         <p-select [options]="tipoConsultaOptions"
                             [(ngModel)]="personaForm.tipoConsulta"
                             optionLabel="label" optionValue="value" appendTo="body" class="w-full"></p-select>
+                    </div>
+                </div>
+
+                <div class="cies-note" [ngClass]="personaLookupNotice.severity === 'error' ? 'cies-note--error' : 'cies-note--warning'"
+                    *ngIf="personaLookupNotice" style="margin-top:1rem">
+                    <div class="registro-lookup-note">
+                        <span><i class="pi" [ngClass]="personaLookupNotice.severity === 'error' ? 'pi-exclamation-triangle' : 'pi-info-circle'"></i> {{ personaLookupNotice.message }}</span>
+                        <button pButton type="button" label="Cerrar" size="small" severity="secondary" text
+                            (click)="closePersonaLookupNotice()"></button>
                     </div>
                 </div>
 
@@ -614,6 +639,36 @@ interface PersonaForm {
 
             .carga-paso {
                 margin-bottom: 1.25rem;
+            }
+
+            .registro-documento-row {
+                display: flex;
+                gap: 0.75rem;
+                align-items: center;
+            }
+
+            .registro-documento-row .w-full {
+                min-width: 0;
+                flex: 1 1 auto;
+            }
+
+            .registro-documento-buscar {
+                flex: 0 0 auto;
+                white-space: nowrap;
+            }
+
+            .registro-lookup-note {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 0.75rem;
+            }
+
+            .registro-lookup-note span {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.5rem;
+                line-height: 1.5;
             }
 
             .carga-paso-header {
@@ -1016,6 +1071,8 @@ export class SeleccionPage implements OnInit {
     savingPersona = false;
     personaDialogError = '';
     personaForm: PersonaForm = this.createPersonaForm();
+    searchingPersonaByCi = false;
+    personaLookupNotice: PersonaLookupNotice | null = null;
 
     readonly ciesRegionalOptions = [
         { label: 'Cochabamba', value: 'Cochabamba' },
@@ -1138,6 +1195,7 @@ export class SeleccionPage implements OnInit {
         this.editingPersonaId = null;
         this.personaForm = this.createPersonaForm();
         this.personaDialogError = '';
+        this.personaLookupNotice = null;
         this.showPersonaDialog = true;
         this.cdr.detectChanges();
     }
@@ -1164,6 +1222,7 @@ export class SeleccionPage implements OnInit {
         };
         this.editingPersonaId = item.id;
         this.personaDialogError = '';
+        this.personaLookupNotice = null;
         this.showPersonaDialog = true;
         this.cdr.detectChanges();
     }
@@ -1173,6 +1232,8 @@ export class SeleccionPage implements OnInit {
         this.showPersonaDialog = false;
         this.editingPersonaId = null;
         this.personaDialogError = '';
+        this.personaLookupNotice = null;
+        this.searchingPersonaByCi = false;
         this.personaForm = this.createPersonaForm();
         this.cdr.detectChanges();
     }
@@ -1182,6 +1243,99 @@ export class SeleccionPage implements OnInit {
         if (seleccion) {
             this.personaForm.regional = seleccion.regional;
         }
+    }
+
+    onPersonaDocumentoChange(value: string): void {
+        this.personaForm.documento = String(value ?? '').replace(/\D/g, '');
+        if (this.personaLookupNotice) {
+            this.personaLookupNotice = null;
+            this.cdr.detectChanges();
+        }
+    }
+
+    onNumericIdentityKeydown(event: KeyboardEvent): void {
+        if (event.ctrlKey || event.metaKey || event.altKey) {
+            return;
+        }
+
+        const allowedKeys = new Set([
+            'Backspace',
+            'Delete',
+            'Tab',
+            'Escape',
+            'Enter',
+            'ArrowLeft',
+            'ArrowRight',
+            'ArrowUp',
+            'ArrowDown',
+            'Home',
+            'End'
+        ]);
+
+        if (allowedKeys.has(event.key) || /^\d$/.test(event.key)) {
+            return;
+        }
+
+        event.preventDefault();
+    }
+
+    onNumericIdentityPaste(event: ClipboardEvent): void {
+        const pastedText = event.clipboardData?.getData('text') ?? '';
+        if (/^\d*$/.test(pastedText)) {
+            return;
+        }
+
+        event.preventDefault();
+    }
+
+    buscarPersonaPorCi(): void {
+        if (this.searchingPersonaByCi) return;
+
+        const documento = (this.personaForm.documento || '').trim();
+        if (!this.isValidCiForLookup(documento)) {
+            this.personaLookupNotice = {
+                severity: 'error',
+                message: 'Ingrese un CI valido. El CI debe contener solo numeros, sin espacios, guiones ni letras de extension.'
+            };
+            this.cdr.detectChanges();
+            return;
+        }
+
+        this.searchingPersonaByCi = true;
+        this.personaLookupNotice = null;
+        this.personaDialogError = '';
+
+        this.ciesService.buscarPersonaPorCi(documento).subscribe({
+            next: (response) => {
+                this.searchingPersonaByCi = false;
+                this.personaForm.documento = response.documento || documento;
+
+                if (!response.encontrado) {
+                    this.personaLookupNotice = {
+                        severity: 'info',
+                        message: response.mensaje || 'No se encontro una persona con ese CI. Debe registrar a la persona manualmente.'
+                    };
+                    this.cdr.detectChanges();
+                    return;
+                }
+
+                this.applyPersonaLookup(response);
+                this.cdr.detectChanges();
+            },
+            error: () => {
+                this.searchingPersonaByCi = false;
+                this.personaLookupNotice = {
+                    severity: 'error',
+                    message: 'No se pudo realizar la busqueda en este momento. Intente nuevamente.'
+                };
+                this.cdr.detectChanges();
+            }
+        });
+    }
+
+    closePersonaLookupNotice(): void {
+        this.personaLookupNotice = null;
+        this.cdr.detectChanges();
     }
 
     guardarPersona(): void {
@@ -1269,6 +1423,19 @@ export class SeleccionPage implements OnInit {
             fechaConsulta: this.todayLocalIsoDate(),
             tipoConsulta: 'PRIMERA_CONSULTA_SSR'
         };
+    }
+
+    private applyPersonaLookup(response: PersonaBusquedaCiResponse): void {
+        this.personaForm.nombre = (response.nombres || '').trim();
+        this.personaForm.apellido = [response.paterno, response.materno]
+            .filter((item) => !!item && item.trim().length > 0)
+            .join(' ')
+            .trim();
+        this.personaForm.documento = response.documento || this.personaForm.documento;
+    }
+
+    private isValidCiForLookup(value: string): boolean {
+        return /^\d+$/.test((value || '').trim());
     }
 
     private normalizeText(value: unknown): string {

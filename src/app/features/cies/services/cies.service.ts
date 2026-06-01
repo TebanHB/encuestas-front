@@ -287,6 +287,19 @@ export interface PersonaUpsertRequest {
     tipoConsulta: string;
 }
 
+export interface PersonaBusquedaCiResponse {
+    encontrado: boolean;
+    mensaje?: string;
+    documento?: string;
+    documentoConsultado?: string;
+    idAfiliado?: number;
+    nombres?: string;
+    paterno?: string;
+    materno?: string | null;
+    sexo?: string | null;
+    fechaNacimiento?: string | null;
+}
+
 export interface MedicareOutboxItem {
     id: number;
     tipo: string;
@@ -677,6 +690,12 @@ export class CiesService {
         return this.http.post<PersonaElegible>(`${this.apiBase}/seleccion/personas`, payload).pipe(
             tap(() => this.resetOperacionCache())
         );
+    }
+
+    buscarPersonaPorCi(ci: string): Observable<PersonaBusquedaCiResponse> {
+        return this.http.get<PersonaBusquedaCiResponse>(`${this.apiBase}/seleccion/personas/buscar-por-ci`, {
+            params: this.toParams({ ci })
+        });
     }
 
     actualizarPersona(id: number, payload: PersonaUpsertRequest): Observable<PersonaElegible> {
